@@ -30,7 +30,6 @@ class DBTest extends \PHPUnit\Framework\TestCase
             `id` int(11) NOT NULL AUTO_INCREMENT,
             `username` varchar(255) COLLATE utf8_bin NOT NULL,
             `password` varchar(255) COLLATE utf8_bin NOT NULL,
-            `salt` varchar(255) COLLATE utf8_bin NOT NULL,
             `created` datetime NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `username` (`username`)
@@ -59,20 +58,20 @@ class DBTest extends \PHPUnit\Framework\TestCase
 
     public function testInsertUsers()
     {
-        $result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `salt`, `created`) VALUES (NULL, 'test1', 'c32ac6310706acdadea74c901c3f08fe06c44c61', 'd7e8541887cb9b3461d7364e4e7c8b7d', '2014-05-28 22:58:22');");
+        $result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `created`) VALUES (NULL, 'test1', 'c32ac6310706acdadea74c901c3f08fe06c44c61', '2014-05-28 22:58:22');");
         $this->assertNotFalse($result, 'insert user failed 1');
         $this->assertEquals(1, $result);
-        $result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `salt`, `created`) VALUES (NULL, 'test2', 'c32ac6310706acdadea74c901c3f08fe06c44c61', 'd7e8541887cb9b3461d7364e4e7c8b7d', '2014-05-28 22:58:22');");
+        $result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `created`) VALUES (NULL, 'test2', 'c32ac6310706acdadea74c901c3f08fe06c44c61', '2014-05-28 22:58:22');");
         $this->assertNotFalse($result, 'insert user failed 2');
         $this->assertEquals(2, $result);
     }
 
     public function testInsertPosts()
     {
-        $result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test1', '', 'test', 'test', '0000-00-00 00:00:00', NULL, 1);");
+        $result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test1', '', 'test', 'test', '2014-05-28 22:58:22', NULL, 1);");
         $this->assertNotFalse($result, 'insert post failed 1');
         $this->assertEquals(1, $result);
-        $result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test2', '', 'test', 'test', '0000-00-00 00:00:00', NULL, 1);");
+        $result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test2', '', 'test', 'test', '2014-05-28 22:58:22', NULL, 1);");
         $this->assertNotFalse($result, 'insert post failed 2');
         $this->assertEquals(2, $result);
     }
@@ -88,7 +87,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('posts', 'users'), array_keys($result[0]));
         $this->assertEquals('id', array_keys($result[0]['posts'])[0]);
         $this->assertEquals('test1', $result[0]['users']['username']);
-        $this->setExpectedException('MindaPHP\DBError');
+        $this->expectException('MindaPHP\DBError');
         $result = DB::select("some bogus query;");
     }
 
@@ -99,7 +98,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('id', array_keys($result['posts'])[0]);
         $result = DB::selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");
         $this->assertEquals(array(), $result);
-        $this->setExpectedException('MindaPHP\DBError');
+        $this->expectException('MindaPHP\DBError');
         $result = DB::selectOne("some bogus query;");
     }
 
@@ -109,7 +108,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('test1', 'test2'), $result);
         $result = DB::selectValues("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
         $this->assertEquals(array(), $result);
-        $this->setExpectedException('MindaPHP\DBError');
+        $this->expectException('MindaPHP\DBError');
         $result = DB::selectValues("some bogus query;");
     }
 
@@ -119,7 +118,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('test1', $result);
         $result = DB::selectValue("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
         $this->assertEquals(false, $result);
-        $this->setExpectedException('MindaPHP\DBError');
+        $this->expectException('MindaPHP\DBError');
         $result = DB::selectValue("some bogus query;");
     }
 
@@ -127,7 +126,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
     {
         $result = DB::query("SELECT * FROM `posts` limit 1;");
         $this->assertEquals(true, $result);
-        $this->setExpectedException('MindaPHP\DBError');
+        $this->expectException('MindaPHP\DBError');
         $result = DB::query("some bogus query;");
     }
 

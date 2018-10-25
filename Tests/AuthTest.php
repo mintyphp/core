@@ -27,7 +27,7 @@ class AuthTest extends \PHPUnit\Framework\TestCase
             var_dump(Auth::login('test', 'test'));
             $session_regenerated = false;
         } catch (\Exception $e) {
-            $session_regenerated = $e->getMessage() == "session_regenerate_id(): Cannot regenerate session id - headers already sent";
+            $session_regenerated = $e->getMessage() == "session_regenerate_id(): Cannot regenerate session id - session is not active";
         }
         $this->assertTrue($session_regenerated, 'session not regenerated');
     }
@@ -40,7 +40,7 @@ class AuthTest extends \PHPUnit\Framework\TestCase
             Auth::logout();
             $session_regenerated = false;
         } catch (\Exception $e) {
-            $session_regenerated = $e->getMessage() == "session_regenerate_id(): Cannot regenerate session id - headers already sent";
+            $session_regenerated = $e->getMessage() == "session_regenerate_id(): Cannot regenerate session id - session is not active";
         }
         $this->assertTrue($session_regenerated, 'session not regenerated');
         $this->assertFalse(isset($_SESSION['user']), 'user not unset');
