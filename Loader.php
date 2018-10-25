@@ -3,7 +3,8 @@ namespace MindaPHP;
 
 class Loader
 {
-    protected static $vendorDir = 'vendor';
+    public static $vendorDir = 'vendor';
+
     protected static $vendorPath = null;
     protected static $paths = null;
     protected static $nsChar = '\\';
