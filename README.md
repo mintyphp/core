@@ -1,0 +1,1 @@
+# MindaPHP core
