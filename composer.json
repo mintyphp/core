@@ -9,8 +9,5 @@
     }
     ],
     "require": {
-    },
-    "extra": {
-        "installer-name": "mindaphp"
     }
 }
