@@ -4,6 +4,7 @@ namespace MindaPHP;
 class Loader
 {
     public static $vendorDir = 'vendor';
+    public static $libDir = 'lib';
 
     protected static $vendorPath = null;
     protected static $paths = null;
@@ -74,6 +75,9 @@ class Loader
         }
         if (strpos($class, static::$nsChar) === false) {
             $fileName = dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php';
+            if (!file_exists($fileName)) {
+                $fileName = static::$libDir . DIRECTORY_SEPARATOR . $class . '.php';
+            }
             if (file_exists($fileName)) {
                 static::$files[] = $fileName;
                 include $fileName;
