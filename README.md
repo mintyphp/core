@@ -1,1 +1,1 @@
-# MindaPHP core
+# MindaPHP Core
