@@ -1,5 +1,5 @@
 <?php
-namespace MindaPHP;
+namespace MintyPHP;
 
 class Flash
 {

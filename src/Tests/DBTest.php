@@ -1,15 +1,15 @@
 <?php
-namespace MindaPHP\Tests;
+namespace MintyPHP\Tests;
 
-use MindaPHP\DB;
+use MintyPHP\DB;
 
 class DBTest extends \PHPUnit\Framework\TestCase
 {
     public static function setUpBeforeClass()
     {
-        DB::$username = 'mindaphp_test';
-        DB::$password = 'mindaphp_test';
-        DB::$database = 'mindaphp_test';
+        DB::$username = 'mintyphp_test';
+        DB::$password = 'mintyphp_test';
+        DB::$database = 'mintyphp_test';
     }
 
     public function testDropPostsBefore()
@@ -87,7 +87,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('posts', 'users'), array_keys($result[0]));
         $this->assertEquals('id', array_keys($result[0]['posts'])[0]);
         $this->assertEquals('test1', $result[0]['users']['username']);
-        $this->expectException('MindaPHP\DBError');
+        $this->expectException('MintyPHP\DBError');
         $result = DB::select("some bogus query;");
     }
 
@@ -98,7 +98,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('id', array_keys($result['posts'])[0]);
         $result = DB::selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");
         $this->assertEquals(array(), $result);
-        $this->expectException('MindaPHP\DBError');
+        $this->expectException('MintyPHP\DBError');
         $result = DB::selectOne("some bogus query;");
     }
 
@@ -108,7 +108,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('test1', 'test2'), $result);
         $result = DB::selectValues("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
         $this->assertEquals(array(), $result);
-        $this->expectException('MindaPHP\DBError');
+        $this->expectException('MintyPHP\DBError');
         $result = DB::selectValues("some bogus query;");
     }
 
@@ -118,7 +118,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('test1', $result);
         $result = DB::selectValue("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
         $this->assertEquals(false, $result);
-        $this->expectException('MindaPHP\DBError');
+        $this->expectException('MintyPHP\DBError');
         $result = DB::selectValue("some bogus query;");
     }
 
@@ -126,7 +126,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
     {
         $result = DB::query("SELECT * FROM `posts` limit 1;");
         $this->assertEquals(true, $result);
-        $this->expectException('MindaPHP\DBError');
+        $this->expectException('MintyPHP\DBError');
         $result = DB::query("some bogus query;");
     }
 

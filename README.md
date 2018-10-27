@@ -1,1 +1,1 @@
-# MindaPHP Core
+# MintyPHP Core

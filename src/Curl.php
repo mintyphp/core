@@ -1,6 +1,6 @@
 <?php
 
-namespace MindaPHP;
+namespace MintyPHP;
 
 class CurlError extends \Exception
 {};

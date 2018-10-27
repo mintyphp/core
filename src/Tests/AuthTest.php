@@ -1,7 +1,7 @@
 <?php
-namespace MindaPHP\Tests;
+namespace MintyPHP\Tests;
 
-use MindaPHP\Auth;
+use MintyPHP\Auth;
 
 class AuthTest extends \PHPUnit\Framework\TestCase
 {

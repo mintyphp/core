@@ -1,5 +1,5 @@
 <?php
-namespace MindaPHP;
+namespace MintyPHP;
 
 class Analyzer
 {
@@ -22,7 +22,7 @@ class Analyzer
     		if (is_array($token)) {
     			if (in_array(token_name($token[0]),static::$tokens)) {
     				if (in_array($token[1],static::$functions)) {
-    					trigger_error('MindaPHP '.$type.' "'.$filename.'" should not use "'.htmlentities($token[1]).'" on line '.$token[2].'. Error raised ', E_USER_WARNING);
+    					trigger_error('MintyPHP '.$type.' "'.$filename.'" should not use "'.htmlentities($token[1]).'" on line '.$token[2].'. Error raised ', E_USER_WARNING);
     				}
     			}
     		}

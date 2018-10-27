@@ -1,11 +1,11 @@
 <?php
-namespace MindaPHP;
+namespace MintyPHP;
 
 class SessionError extends \Exception {};
 
 class Session
 {
-  public static $sessionName        = 'mindaphp';
+  public static $sessionName        = 'mintyphp';
   public static $csrfSessionKey     = 'csrf_token';
   public static $enabled            = true;
 	public static $csrfLength         = 16;

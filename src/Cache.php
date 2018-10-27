@@ -1,11 +1,11 @@
 <?php
-namespace MindaPHP;
+namespace MintyPHP;
 
 class CacheError extends \Exception {};
 
 class Cache
 {
-	public static $prefix='mindaphp';
+	public static $prefix='mintyphp';
 	public static $servers='localhost';
 	public static $compressTreshold=20000;
 	public static $compressSavings=0.2;

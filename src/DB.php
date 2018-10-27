@@ -1,5 +1,5 @@
 <?php
-namespace MindaPHP;
+namespace MintyPHP;
 
 class DBError extends \Exception {};
 
@@ -18,7 +18,7 @@ class DB
   protected static function connect()
   {
     if (static::$closed) {
-      static::error('Database can only be used in MindaPHP action');
+      static::error('Database can only be used in MintyPHP action');
     }
     if (!static::$mysqli) {
       $reflect = new \ReflectionClass('mysqli');

@@ -1,7 +1,7 @@
 <?php
-namespace MindaPHP\Tests;
+namespace MintyPHP\Tests;
 
-use MindaPHP\Token;
+use MintyPHP\Token;
 
 class TokenTest extends \PHPUnit\Framework\TestCase
 {

@@ -1,7 +1,7 @@
 <?php
-namespace MindaPHP\Tests;
+namespace MintyPHP\Tests;
 
-use MindaPHP\Router;
+use MintyPHP\Router;
 
 class RouterTest extends \PHPUnit\Framework\TestCase
 {
@@ -11,7 +11,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 
     public static function setUpBeforeClass()
     {
-        self::$path = sys_get_temp_dir() . '/mindaphp_test';
+        self::$path = sys_get_temp_dir() . '/mintyphp_test';
 
         Router::$baseUrl = '/';
         Router::$pageRoot = self::$path . '/pages/';
