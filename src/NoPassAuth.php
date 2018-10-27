@@ -98,8 +98,3 @@ class NoPassAuth
     }
 
 }
-
-// for compatibility in PHP 5.3
-if (!function_exists('random_bytes')) {
-    include __DIR__ . "/random_compat.inc";
-}
