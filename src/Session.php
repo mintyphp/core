@@ -1,9 +1,6 @@
 <?php
 namespace MintyPHP;
 
-class SessionError extends \Exception
-{};
-
 class Session
 {
     public static $sessionName = 'mintyphp';

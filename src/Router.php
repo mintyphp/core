@@ -1,8 +1,6 @@
 <?php
 namespace MintyPHP;
 
-class RouterError extends \Exception {};
-
 class Router
 {
   protected static $method = null;

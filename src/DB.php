@@ -1,8 +1,6 @@
 <?php
 namespace MintyPHP;
 
-class DBError extends \Exception {};
-
 class DB
 {
   public static $host=null;

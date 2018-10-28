@@ -1,9 +1,5 @@
 <?php
-
 namespace MintyPHP;
-
-class CurlError extends \Exception
-{};
 
 class Curl
 {

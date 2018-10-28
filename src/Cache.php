@@ -1,8 +1,6 @@
 <?php
 namespace MintyPHP;
 
-class CacheError extends \Exception {};
-
 class Cache
 {
 	public static $prefix='mintyphp';
