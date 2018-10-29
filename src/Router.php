@@ -122,7 +122,7 @@ class Router
     return array($view,$template,$action,$parameters);
   }
 
-  protected static function routeFile($templateRoot,$root,$dir,$path,$parameters)
+  protected static function routeFile($templateRoot,$root,$dir,$path,$parameters,$getParameters)
   {
     $redirect = false;
 
@@ -158,7 +158,7 @@ class Router
       $parameters = array_map('urldecode', $parameters);
       if (count($parameters)<count($parameterNames)) {
         for ($i=count($parameters); $i<count($parameterNames); $i++) {
-          array_push($parameters,null);
+          array_push($parameters,isset($getParameters[$parameterNames[$i]])?$getParameters[$parameterNames[$i]]:null);
         }
       }
       if (!$redirect && count($parameterNames)){
@@ -176,7 +176,7 @@ class Router
     return $redirect;
   }
 
-  protected static function routeDir($csrfOk,$getOk,$templateRoot,$root,$dir,$parameters)
+  protected static function routeDir($csrfOk,$templateRoot,$root,$dir,$parameters,$getParameters)
   {
     $status = 200;
     $matches = array();
@@ -188,15 +188,6 @@ class Router
       $matches = glob($root.$dir.'forbidden(*).phtml');
       if (count($matches)==0) {
         $matches = glob($root.$dir.'forbidden(*).php');
-      }
-    }
-    // route 405
-    elseif (!$getOk) {
-      $status = 405;
-      $dir = 'error/';
-      $matches = glob($root.$dir.'method_not_allowed(*).phtml');
-      if (count($matches)==0) {
-        $matches = glob($root.$dir.'method_not_allowed(*).php');
       }
     }
     // normal route
@@ -230,7 +221,7 @@ class Router
         static::error('Could not find 404');
       }
     }
-    return array($status,static::routeFile($templateRoot,$root,$dir,$matches[0],$parameters));
+    return array($status,static::routeFile($templateRoot,$root,$dir,$matches[0],$parameters,$getParameters));
   }
 
   protected static function route()
@@ -246,10 +237,17 @@ class Router
 
     $csrfOk = static::$method!='POST'?:Session::checkCsrfToken();
 
+    $getParameters = array();
     $questionMarkPosition = strpos($request,'?');
-    $hasGet = $questionMarkPosition!==false;
-    if ($hasGet) $request = substr($request,0,$questionMarkPosition);
-    $getOk = static::$allowGet || !$hasGet;
+    if ($questionMarkPosition!==false) {
+      list($request,$query) = explode('?',$request,2);
+      parse_str($query,$getParameters);
+    }
+
+    if (!static::$allowGet) {
+      $_SERVER['REQUEST_URI'] = static::$baseUrl.$request;
+      $_GET = array();
+    }
 
     $parts = explode('/',$request);
     for ($i=count($parts);$i>=0;$i--) {
@@ -257,7 +255,7 @@ class Router
     	else $dir = implode('/',array_slice($parts, 0, $i)).'/';
     	if (file_exists($root.$dir) && is_dir($root.$dir)) {
     		$parameters = array_slice($parts, $i, count($parts)-$i);
-        list($status,$redirect) = static::routeDir($csrfOk,$getOk,static::$templateRoot,$root,$dir,$parameters);
+        list($status,$redirect) = static::routeDir($csrfOk,static::$templateRoot,$root,$dir,$parameters,$getParameters);
         break;
     	}
     }
@@ -270,7 +268,7 @@ class Router
     	$templateFile = static::$template;
     	$parameters = array();
     	$parameters['url'] = static::$parameters;
-    	$parameters['get'] = $_GET;
+    	$parameters['get'] = $getParameters;
     	$parameters['post'] = $_POST;
     	Debugger::set('router',compact('method','csrfOk','request','url','dir','view','template','viewFile','actionFile','templateFile','parameters'));
     	Debugger::set('status',$status);

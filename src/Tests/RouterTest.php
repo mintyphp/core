@@ -25,6 +25,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
             'admin/posts/view(admin).phtml',
             'admin/index().php',
             'admin/index(admin).phtml',
+            'admin/auth($code,$state).php',
             'admin/login().php',
             'admin/login(login).phtml',
             'error/forbidden(error).phtml',
@@ -66,6 +67,10 @@ class RouterTest extends \PHPUnit\Framework\TestCase
     {
         $_SERVER['REQUEST_METHOD'] = $method;
         $_SERVER['REQUEST_URI'] = $uri;
+        $q = strpos($uri, '?');
+        if ($q !== false) {
+            parse_str(substr($uri, $q + 1), $_GET);
+        }
         Router::$initialized = false;
     }
 
@@ -133,6 +138,56 @@ class RouterTest extends \PHPUnit\Framework\TestCase
     {
         $this->request('GET', '/2014-some-blog-title');
         $this->assertEquals(array('slug' => '2014-some-blog-title'), Router::getParameters());
+    }
+
+    public function testGetParameter()
+    {
+        $this->request('GET', '/admin/posts/view?id=12');
+        $this->assertEquals(array('id' => '12'), Router::getParameters());
+    }
+
+    public function testGetParameters()
+    {
+        $this->request('GET', '/admin/auth?code=23&state=12');
+        $this->assertEquals(array('code' => '23', 'state' => '12'), Router::getParameters());
+    }
+
+    public function testGetParameterWithWrongName()
+    {
+        $this->request('GET', '/admin/posts/view?idea=12');
+        $this->assertEquals(array('id' => null), Router::getParameters());
+    }
+
+    public function testGetParameterHalf()
+    {
+        $this->request('GET', '/admin/auth/23?state=12');
+        $this->assertEquals(array('code' => '23', 'state' => '12'), Router::getParameters());
+    }
+
+    public function testGetParameterWrongOrder()
+    {
+        $this->request('GET', '/admin/auth?state=12&code=23');
+        $this->assertEquals(array('code' => '23', 'state' => '12'), Router::getParameters());
+    }
+
+    public function testGetParameterFirstOnly()
+    {
+        $this->request('GET', '/admin/auth?code=23');
+        $this->assertEquals(array('code' => '23', 'state' => null), Router::getParameters());
+    }
+
+    public function testGetParameterLastOnly()
+    {
+        $this->request('GET', '/admin/auth?state=12');
+        $this->assertEquals(array('code' => null, 'state' => '12'), Router::getParameters());
+    }
+
+    public function testGetParameterGloballyUnset()
+    {
+        $this->request('GET', '/admin/posts/view/4?state=12&code=23');
+        $this->assertEquals(array('id' => '4'), Router::getParameters());
+        $this->assertEquals(array(), $_GET);
+        $this->assertEquals('/admin/posts/view/4', $_SERVER['REQUEST_URI']);
     }
 
     public function testActionWithoutView()
