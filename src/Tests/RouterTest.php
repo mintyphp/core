@@ -67,10 +67,6 @@ class RouterTest extends \PHPUnit\Framework\TestCase
     {
         $_SERVER['REQUEST_METHOD'] = $method;
         $_SERVER['REQUEST_URI'] = $uri;
-        $q = strpos($uri, '?');
-        if ($q !== false) {
-            parse_str(substr($uri, $q + 1), $_GET);
-        }
         Router::$initialized = false;
     }
 
@@ -155,7 +151,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
     public function testGetParameterWithWrongName()
     {
         $this->request('GET', '/admin/posts/view?idea=12');
-        $this->assertEquals(array('id' => null), Router::getParameters());
+        $this->assertEquals('/admin/posts/view', Router::getRedirect());
     }
 
     public function testGetParameterHalf()
@@ -182,12 +178,10 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('code' => null, 'state' => '12'), Router::getParameters());
     }
 
-    public function testGetParameterGloballyUnset()
+    public function testGetParametersTooMany()
     {
-        $this->request('GET', '/admin/posts/view/4?state=12&code=23');
-        $this->assertEquals(array('id' => '4'), Router::getParameters());
-        $this->assertEquals(array(), $_GET);
-        $this->assertEquals('/admin/posts/view/4', $_SERVER['REQUEST_URI']);
+        $this->request('GET', '/admin/posts/view?state=12&code=23&id=4');
+        $this->assertEquals('/admin/posts/view?id=4', Router::getRedirect());
     }
 
     public function testActionWithoutView()

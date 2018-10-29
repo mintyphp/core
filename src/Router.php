@@ -145,15 +145,15 @@ class Router
 
       if (substr($url,-7)=='//index') $redirect = substr($url,0,-7);
       if (substr(static::$original,-6)=='/index') $redirect = substr($url,0,-6);
-      if (count($parameters)>count($parameterNames)) {
+      if (count($parameters)>count($parameterNames) || count(array_diff(array_keys($getParameters),$parameterNames))>0) {
         if (substr($url,-6)=='/index') $url = substr($url,0,-6);
         if ($url=='index') $url = '';
-        if (count($parameterNames)) {
-          $redirect = ($url?$url.'/':'');
-          $redirect .= implode('/',array_slice($parameters, 0, count($parameterNames)));
-        } else {
-          $redirect = $url;
+        $redirect = $url;
+        for ($i=0;$i<min(count($parameters),count($parameterNames));$i++) {
+          $redirect .= '/'.$parameters[$i];
         }
+        $query = http_build_query(array_intersect_key($getParameters,array_flip($parameterNames)));
+        $redirect .= $query?'?'.$query:'';
       }
       $parameters = array_map('urldecode', $parameters);
       if (count($parameters)<count($parameterNames)) {
@@ -244,11 +244,6 @@ class Router
       parse_str($query,$getParameters);
     }
 
-    if (!static::$allowGet) {
-      $_SERVER['REQUEST_URI'] = static::$baseUrl.$request;
-      $_GET = array();
-    }
-
     $parts = explode('/',$request);
     for ($i=count($parts);$i>=0;$i--) {
     	if ($i==0) $dir = '';
@@ -268,7 +263,7 @@ class Router
     	$templateFile = static::$template;
     	$parameters = array();
     	$parameters['url'] = static::$parameters;
-    	$parameters['get'] = $getParameters;
+    	$parameters['get'] = $_GET;
     	$parameters['post'] = $_POST;
     	Debugger::set('router',compact('method','csrfOk','request','url','dir','view','template','viewFile','actionFile','templateFile','parameters'));
     	Debugger::set('status',$status);
