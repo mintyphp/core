@@ -75,7 +75,15 @@ class Curl
             unset($_SESSION['curl_cookies']);
         }
 
-        list($head, $body) = explode("\r\n\r\n", $result, 2);
+        if (strpos($result, "\r\n\r\n") === false) {
+            list($head, $body) = array($result, '');
+        } else {
+            list($head, $body) = explode("\r\n\r\n", $result, 2);
+            while (preg_match('|\s+100\s+Continue|', substr($head, 0, strpos($head, "\r\n")))) {
+                list($head, $body) = explode("\r\n\r\n", $body, 2);
+            }
+        }
+
         $result = array('status' => $status);
         $result['headers'] = array();
         $result['data'] = $body;
