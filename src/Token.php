@@ -13,7 +13,14 @@ class Token
 
     protected static function getVerifiedClaims($token, $time, $leeway, $ttl, $algorithm, $secret)
     {
-        $algorithms = array('HS256' => 'sha256', 'HS384' => 'sha384', 'HS512' => 'sha512');
+        $algorithms = array(
+            'HS256' => 'sha256',
+            'HS384' => 'sha384',
+            'HS512' => 'sha512',
+            'RS256' => 'sha256',
+            'RS384' => 'sha384',
+            'RS512' => 'sha512',
+        );
         if (!isset($algorithms[$algorithm])) {
             return false;
         }
@@ -32,9 +39,26 @@ class Token
         if ($header['alg'] != $algorithm) {
             return false;
         }
-        $signature = bin2hex(base64_decode(strtr($token[2], '-_', '+/')));
-        if ($signature != hash_hmac($hmac, "$token[0].$token[1]", $secret)) {
-            return false;
+        $signature = base64_decode(strtr($token[2], '-_', '+/'));
+        $data = "$token[0].$token[1]";
+        switch ($algorithm[0]) {
+            case 'H':
+                $hash = hash_hmac($hmac, $data, $secret, true);
+                if (function_exists('hash_equals')) {
+                    $equals = hash_equals($signature, $hash);
+                } else {
+                    $equals = $signature == $hash;
+                }
+                if (!$equals) {
+                    return array();
+                }
+                break;
+            case 'R':
+                $equals = openssl_verify($data, $signature, $secret, $hmac) == 1;
+                if (!$equals) {
+                    return array();
+                }
+                break;
         }
         $claims = json_decode(base64_decode(strtr($token[1], '-_', '+/')), true);
         if (!$claims) {
@@ -73,7 +97,14 @@ class Token
 
     protected static function generateToken($claims, $time, $ttl, $algorithm, $secret)
     {
-        $algorithms = array('HS256' => 'sha256', 'HS384' => 'sha384', 'HS512' => 'sha512');
+        $algorithms = array(
+            'HS256' => 'sha256',
+            'HS384' => 'sha384',
+            'HS512' => 'sha512',
+            'RS256' => 'sha256',
+            'RS384' => 'sha384',
+            'RS512' => 'sha512',
+        );
         $header = array();
         $header['typ'] = 'JWT';
         $header['alg'] = $algorithm;
@@ -86,7 +117,15 @@ class Token
             return false;
         }
         $hmac = $algorithms[$algorithm];
-        $signature = hash_hmac($hmac, "$token[0].$token[1]", $secret, true);
+        $data = "$token[0].$token[1]";
+        switch ($algorithm[0]) {
+            case 'H':
+                $signature = hash_hmac($hmac, $data, $secret, true);
+                break;
+            case 'R':
+                $signature = (openssl_sign($data, $signature, $secret, $hmac) ? $signature : '');
+                break;
+        }
         $token[2] = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
         return implode('.', $token);
     }
