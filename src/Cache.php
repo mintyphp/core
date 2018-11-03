@@ -4,7 +4,7 @@ namespace MintyPHP;
 class Cache
 {
 	public static $prefix='mintyphp';
-	public static $servers='localhost';
+	public static $servers='127.0.0.1';
 	public static $compressTreshold=20000;
 	public static $compressSavings=0.2;
 	
