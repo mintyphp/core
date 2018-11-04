@@ -8,10 +8,15 @@ class Token
     public static $secret = false;
     public static $leeway = 5; // 5 seconds
     public static $ttl = 30; // 1/2 minute
+    public static $audience = false;
+    public static $issuer = false;
+    public static $algorithms = '';
+    public static $audiences = '';
+    public static $issuers = '';
 
     protected static $cache = null;
 
-    protected static function getVerifiedClaims($token, $time, $leeway, $ttl, $algorithm, $secret)
+    protected static function getVerifiedClaims($token, $time, $leeway, $ttl, $secret, $requirements)
     {
         $algorithms = array(
             'HS256' => 'sha256',
@@ -21,10 +26,6 @@ class Token
             'RS384' => 'sha384',
             'RS512' => 'sha512',
         );
-        if (!isset($algorithms[$algorithm])) {
-            return false;
-        }
-        $hmac = $algorithms[$algorithm];
         $token = explode('.', $token);
         if (count($token) < 3) {
             return false;
@@ -36,9 +37,14 @@ class Token
         if ($header['typ'] != 'JWT') {
             return false;
         }
-        if ($header['alg'] != $algorithm) {
+        $algorithm = $header['alg'];
+        if (!isset($algorithms[$algorithm])) {
             return false;
         }
+        if (!empty($requirements['alg']) && !in_array($algorithm, $requirements['alg'])) {
+            return false;
+        }
+        $hmac = $algorithms[$algorithm];
         $signature = base64_decode(strtr($token[2], '-_', '+/'));
         $data = "$token[0].$token[1]";
         switch ($algorithm[0]) {
@@ -50,19 +56,28 @@ class Token
                     $equals = $signature == $hash;
                 }
                 if (!$equals) {
-                    return array();
+                    return false;
                 }
                 break;
             case 'R':
                 $equals = openssl_verify($data, $signature, $secret, $hmac) == 1;
                 if (!$equals) {
-                    return array();
+                    return false;
                 }
                 break;
         }
         $claims = json_decode(base64_decode(strtr($token[1], '-_', '+/')), true);
         if (!$claims) {
             return false;
+        }
+        foreach ($requirements as $field => $values) {
+            if (!empty($values)) {
+                if ($field != 'alg') {
+                    if (!isset($claims[$field]) || !in_array($claims[$field], $values)) {
+                        return false;
+                    }
+                }
+            }
         }
         if (isset($claims['nbf']) && $time + $leeway < $claims['nbf']) {
             return false;
@@ -77,7 +92,6 @@ class Token
             if ($time - $leeway > $claims['iat'] + $ttl) {
                 return false;
             }
-
         }
         return $claims;
     }
@@ -90,9 +104,12 @@ class Token
         $time = time();
         $leeway = static::$leeway;
         $ttl = static::$ttl;
-        $algorithm = static::$algorithm;
         $secret = static::$secret;
-        return static::getVerifiedClaims($token, $time, $leeway, $ttl, $algorithm, $secret);
+        $requirements = array();
+        $requirements['alg'] = static::$algorithms;
+        $requirements['aud'] = static::$audiences;
+        $requirements['iss'] = static::$issuers;
+        return static::getVerifiedClaims($token, $time, $leeway, $ttl, $secret, $requirements);
     }
 
     protected static function generateToken($claims, $time, $ttl, $algorithm, $secret)
@@ -136,6 +153,12 @@ class Token
         $ttl = static::$ttl;
         $algorithm = static::$algorithm;
         $secret = static::$secret;
+        if (!isset($claims['aud']) && static::$audience) {
+            $claims['aud'] = static::$audience;
+        }
+        if (!isset($claims['iss']) && static::$issuer) {
+            $claims['iss'] = static::$issuer;
+        }
         $token = static::generateToken($claims, $time, $ttl, $algorithm, $secret);
         return $token;
     }
