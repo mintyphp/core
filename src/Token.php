@@ -3,7 +3,6 @@ namespace MintyPHP;
 
 class Token
 {
-
     public static $algorithm = 'HS256';
     public static $secret = false;
     public static $leeway = 5; // 5 seconds
