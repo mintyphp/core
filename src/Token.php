@@ -106,9 +106,9 @@ class Token
         $ttl = static::$ttl;
         $secret = static::$secret;
         $requirements = array();
-        $requirements['alg'] = static::$algorithms;
-        $requirements['aud'] = static::$audiences;
-        $requirements['iss'] = static::$issuers;
+        $requirements['alg'] = array_filter(array_map('trim', explode(',', static::$algorithms)));
+        $requirements['aud'] = array_filter(array_map('trim', explode(',', static::$audiences)));
+        $requirements['iss'] = array_filter(array_map('trim', explode(',', static::$issuers)));
         return static::getVerifiedClaims($token, $time, $leeway, $ttl, $secret, $requirements);
     }
 
