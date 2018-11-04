@@ -159,8 +159,7 @@ class Token
         if (!isset($claims['iss']) && static::$issuer) {
             $claims['iss'] = static::$issuer;
         }
-        $token = static::generateToken($claims, $time, $ttl, $algorithm, $secret);
-        return $token;
+        return static::generateToken($claims, $time, $ttl, $algorithm, $secret);
     }
 
 }
