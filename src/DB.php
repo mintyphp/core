@@ -165,7 +165,7 @@ class DB
 
     $result = array();
     while ($query->fetch()) {
-      $result[] = json_decode(json_encode($row),true);
+      $result[] = unserialize(serialize($row));
     }
 
     $query->close();
