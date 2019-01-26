@@ -96,7 +96,7 @@ class Template
         return $result;
     }
 
-    private static function renderIfNode(&$node, &$data, &$functions)
+    private static function renderIfNode($node, &$data, &$functions)
     {
         $parts = explode('|', $node->expression);
         $path = array_shift($parts);
@@ -113,7 +113,7 @@ class Template
         return $result;
     }
 
-    private static function renderForNode(&$node, &$data, &$functions)
+    private static function renderForNode($node, &$data, &$functions)
     {
         $parts = explode('|', $node->expression);
         $path = array_shift($parts);
@@ -139,7 +139,7 @@ class Template
         return $result;
     }
 
-    private static function renderVarNode(&$node, &$data, &$functions)
+    private static function renderVarNode($node, &$data, &$functions)
     {
         $parts = explode('|', $node->expression);
         $path = array_shift($parts);
@@ -152,7 +152,7 @@ class Template
         return $value;
     }
 
-    private static function resolvePath(&$path, &$data)
+    private static function resolvePath($path, &$data)
     {
         $current = &$data;
         foreach (explode('.', $path) as $p) {
@@ -164,7 +164,7 @@ class Template
         return $current;
     }
 
-    private static function applyFunctions(&$value, &$parts, &$functions)
+    private static function applyFunctions($value, &$parts, &$functions)
     {
         foreach ($parts as $part) {
             $function = explode('(', rtrim($part, ')'));
