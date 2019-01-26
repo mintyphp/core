@@ -79,13 +79,17 @@ class Template
         $result = '';
         foreach ($node->children as $child) {
             switch ($child->type) {
-                case 'if':$result .= Template::renderIfNode($child, $data, $functions);
+                case 'if':
+                    $result .= Template::renderIfNode($child, $data, $functions);
                     break;
-                case 'for':$result .= Template::renderForNode($child, $data, $functions);
+                case 'for':
+                    $result .= Template::renderForNode($child, $data, $functions);
                     break;
-                case 'var':$result .= Template::renderVarNode($child, $data, $functions);
+                case 'var':
+                    $result .= Template::renderVarNode($child, $data, $functions);
                     break;
-                case 'lit':$result .= $child->expression;
+                case 'lit':
+                    $result .= $child->expression;
                     break;
             }
         }
