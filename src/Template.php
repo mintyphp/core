@@ -12,7 +12,7 @@ class Template
 
     private static function createNode($type, $expression)
     {
-        return (object) array('type' => $type, 'expression' => $expression, 'children' => array());
+        return (object) array('type' => $type, 'expression' => $expression, 'children' => array(), 'value' => null);
     }
 
     private static function tokenize($template)
@@ -47,6 +47,9 @@ class Template
                 } elseif ($token == 'endfor') {
                     $type = 'endfor';
                     $expression = false;
+                } elseif ($token == 'else') {
+                    $type = 'else';
+                    $expression = false;
                 } elseif (substr($token, 0, 3) == 'if:') {
                     $type = 'if';
                     $expression = substr($token, 3);
@@ -57,15 +60,18 @@ class Template
                     $type = 'var';
                     $expression = $token;
                 }
-                if (in_array($type, array('endif', 'endfor'))) {
-                    $current = array_pop($stack);
-                } else {
+                if (in_array($type, array('endif', 'endfor', 'else'))) {
+                    if (count($stack)) {
+                        $current = array_pop($stack);
+                    }
+                }
+                if (in_array($type, array('if', 'for', 'var', 'else'))) {
                     $node = Template::createNode($type, $expression);
                     array_push($current->children, $node);
-                    if (in_array($type, array('if', 'for'))) {
-                        array_push($stack, $current);
-                        $current = $node;
-                    }
+                }
+                if (in_array($type, array('if', 'for', 'else'))) {
+                    array_push($stack, $current);
+                    $current = $node;
                 }
             } else {
                 array_push($current->children, Template::createNode('lit', $token));
@@ -77,10 +83,14 @@ class Template
     private static function renderChildren($node, $data, $functions)
     {
         $result = '';
+        $previousChild = null;
         foreach ($node->children as $child) {
             switch ($child->type) {
                 case 'if':
                     $result .= Template::renderIfNode($child, $data, $functions);
+                    break;
+                case 'else':
+                    $result .= Template::renderElseNode($child, $previousChild, $data, $functions);
                     break;
                 case 'for':
                     $result .= Template::renderForNode($child, $data, $functions);
@@ -92,6 +102,7 @@ class Template
                     $result .= $child->expression;
                     break;
             }
+            $previousChild = $child;
         }
         return $result;
     }
@@ -109,6 +120,19 @@ class Template
         $result = '';
         if ($value) {
             $result .= Template::renderChildren($node, $data, $functions);
+            $node->value = $value;
+        }
+        return $result;
+    }
+
+    private static function renderElseNode($node, $previousNode, $data, $functions)
+    {
+        if ($previousNode->type != 'if') {
+            return "{{else!!could not find matching 'if'}}";
+        }
+        $result = '';
+        if (!$previousNode->value) {
+            $result .= Template::renderChildren($node, $data, $functions);
         }
         return $result;
     }
@@ -117,11 +141,15 @@ class Template
     {
         $parts = explode('|', $node->expression);
         $path = array_shift($parts);
-        $path = explode(':', $path, 2);
-        if (count($path) != 2) {
+        $path = explode(':', $path, 3);
+        if (count($path) == 2) {
+            list($var, $path) = $path;
+            $key = false;
+        } elseif (count($path) == 3) {
+            list($var, $key, $path) = $path;
+        } else {
             return '{{for:' . $node->expression . '!!' . "for must have 'for:var:array' format" . '}}';
         }
-        list($var, $path) = $path;
         try {
             $value = Template::resolvePath($path, $data);
             $value = Template::applyFunctions($value, $parts, $functions);
@@ -132,8 +160,8 @@ class Template
             return '{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}';
         }
         $result = '';
-        foreach ($value as $v) {
-            $data = array_merge($data, [$var => $v]);
+        foreach ($value as $k => $v) {
+            $data = array_merge($data, $key ? [$var => $v, $key => $k] : [$var => $v]);
             $result .= Template::renderChildren($node, $data, $functions);
         }
         return $result;
