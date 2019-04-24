@@ -184,7 +184,7 @@ class Template
     {
         $current = $data;
         foreach (explode('.', $path) as $p) {
-            if (!isset($current[$p])) {
+            if (!array_key_exists($p, $current)) {
                 throw new \Exception("path '$p' not found");
             }
             $current = &$current[$p];
