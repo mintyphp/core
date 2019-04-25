@@ -3,6 +3,17 @@ namespace MintyPHP;
 
 class Template
 {
+    public static $escape = 'html';
+
+    public static function escape($string)
+    {
+        switch (static::$escape) {
+            case 'html':
+                return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+        }
+        return $string;
+    }
+
     public static function render($template, $data, $functions = array())
     {
         $tokens = Template::tokenize($template);
@@ -115,7 +126,7 @@ class Template
             $value = Template::resolvePath($path, $data);
             $value = Template::applyFunctions($value, $parts, $functions);
         } catch (\Throwable $e) {
-            return '{{if:' . $node->expression . '!!' . $e->getMessage() . '}}';
+            return Template::escape('{{if:' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         $result = '';
         if ($value) {
@@ -128,7 +139,7 @@ class Template
     private static function renderElseNode($node, $previousNode, $data, $functions)
     {
         if ($previousNode == null || $previousNode->type != 'if') {
-            return "{{else!!could not find matching 'if'}}";
+            return Template::escape("{{else!!could not find matching `if`}}");
         }
         $result = '';
         if (!$previousNode->value) {
@@ -148,16 +159,16 @@ class Template
         } elseif (count($path) == 3) {
             list($var, $key, $path) = $path;
         } else {
-            return '{{for:' . $node->expression . '!!' . "for must have 'for:var:array' format" . '}}';
+            return Template::escape('{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
         }
         try {
             $value = Template::resolvePath($path, $data);
             $value = Template::applyFunctions($value, $parts, $functions);
         } catch (\Throwable $e) {
-            return '{{for:' . $node->expression . '!!' . $e->getMessage() . '}}';
+            return Template::escape('{{for:' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         if (!is_array($value)) {
-            return '{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}';
+            return Template::escape('{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}');
         }
         $result = '';
         foreach ($value as $k => $v) {
@@ -175,9 +186,9 @@ class Template
             $value = Template::resolvePath($path, $data);
             $value = Template::applyFunctions($value, $parts, $functions);
         } catch (\Throwable $e) {
-            return '{{' . $node->expression . '!!' . $e->getMessage() . '}}';
+            return Template::escape('{{' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
-        return $value;
+        return Template::escape($value);
     }
 
     private static function resolvePath($path, $data)
@@ -185,7 +196,7 @@ class Template
         $current = $data;
         foreach (explode('.', $path) as $p) {
             if (!array_key_exists($p, $current)) {
-                throw new \Exception("path '$p' not found");
+                throw new \Exception("path `$p` not found");
             }
             $current = &$current[$p];
         }
@@ -202,7 +213,7 @@ class Template
             if (isset($functions[$f])) {
                 $value = call_user_func_array($functions[$f], $arguments);
             } else {
-                throw new \Exception("function '$f' not found");
+                throw new \Exception("function `$f` not found");
             }
         }
         return $value;
