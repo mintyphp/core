@@ -127,7 +127,7 @@ class Template
 
     private static function renderElseNode($node, $previousNode, $data, $functions)
     {
-        if ($previousNode->type != 'if') {
+        if ($previousNode == null || $previousNode->type != 'if') {
             return "{{else!!could not find matching 'if'}}";
         }
         $result = '';
