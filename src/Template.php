@@ -201,7 +201,7 @@ class Template
 
     private static function renderElseNode($node, $ifNodes, $data, $functions)
     {
-        if (count($ifNodes) == 0) {
+        if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
             return Template::escape("{{else!!could not find matching `if`}}");
         }
         $result = '';
