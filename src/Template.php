@@ -45,6 +45,31 @@ class Template
         return $tokens;
     }
 
+    private static function split(string $a, string $separator, string $escape)
+    {
+        $result = array();
+        $token = '';
+        $escaped = false;
+        for ($i = 0; $i < strlen($a); $i++) {
+            $c = $a[$i];
+            if (!$escaped) {
+                if ($c == $escape) {
+                    $escaped = true;
+                } elseif ($c == $separator) {
+                    $result[] = $token;
+                    $token = '';
+                } else { // other char
+                    $token .= $c;
+                }
+            } else { // $escaped
+                $token .= $c;
+                $escaped = false;
+            }
+        }
+        $result[] = $token;
+        return $result;
+    }
+
     private static function createSyntaxTree(&$tokens)
     {
         $root = Template::createNode('root', false);
@@ -252,7 +277,7 @@ class Template
         foreach ($parts as $part) {
             $function = explode('(', rtrim($part, ')'));
             $f = $function[0];
-            $arguments = isset($function[1]) ? explode(',', $function[1]) : array();
+            $arguments = isset($function[1]) ? Template::split($function[1], ',', '\\') : array();
             array_unshift($arguments, $value);
             if (isset($functions[$f])) {
                 $value = call_user_func_array($functions[$f], $arguments);
