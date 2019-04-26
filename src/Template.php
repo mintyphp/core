@@ -45,13 +45,13 @@ class Template
         return $tokens;
     }
 
-    private static function split(string $a, string $separator, string $escape)
+    private static function split($str, $separator, $escape)
     {
         $result = array();
         $token = '';
         $escaped = false;
-        for ($i = 0; $i < strlen($a); $i++) {
-            $c = $a[$i];
+        for ($i = 0; $i < strlen($str); $i++) {
+            $c = $str[$i];
             if (!$escaped) {
                 if ($c == $escape) {
                     $escaped = true;
