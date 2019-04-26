@@ -61,6 +61,9 @@ class Template
                 } elseif ($token == 'else') {
                     $type = 'else';
                     $expression = false;
+                } elseif (substr($token, 0, 7) == 'elseif:') {
+                    $type = 'elseif';
+                    $expression = substr($token, 7);
                 } elseif (substr($token, 0, 3) == 'if:') {
                     $type = 'if';
                     $expression = substr($token, 3);
@@ -71,16 +74,16 @@ class Template
                     $type = 'var';
                     $expression = $token;
                 }
-                if (in_array($type, array('endif', 'endfor', 'else'))) {
+                if (in_array($type, array('endif', 'endfor', 'elseif', 'else'))) {
                     if (count($stack)) {
                         $current = array_pop($stack);
                     }
                 }
-                if (in_array($type, array('if', 'for', 'var', 'else'))) {
+                if (in_array($type, array('if', 'for', 'var', 'elseif', 'else'))) {
                     $node = Template::createNode($type, $expression);
                     array_push($current->children, $node);
                 }
-                if (in_array($type, array('if', 'for', 'else'))) {
+                if (in_array($type, array('if', 'for', 'elseif', 'else'))) {
                     array_push($stack, $current);
                     $current = $node;
                 }
@@ -94,26 +97,36 @@ class Template
     private static function renderChildren($node, $data, $functions)
     {
         $result = '';
-        $previousChild = null;
+        $ifNodes = array();
         foreach ($node->children as $child) {
             switch ($child->type) {
                 case 'if':
                     $result .= Template::renderIfNode($child, $data, $functions);
+                    $ifNodes = array($child);
+                    break;
+                case 'elseif':
+                    $result .= Template::renderElseIfNode($child, $ifNodes, $data, $functions);
+                    if (count($ifNodes) > 0) {
+                        array_push($ifNodes, $child);
+                    }
                     break;
                 case 'else':
-                    $result .= Template::renderElseNode($child, $previousChild, $data, $functions);
+                    $result .= Template::renderElseNode($child, $ifNodes, $data, $functions);
+                    $ifNodes = array();
                     break;
                 case 'for':
                     $result .= Template::renderForNode($child, $data, $functions);
+                    $ifNodes = array();
                     break;
                 case 'var':
                     $result .= Template::renderVarNode($child, $data, $functions);
+                    $ifNodes = array();
                     break;
                 case 'lit':
                     $result .= $child->expression;
+                    $ifNodes = array();
                     break;
             }
-            $previousChild = $child;
         }
         return $result;
     }
@@ -131,18 +144,49 @@ class Template
         $result = '';
         if ($value) {
             $result .= Template::renderChildren($node, $data, $functions);
-            $node->value = $value;
         }
+        $node->value = $value;
         return $result;
     }
 
-    private static function renderElseNode($node, $previousNode, $data, $functions)
+    private static function renderElseIfNode($node, $ifNodes, $data, $functions)
     {
-        if ($previousNode == null || $previousNode->type != 'if') {
+        if (count($ifNodes) == 0) {
+            return Template::escape("{{elseif!!could not find matching `if`}}");
+        }
+        $result = '';
+        $value = false;
+        for ($i = 0; $i < count($ifNodes); $i++) {
+            $value = $value || $ifNodes[$i]->value;
+        }
+        if (!$value) {
+            $parts = explode('|', $node->expression);
+            $path = array_shift($parts);
+            try {
+                $value = Template::resolvePath($path, $data);
+                $value = Template::applyFunctions($value, $parts, $functions);
+            } catch (\Throwable $e) {
+                return Template::escape('{{elseif:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            }
+            if ($value) {
+                $result .= Template::renderChildren($node, $data, $functions);
+            }
+        }
+        $node->value = $value;
+        return $result;
+    }
+
+    private static function renderElseNode($node, $ifNodes, $data, $functions)
+    {
+        if (count($ifNodes) == 0) {
             return Template::escape("{{else!!could not find matching `if`}}");
         }
         $result = '';
-        if (!$previousNode->value) {
+        $value = false;
+        for ($i = 0; $i < count($ifNodes); $i++) {
+            $value = $value || $ifNodes[$i]->value;
+        }
+        if (!$value) {
             $result .= Template::renderChildren($node, $data, $functions);
         }
         return $result;
