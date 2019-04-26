@@ -12,7 +12,7 @@ class TemplateTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals("hello m is 3", Template::render('hello {{if:n.m|eq(3)}}m is 3{{endif}}', ['n' => ['m' => 3]], ['eq' => function ($a, $b) {return $a == $b;}]));
         $this->assertEquals("hello not n", Template::render('hello {{if:n}}n{{else}}not n{{endif}}', ['n' => false]));
         $this->assertEquals("hello 1980-05-13", Template::render('hello {{name|dateFormat(Y-m-d)}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
-        $this->assertEquals("hello May 13, 1980", Template::render('hello {{name|dateFormat(M j\, Y)}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
+        $this->assertEquals("hello May 13, 1980", Template::render('hello {{name|dateFormat(M j,, Y)}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
         $this->assertEquals("test 1 2 3", Template::render('test{{for:i:counts}} {{i}}{{endfor}}', ['counts' => [1, 2, 3]]));
         $this->assertEquals("test a=1 b=2 c=3", Template::render('test{{for:v:k:counts}} {{k}}={{v}}{{endfor}}', ['counts' => ['a' => 1, 'b' => 2, 'c' => 3]]));
         $this->assertEquals("test (-1,-1) (-1,1) (1,-1) (1,1)", Template::render('test{{for:x:steps}}{{for:y:steps}} ({{x}},{{y}}){{endfor}}{{endfor}}', ['steps' => [-1, 1]]));

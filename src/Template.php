@@ -31,12 +31,12 @@ class Template
         $parts = ['', $template];
         $tokens = [];
         while (true) {
-            $parts = explode('{{', $parts[1], 2);
+            $parts = Template::explode('{{', $parts[1], 2);
             $tokens[] = $parts[0];
             if (count($parts) != 2) {
                 break;
             }
-            $parts = explode('}}', $parts[1], 2);
+            $parts = Template::explode('}}', $parts[1], 2);
             $tokens[] = $parts[0];
             if (count($parts) != 2) {
                 break;
@@ -45,29 +45,11 @@ class Template
         return $tokens;
     }
 
-    private static function split($str, $separator, $escape)
+    private static function explode($separator, $str, $count = -1)
     {
-        $result = array();
-        $token = '';
-        $escaped = false;
-        for ($i = 0; $i < strlen($str); $i++) {
-            $c = $str[$i];
-            if (!$escaped) {
-                if ($c == $escape) {
-                    $escaped = true;
-                } elseif ($c == $separator) {
-                    $result[] = $token;
-                    $token = '';
-                } else { // other char
-                    $token .= $c;
-                }
-            } else { // $escaped
-                $token .= $c;
-                $escaped = false;
-            }
-        }
-        $result[] = $token;
-        return $result;
+        return array_map(function ($s) use ($separator) {
+            return str_replace($separator . $separator, $separator, $s);
+        }, preg_split("~(?<!\\$separator)\\$separator(?!\\$separator)~", $str, $count));
     }
 
     private static function createSyntaxTree(&$tokens)
@@ -156,7 +138,7 @@ class Template
 
     private static function renderIfNode($node, $data, $functions)
     {
-        $parts = explode('|', $node->expression);
+        $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
         try {
             $value = Template::resolvePath($path, $data);
@@ -183,7 +165,7 @@ class Template
             $value = $value || $ifNodes[$i]->value;
         }
         if (!$value) {
-            $parts = explode('|', $node->expression);
+            $parts = Template::explode('|', $node->expression);
             $path = array_shift($parts);
             try {
                 $value = Template::resolvePath($path, $data);
@@ -217,9 +199,9 @@ class Template
 
     private static function renderForNode($node, $data, $functions)
     {
-        $parts = explode('|', $node->expression);
+        $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
-        $path = explode(':', $path, 3);
+        $path = Template::explode(':', $path, 3);
         if (count($path) == 2) {
             list($var, $path) = $path;
             $key = false;
@@ -247,7 +229,7 @@ class Template
 
     private static function renderVarNode($node, $data, $functions)
     {
-        $parts = explode('|', $node->expression);
+        $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
         try {
             $value = Template::resolvePath($path, $data);
@@ -261,7 +243,7 @@ class Template
     private static function resolvePath($path, $data)
     {
         $current = $data;
-        foreach (explode('.', $path) as $p) {
+        foreach (Template::explode('.', $path) as $p) {
             if (!array_key_exists($p, $current)) {
                 throw new \Exception("path `$p` not found");
             }
@@ -273,9 +255,9 @@ class Template
     private static function applyFunctions($value, $parts, $functions)
     {
         foreach ($parts as $part) {
-            $function = explode('(', rtrim($part, ')'));
+            $function = Template::explode('(', rtrim($part, ')'));
             $f = $function[0];
-            $arguments = isset($function[1]) ? Template::split($function[1], ',', '\\') : array();
+            $arguments = isset($function[1]) ? Template::explode(',', $function[1]) : array();
             array_unshift($arguments, $value);
             if (isset($functions[$f])) {
                 $value = call_user_func_array($functions[$f], $arguments);
