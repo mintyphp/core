@@ -131,9 +131,7 @@ class Template
                     break;
                 case 'elseif':
                     $result .= Template::renderElseIfNode($child, $ifNodes, $data, $functions);
-                    if (count($ifNodes) > 0) {
-                        array_push($ifNodes, $child);
-                    }
+                    array_push($ifNodes, $child);
                     break;
                 case 'else':
                     $result .= Template::renderElseNode($child, $ifNodes, $data, $functions);
@@ -176,7 +174,7 @@ class Template
 
     private static function renderElseIfNode($node, $ifNodes, $data, $functions)
     {
-        if (count($ifNodes) == 0) {
+        if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
             return Template::escape("{{elseif!!could not find matching `if`}}");
         }
         $result = '';
