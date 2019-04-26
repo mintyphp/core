@@ -232,12 +232,12 @@ class Template
         $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
         try {
-            $value = Template::escape(Template::resolvePath($path, $data));
+            $value = Template::resolvePath($path, $data);
             $value = Template::applyFunctions($value, $parts, $functions);
         } catch (\Throwable $e) {
             return Template::escape('{{' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
-        return $value;
+        return Template::escape($value);
     }
 
     private static function resolvePath($path, $data)
