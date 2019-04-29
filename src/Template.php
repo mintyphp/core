@@ -65,7 +65,7 @@ class Template
                         break;
                     }
                     $token = '';
-                    $i += $seplen - 1;
+                    $i += strlen($separator) - 1;
                     continue;
                 }
             } else {
