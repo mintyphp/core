@@ -31,12 +31,12 @@ class Template
         $parts = ['', $template];
         $tokens = [];
         while (true) {
-            $parts = Template::explode('{{', $parts[1], 2);
+            $parts = explode('{{', $parts[1], 2);
             $tokens[] = $parts[0];
             if (count($parts) != 2) {
                 break;
             }
-            $parts = Template::explode('}}', $parts[1], 2);
+            $parts = explode('}}', $parts[1], 2);
             $tokens[] = $parts[0];
             if (count($parts) != 2) {
                 break;
