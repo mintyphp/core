@@ -36,7 +36,7 @@ class Template
             if (count($parts) != 2) {
                 break;
             }
-            $parts = explode('}}', $parts[1], 2);
+            $parts = Template::explode('}}', $parts[1], 2);
             $tokens[] = $parts[0];
             if (count($parts) != 2) {
                 break;
