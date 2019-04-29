@@ -47,9 +47,42 @@ class Template
 
     private static function explode($separator, $str, $count = -1)
     {
-        return array_map(function ($s) use ($separator) {
-            return str_replace($separator . $separator, $separator, $s);
-        }, preg_split("~(?<!\\$separator)\\$separator(?!\\$separator)~", $str, $count));
+        $tokens = [];
+        $token = '';
+        $quote = '"';
+        $escape = '\\';
+        $escaped = false;
+        $quoted = false;
+        for ($i = 0; $i < strlen($str); $i++) {
+            $c = $str[$i];
+            if (!$quoted) {
+                if ($c == $quote) {
+                    $quoted = true;
+                } elseif (substr($str, $i, strlen($separator)) == $separator) {
+                    $tokens[] = $token;
+                    if (count($tokens) == $count - 1) {
+                        $token = substr($str, $i + strlen($separator));
+                        break;
+                    }
+                    $token = '';
+                    $i += $seplen - 1;
+                    continue;
+                }
+            } else {
+                if (!$escaped) {
+                    if ($c == $quote) {
+                        $quoted = false;
+                    } elseif ($c == $escape) {
+                        $escaped = true;
+                    }
+                } else {
+                    $escaped = false;
+                }
+            }
+            $token .= $c;
+        }
+        $tokens[] = $token;
+        return $tokens;
     }
 
     private static function createSyntaxTree(&$tokens)
@@ -255,9 +288,17 @@ class Template
     private static function applyFunctions($value, $parts, $functions)
     {
         foreach ($parts as $part) {
-            $function = Template::explode('(', rtrim($part, ')'));
+            $function = Template::explode('(', rtrim($part, ')'), 2);
             $f = $function[0];
             $arguments = isset($function[1]) ? Template::explode(',', $function[1]) : array();
+            $arguments = array_map(function ($argument) {
+                $argument = trim($argument);
+                $len = strlen($argument);
+                if ($argument[0] == '"' && $argument[$len - 1] == '"') {
+                    $argument = stripcslashes(substr($argument, 1, $len - 2));
+                }
+                return $argument;
+            }, $arguments);
             array_unshift($arguments, $value);
             if (isset($functions[$f])) {
                 $value = call_user_func_array($functions[$f], $arguments);
