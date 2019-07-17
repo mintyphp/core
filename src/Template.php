@@ -3,22 +3,20 @@ namespace MintyPHP;
 
 class Template
 {
-    public static $escape = 'html';
-
-    public static function escape($string)
+    public static function escape($escape, $string)
     {
-        switch (static::$escape) {
+        switch ($escape) {
             case 'html':
                 return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
         }
         return $string;
     }
 
-    public static function render($template, $data, $functions = array())
+    public static function render($template, $data, $functions = array(), $escape = 'html')
     {
         $tokens = Template::tokenize($template);
         $tree = Template::createSyntaxTree($tokens);
-        return Template::renderChildren($tree, $data, $functions);
+        return Template::renderChildren($tree, $data, $functions, $escape);
     }
 
     private static function createNode($type, $expression)
@@ -134,30 +132,30 @@ class Template
         return $root;
     }
 
-    private static function renderChildren($node, $data, $functions)
+    private static function renderChildren($node, $data, $functions, $escape)
     {
         $result = '';
         $ifNodes = array();
         foreach ($node->children as $child) {
             switch ($child->type) {
                 case 'if':
-                    $result .= Template::renderIfNode($child, $data, $functions);
+                    $result .= Template::renderIfNode($child, $data, $functions, $escape);
                     $ifNodes = array($child);
                     break;
                 case 'elseif':
-                    $result .= Template::renderElseIfNode($child, $ifNodes, $data, $functions);
+                    $result .= Template::renderElseIfNode($child, $ifNodes, $data, $functions, $escape);
                     array_push($ifNodes, $child);
                     break;
                 case 'else':
-                    $result .= Template::renderElseNode($child, $ifNodes, $data, $functions);
+                    $result .= Template::renderElseNode($child, $ifNodes, $data, $functions, $escape);
                     $ifNodes = array();
                     break;
                 case 'for':
-                    $result .= Template::renderForNode($child, $data, $functions);
+                    $result .= Template::renderForNode($child, $data, $functions, $escape);
                     $ifNodes = array();
                     break;
                 case 'var':
-                    $result .= Template::renderVarNode($child, $data, $functions);
+                    $result .= Template::renderVarNode($child, $data, $functions, $escape);
                     $ifNodes = array();
                     break;
                 case 'lit':
@@ -169,28 +167,28 @@ class Template
         return $result;
     }
 
-    private static function renderIfNode($node, $data, $functions)
+    private static function renderIfNode($node, $data, $functions, $escape)
     {
         $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
         try {
             $value = Template::resolvePath($path, $data);
-            $value = Template::applyFunctions($value, $parts, $functions);
+            $value = Template::applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return Template::escape('{{if:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return Template::escape($escape, '{{if:' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         $result = '';
         if ($value) {
-            $result .= Template::renderChildren($node, $data, $functions);
+            $result .= Template::renderChildren($node, $data, $functions, $escape);
         }
         $node->value = $value;
         return $result;
     }
 
-    private static function renderElseIfNode($node, $ifNodes, $data, $functions)
+    private static function renderElseIfNode($node, $ifNodes, $data, $functions, $escape)
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
-            return Template::escape("{{elseif!!could not find matching `if`}}");
+            return Template::escape($escape, "{{elseif!!could not find matching `if`}}");
         }
         $result = '';
         $value = false;
@@ -202,22 +200,22 @@ class Template
             $path = array_shift($parts);
             try {
                 $value = Template::resolvePath($path, $data);
-                $value = Template::applyFunctions($value, $parts, $functions);
+                $value = Template::applyFunctions($value, $parts, $functions, $data);
             } catch (\Throwable $e) {
-                return Template::escape('{{elseif:' . $node->expression . '!!' . $e->getMessage() . '}}');
+                return Template::escape($escape, '{{elseif:' . $node->expression . '!!' . $e->getMessage() . '}}');
             }
             if ($value) {
-                $result .= Template::renderChildren($node, $data, $functions);
+                $result .= Template::renderChildren($node, $data, $functions, $escape);
             }
         }
         $node->value = $value;
         return $result;
     }
 
-    private static function renderElseNode($node, $ifNodes, $data, $functions)
+    private static function renderElseNode($node, $ifNodes, $data, $functions, $escape)
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
-            return Template::escape("{{else!!could not find matching `if`}}");
+            return Template::escape($escape, "{{else!!could not find matching `if`}}");
         }
         $result = '';
         $value = false;
@@ -225,12 +223,12 @@ class Template
             $value = $value || $ifNodes[$i]->value;
         }
         if (!$value) {
-            $result .= Template::renderChildren($node, $data, $functions);
+            $result .= Template::renderChildren($node, $data, $functions, $escape);
         }
         return $result;
     }
 
-    private static function renderForNode($node, $data, $functions)
+    private static function renderForNode($node, $data, $functions, $escape)
     {
         $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
@@ -241,36 +239,36 @@ class Template
         } elseif (count($path) == 3) {
             list($var, $key, $path) = $path;
         } else {
-            return Template::escape('{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
+            return Template::escape($escape, '{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
         }
         try {
             $value = Template::resolvePath($path, $data);
-            $value = Template::applyFunctions($value, $parts, $functions);
+            $value = Template::applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return Template::escape('{{for:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return Template::escape($escape, '{{for:' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         if (!is_array($value)) {
-            return Template::escape('{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}');
+            return Template::escape($escape, '{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}');
         }
         $result = '';
         foreach ($value as $k => $v) {
             $data = array_merge($data, $key ? [$var => $v, $key => $k] : [$var => $v]);
-            $result .= Template::renderChildren($node, $data, $functions);
+            $result .= Template::renderChildren($node, $data, $functions, $escape);
         }
         return $result;
     }
 
-    private static function renderVarNode($node, $data, $functions)
+    private static function renderVarNode($node, $data, $functions, $escape)
     {
         $parts = Template::explode('|', $node->expression);
         $path = array_shift($parts);
         try {
             $value = Template::resolvePath($path, $data);
-            $value = Template::applyFunctions($value, $parts, $functions);
+            $value = Template::applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return Template::escape('{{' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return Template::escape($escape, '{{' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
-        return Template::escape($value);
+        return Template::escape($escape, $value);
     }
 
     private static function resolvePath($path, $data)
@@ -285,17 +283,19 @@ class Template
         return $current;
     }
 
-    private static function applyFunctions($value, $parts, $functions)
+    private static function applyFunctions($value, $parts, $functions, $data)
     {
         foreach ($parts as $part) {
             $function = Template::explode('(', rtrim($part, ')'), 2);
             $f = $function[0];
             $arguments = isset($function[1]) ? Template::explode(',', $function[1]) : array();
-            $arguments = array_map(function ($argument) {
+            $arguments = array_map(function ($argument) use ($data) {
                 $argument = trim($argument);
                 $len = strlen($argument);
                 if ($argument[0] == '"' && $argument[$len - 1] == '"') {
                     $argument = stripcslashes(substr($argument, 1, $len - 2));
+                } else if (!is_numeric($argument)) {
+                    $argument = Template::resolvePath($argument, $data);
                 }
                 return $argument;
             }, $arguments);

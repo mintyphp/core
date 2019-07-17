@@ -12,7 +12,8 @@ class TemplateTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals("hello {{name|failure!!function `failure` not found}}", Template::render('hello {{name|failure}}', ['name' => 'world'], ['capitalize' => 'ucfirst']));
         $this->assertEquals("hello m is 3", Template::render('hello {{if:n.m|eq(3)}}m is 3{{endif}}', ['n' => ['m' => 3]], ['eq' => function ($a, $b) {return $a == $b;}]));
         $this->assertEquals("hello not n", Template::render('hello {{if:n}}n{{else}}not n{{endif}}', ['n' => false]));
-        $this->assertEquals("hello 1980-05-13", Template::render('hello {{name|dateFormat(Y-m-d)}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
+        $this->assertEquals("hello 1980-05-13", Template::render('hello {{name|dateFormat("Y-m-d")}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
+        $this->assertEquals("hello 1980-05-13", Template::render('hello {{name|dateFormat(format)}}', ['name' => 'May 13, 1980', 'format' => 'Y-m-d'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
         $this->assertEquals("hello May 13, 1980", Template::render('hello {{name|dateFormat("M j, Y")}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
         $this->assertEquals("hello May 13, 1980", Template::render('hello {{name|dateFormat( "M j, Y")}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
         $this->assertEquals("hello \" May ()}}&quot;,|:.13, 1980\"", Template::render('hello "{{name|dateFormat(" M ()}}\\",|:.j, Y")}}"', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {return date($format, strtotime($date));}]));
