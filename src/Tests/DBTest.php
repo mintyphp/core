@@ -1,4 +1,5 @@
 <?php
+
 namespace MintyPHP\Tests;
 
 use MintyPHP\DB;
@@ -73,6 +74,13 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(1, $result);
         $result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test2', '', 'test', 'test', '2014-05-28 22:58:22', NULL, 1);");
         $this->assertNotFalse($result, 'insert post failed 2');
+        $this->assertEquals(2, $result);
+    }
+
+    public function testUpdatePosts()
+    {
+        $result = DB::update("UPDATE `posts` SET `created`='2014-05-28 22:58:20' WHERE `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???);", 1, [1, 2], 1, [1]);
+        $this->assertNotFalse($result, 'update posts failed');
         $this->assertEquals(2, $result);
     }
 
@@ -155,5 +163,4 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $result = DB::query('DROP TABLE `users`;');
         $this->assertNotFalse($result, 'drop users failed');
     }
-
 }
