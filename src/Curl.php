@@ -79,7 +79,7 @@ class Curl
             list($head, $body) = array($result, '');
         } else {
             list($head, $body) = explode("\r\n\r\n", $result, 2);
-            while (preg_match('|\s+100\s+Continue|', substr($head, 0, strpos($head, "\r\n")))) {
+            while (preg_match('|\s+100\s+Continue|', explode("\r\n",$head)[0])) {
                 list($head, $body) = explode("\r\n\r\n", $body, 2);
             }
         }
