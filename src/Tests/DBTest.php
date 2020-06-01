@@ -125,7 +125,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
     public function testQuery()
     {
         $result = DB::query("SELECT * FROM `posts` limit 1;");
-        $this->assertEquals(true, $result);
+        $this->assertNotEquals(false, $result);
         $this->expectException('MintyPHP\DBError');
         $result = DB::query("some bogus query;");
     }
