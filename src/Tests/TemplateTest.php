@@ -21,5 +21,6 @@ class TemplateTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals("test a=1 b=2 c=3", Template::render('test{{for:v:k:counts}} {{k}}={{v}}{{endfor}}', ['counts' => ['a' => 1, 'b' => 2, 'c' => 3]]));
         $this->assertEquals("test (-1,-1) (-1,1) (1,-1) (1,1)", Template::render('test{{for:x:steps}}{{for:y:steps}} ({{x}},{{y}}){{endfor}}{{endfor}}', ['steps' => [-1, 1]]));
         $this->assertEquals("hello one two three", Template::render('hello{{for:i:counts}} {{if:i|eq(1)}}one{{elseif:i|eq(2)}}two{{else}}three{{endif}}{{endfor}}', ['counts' => [1, 2, 3]], ['eq' => function ($a, $b) {return $a == $b;}]));
+        $this->assertEquals("hello <b>Maurits</b>", Template::render('hello {{content}}', ['content' => Template::render('<b>{{name}}</b>', ['name' => 'Maurits'])]));
     }
 }

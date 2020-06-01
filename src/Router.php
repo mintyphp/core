@@ -264,7 +264,7 @@ class Router
     	$parameters['url'] = static::$parameters;
     	$parameters['get'] = $_GET;
     	$parameters['post'] = $_POST;
-    	Debugger::set('router',compact('method','csrfOk','request','url','dir','view','template','viewFile','actionFile','templateFile','parameters'));
+    	Debugger::set('router',compact('method','csrfOk','request','url','dir','viewFile','actionFile','templateFile','parameters'));
     	Debugger::set('status',$status);
     }
     if ($redirect) static::redirect($redirect);

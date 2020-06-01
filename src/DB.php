@@ -34,11 +34,72 @@ class DB
     throw new DBError($message);
   }
 
+<<<<<<< HEAD
   public static function query($query)
+=======
+  public static function selectValue($query)
+  {
+    $record = forward_static_call_array('DB::selectOne', func_get_args());
+    if (!is_array($record)) return false;
+    $firstTable = array_shift($record);
+    if (!is_array($firstTable)) return false;
+    return array_shift($firstTable);
+  }
+
+
+  public static function selectValues($query)
+  {
+    $result = forward_static_call_array('DB::select', func_get_args());
+    if (!is_array($result)) return false;
+    $list = array();
+    foreach ($result as $record) {
+      if (!is_array($record)) return false;
+      $firstTable = array_shift($record);
+      if (!is_array($firstTable)) return false;
+      $list[] = array_shift($firstTable);
+    }
+    return $list;
+  }
+
+  public static function selectPairs($query)
+  {
+    $result = forward_static_call_array('DB::select', func_get_args());
+    if (!is_array($result)) return false;
+    $list = array();
+    foreach ($result as $record) {
+      $firstTable = array_shift($record);
+      $list[array_shift($firstTable)] = array_shift($firstTable);
+    }
+    return $list;
+  }
+
+  public static function selectOne($query)
+  {
+    return forward_static_call_array('DB::selectOneTyped', func_get_args());
+  }
+
+  private static function selectOneTyped($query)
+  {
+    $result = forward_static_call_array('DB::selectTyped', func_get_args());
+    if (!is_array($result)) return false;
+    if (isset($result[0])) return $result[0];
+    return $result;
+  }
+
+  public static function select($query)
+  {
+    $result = forward_static_call_array('DB::selectTyped', func_get_args());
+    if (!is_array($result)) return false;
+    return $result;
+  }
+
+  private static function selectTyped($query)
+>>>>>>> 18d9f7fe81db50cc817249ef79f6b2698b75e689
   {
     if (Debugger::$enabled) {
       $time = microtime(true);
     }
+<<<<<<< HEAD
     $result = forward_static_call_array('DB::queryTyped', func_get_args());
     if (Debugger::$enabled) {
       $duration = microtime(true) - $time;
@@ -53,6 +114,21 @@ class DB
       $equery = static::$mysqli->real_escape_string($query);
       Debugger::add('queries', compact('duration', 'query', 'equery', 'arguments', 'result', 'explain'));
     }
+=======
+    $time = microtime(true);
+    $result = forward_static_call_array('DB::selectTypedInternal', func_get_args());
+    $duration = microtime(true) - $time;
+    $arguments = func_get_args();
+    if (strtoupper(substr(trim($query), 0, 6)) == 'SELECT') {
+      $arguments[0] = 'explain ' . $query;
+      $explain = forward_static_call_array('DB::selectTypedInternal', $arguments);
+    } else {
+      $explain = false;
+    }
+    $arguments = array_slice(func_get_args(), 2);
+    $equery = static::$mysqli->real_escape_string($query);
+    Debugger::add('queries', compact('duration', 'query', 'equery', 'arguments', 'result', 'explain'));
+>>>>>>> 18d9f7fe81db50cc817249ef79f6b2698b75e689
     return $result;
   }
 
@@ -137,7 +213,11 @@ class DB
 
   public static function insert($query)
   {
+<<<<<<< HEAD
     $result = forward_static_call_array('DB::query', func_get_args());
+=======
+    $result = forward_static_call_array('DB::selectTyped', func_get_args());
+>>>>>>> 18d9f7fe81db50cc817249ef79f6b2698b75e689
     if (!is_int($result)) return false;
     if (!$result) return false;
     return static::$mysqli->insert_id;
@@ -145,7 +225,11 @@ class DB
 
   public static function update($query)
   {
+<<<<<<< HEAD
     $result = forward_static_call_array('DB::query', func_get_args());
+=======
+    $result = forward_static_call_array('DB::selectTyped', func_get_args());
+>>>>>>> 18d9f7fe81db50cc817249ef79f6b2698b75e689
     if (!is_int($result)) return false;
     return $result;
   }
@@ -159,6 +243,7 @@ class DB
 
   public static function select($query)
   {
+<<<<<<< HEAD
     $result = forward_static_call_array('DB::query', func_get_args());
     if (!is_array($result)) return false;
     return $result;
@@ -208,6 +293,10 @@ class DB
     $result = forward_static_call_array('DB::query', func_get_args());
     if (!is_array($result)) return false;
     if (isset($result[0])) return $result[0];
+=======
+    $result = forward_static_call_array('DB::selectTyped', func_get_args());
+    if ($result !== false) return true;
+>>>>>>> 18d9f7fe81db50cc817249ef79f6b2698b75e689
     return $result;
   }
 
