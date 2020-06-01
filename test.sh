@@ -1,5 +1,5 @@
 #!/bin/bash
 if [ ! -f phpunit.phar ]; then
-  wget https://phar.phpunit.de/phpunit.phar
+  wget -O phpunit.phar https://phar.phpunit.de/phpunit-7.phar
 fi
 php phpunit.phar --bootstrap src/Loader.php src/Tests
