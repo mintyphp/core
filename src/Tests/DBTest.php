@@ -79,7 +79,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
 
     public function testUpdatePosts()
     {
-        $result = DB::update("UPDATE `posts` SET `created`='2014-05-28 22:58:20' WHERE `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???);", 1, [1, 2], 1, [1]);
+        $result = DB::update("UPDATE `posts` SET `created`='2014-05-28 22:58:20' WHERE `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???);", 1, [1, 2], 1, [1], 1, []);
         $this->assertNotFalse($result, 'update posts failed');
         $this->assertEquals(2, $result);
     }
