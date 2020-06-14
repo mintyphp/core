@@ -222,6 +222,7 @@ class DB
   // Undocumented
   public static function handle()
   {
+    static::$closed = false;
     static::connect();
     return static::$mysqli;
   }
