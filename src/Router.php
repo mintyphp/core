@@ -106,6 +106,7 @@ class Router
     header("Content-disposition: attachment; filename=\"" . $filename . "\"");
     header('Content-Length: ' . filesize($filepath));
     readfile($filepath);
+    die();
   }
 
   protected static function extractParts($root, $dir, $match)
