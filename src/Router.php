@@ -79,6 +79,17 @@ class Router
     header('Content-Type: application/json');
     die(json_encode($object));
   }
+	
+  public static function download($filename, $filedata)
+  {
+    if (Debugger::$enabled) {
+      Debugger::end('download');
+    }
+    header('Content-Type: application/octet-stream');
+    header("Content-Transfer-Encoding: Binary");
+    header("Content-disposition: attachment; filename=\"" . $filename . "\"");
+    die($filedata);
+  }
 
   protected static function extractParts($root,$dir,$match)
   {
