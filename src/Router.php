@@ -76,7 +76,7 @@ class Router
   {
     if (!static::$initialized) static::initialize();
     if (Debugger::$enabled) {
-      Debugger::end('ok');
+      Debugger::end('json');
     }
     header('Content-Type: application/json');
     die(json_encode($object));
@@ -86,7 +86,7 @@ class Router
   {
     if (!static::$initialized) static::initialize();
     if (Debugger::$enabled) {
-      Debugger::end('ok');
+      Debugger::end('download');
     }
     header('Content-Type: application/octet-stream');
     header("Content-Transfer-Encoding: Binary");
