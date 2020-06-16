@@ -82,7 +82,7 @@ class Router
     die(json_encode($object));
   }
 
-  public static function download($filename, $filedata)
+  public static function download($filename, $data)
   {
     if (!static::$initialized) static::initialize();
     if (Debugger::$enabled) {
@@ -91,7 +91,21 @@ class Router
     header('Content-Type: application/octet-stream');
     header("Content-Transfer-Encoding: Binary");
     header("Content-disposition: attachment; filename=\"" . $filename . "\"");
-    die($filedata);
+    header('Content-Length: ' . strlen($data));
+    die($data);
+  }
+
+  public static function file($filename, $filepath)
+  {
+    if (!static::$initialized) static::initialize();
+    if (Debugger::$enabled) {
+      Debugger::end('download');
+    }
+    header('Content-Type: application/octet-stream');
+    header("Content-Transfer-Encoding: Binary");
+    header("Content-disposition: attachment; filename=\"" . $filename . "\"");
+    header('Content-Length: ' . filesize($filepath));
+    readfile($filepath);
   }
 
   protected static function extractParts($root, $dir, $match)
