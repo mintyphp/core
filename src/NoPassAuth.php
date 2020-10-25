@@ -10,7 +10,7 @@ class NoPassAuth
     static $rememberExpiresField = 'remember_expires';
     static $createdField = 'created';
     static $tokenValidity = 300;
-    static $rememberDays = 0;
+    static $rememberDays = 90;
 
     public static function token($username)
     {
@@ -104,7 +104,7 @@ class NoPassAuth
             if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
                 session_regenerate_id(true);
                 $_SESSION['user'] = $user[$table];
-                if (static::$rememberDays > 0) {
+                if ($rememberMe) {
                     static::doRemember($username);
                 }
             } else {
