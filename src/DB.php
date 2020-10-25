@@ -61,24 +61,23 @@ class DB
     static::connect();
     if (func_num_args() > 1) {
       $args = func_get_args();
-      $args[0] = str_repeat('s', count($args) - 1);
-      $i = 0;
-      while ($i < count($args)) {
-        if ($i > 0) {
-          if (is_array($args[$i])) {
-            $arr = $args[$i];
-            $query = preg_replace('/\?\?\?/', implode(',', str_split(str_repeat('?', count($arr)))), $query, 1);
-            foreach (array_keys($arr) as $j) {
-              $args[$i][$j] = &$arr[$j];
-            }
-            array_splice($args, $i, 1, $arr);
-            $args[0] .= str_repeat('s', count($arr) - 1);
-            $i += count($arr) - 1;
+      $nargs = [''];
+      for ($i = 1; $i < count($args); $i++) {
+        if (is_array($args[$i])) {
+          if (count($args[$i])) {
+            $qmarks = '(' . implode(',', str_split(str_repeat('?', count($args[$i])))) . ')';
           } else {
-            $args[$i] = &$args[$i];
+            $qmarks = '(select 1 from dual where false)';
           }
+          $query = preg_replace('/\(\?\?\?\)/', $qmarks, $query, 1);
+          foreach (array_keys($args[$i]) as $j) {
+            $nargs[0] .= 's';
+            $nargs[] = &$args[$i][$j];
+          }
+        } else {
+          $nargs[0] .= 's';
+          $nargs[] = &$args[$i];
         }
-        $i += 1;
       }
       $stmt = static::$mysqli->prepare($query);
       if (!$stmt) {
@@ -87,7 +86,7 @@ class DB
       //legacy (PHP 7.4)
       $ref    = new \ReflectionClass('mysqli_stmt');
       $method = $ref->getMethod("bind_param");
-      $method->invokeArgs($stmt, $args);
+      $method->invokeArgs($stmt, $nargs);
       //$stmt->bind_param(...$args);
     } else {
       $stmt = static::$mysqli->prepare($query);
@@ -223,6 +222,7 @@ class DB
   // Undocumented
   public static function handle()
   {
+    static::$closed = false;
     static::connect();
     return static::$mysqli;
   }

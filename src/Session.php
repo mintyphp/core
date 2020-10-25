@@ -49,6 +49,9 @@ class Session
         }
 
         if (static::$enabled || Debugger::$enabled) {
+            if (!ini_get('session.cookie_samesite')) {
+                ini_set('session.cookie_samesite', 'Strict');
+            }
             if (!ini_get('session.cookie_httponly')) {
                 ini_set('session.cookie_httponly', 1);
             }
