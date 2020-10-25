@@ -6,8 +6,11 @@ class NoPassAuth
     static $usersTable = 'users';
     static $usernameField = 'username';
     static $passwordField = 'password';
+    static $rememberTokenField = 'remember_token';
+    static $rememberExpiresField = 'remember_expires';
     static $createdField = 'created';
     static $tokenValidity = 300;
+    static $rememberDays = 0;
 
     public static function token($username)
     {
@@ -26,6 +29,60 @@ class NoPassAuth
             $token = '';
         }
         return $token;
+    }
+
+    public static function remember()
+    {
+        $name = Session::$sessionName . '_remember';
+        $value = $_COOKIE[$name];
+        $username = explode(':', $value, 2)[0];
+        $token = explode(':', $value, 2)[1] ?? '';
+        $query = sprintf('select * from `%s` where `%s` = ? and `%s` > NOW() limit 1',
+            static::$usersTable,
+            static::$usernameField,
+            static::$rememberExpiresField);
+        $user = DB::selectOne($query, $username);
+        if ($user) {
+            $table = static::$usersTable;
+            $username = $user[$table][static::$usernameField];
+            $hash = $user[$table][static::$rememberTokenField];
+            if (password_verify($token, $hash)) {
+                session_regenerate_id(true);
+                $_SESSION['user'] = $user[$table];
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function unRemember()
+    {
+        $name = Session::$sessionName . '_remember';
+        if ($_COOKIE[$name]) {
+            setcookie($name, false);
+        }
+    }
+
+    private static function doRemember($username)
+    {
+        $name = Session::$sessionName . '_remember';
+        $token = base64_encode(random_bytes(24));
+        $hash = password_hash($token, PASSWORD_DEFAULT);
+        $query = sprintf('update `%s` set `%s` = ?, `%s` = DATE_ADD(NOW(), INTERVAL ? DAY) where `%s` = ? limit 1',
+            static::$usersTable,
+            static::$rememberTokenField,
+            static::$rememberExpiresField,
+            static::$usernameField);
+        DB::update($query, $hash, static::$rememberDays, $username);
+        $value = "$username:$token";
+        $expires = strtotime('+' . static::$rememberDays . ' days');
+        $path = Router::$baseUrl;
+        $domain = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
+        if (!$domain || $domain == 'localhost') {
+            setcookie($name, $value, $expires, $path);
+        } else {
+            setcookie($name, $value, $expires, $path, $domain, true, true);
+        }
     }
 
     public static function login($token)
@@ -47,6 +104,9 @@ class NoPassAuth
             if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
                 session_regenerate_id(true);
                 $_SESSION['user'] = $user[$table];
+                if (static::$rememberDays > 0) {
+                    static::doRemember($username);
+                }
             } else {
                 $user = array();
             }
@@ -63,6 +123,7 @@ class NoPassAuth
 
         }
         session_regenerate_id(true);
+        static::unRemember();
         return true;
     }
 
