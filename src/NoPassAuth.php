@@ -85,7 +85,7 @@ class NoPassAuth
         }
     }
 
-    public static function login($token)
+    public static function login($token, $rememberMe = false)
     {
         $parts = explode('.', $token);
         $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
