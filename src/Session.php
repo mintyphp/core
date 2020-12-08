@@ -7,6 +7,7 @@ class Session
     public static $csrfSessionKey = 'csrf_token';
     public static $enabled = true;
     public static $csrfLength = 16;
+    public static $sameSite = 'Lax';
 
     protected static $initialized = false;
     protected static $started = false;
@@ -50,7 +51,7 @@ class Session
 
         if (static::$enabled || Debugger::$enabled) {
             if (!ini_get('session.cookie_samesite')) {
-                ini_set('session.cookie_samesite', 'Strict');
+                ini_set('session.cookie_samesite', static::$sameSite);
             }
             if (!ini_get('session.cookie_httponly')) {
                 ini_set('session.cookie_httponly', 1);
