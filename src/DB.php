@@ -49,7 +49,7 @@ class DB
       } else {
         $explain = false;
       }
-      $arguments = array_slice(func_get_args(), 2);
+      $arguments = array_slice(func_get_args(), 1);
       $equery = static::$mysqli->real_escape_string($query);
       Debugger::add('queries', compact('duration', 'query', 'equery', 'arguments', 'result', 'explain'));
     }
