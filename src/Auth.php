@@ -18,7 +18,7 @@ class Auth
         if ($user) {
             $table = static::$usersTable;
             if (password_verify($password, $user[$table][static::$passwordField])) {
-                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp)) {
+                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
                     throw new TotpError('Check failed');
                 }
                 session_regenerate_id(true);

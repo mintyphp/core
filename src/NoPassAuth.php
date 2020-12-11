@@ -103,7 +103,7 @@ class NoPassAuth
             Token::$ttl = static::$tokenValidity;
             $claims = Token::getClaims($token);
             if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
-                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp)) {
+                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
                     throw new TotpError('Check failed');
                 }
                 session_regenerate_id(true);
