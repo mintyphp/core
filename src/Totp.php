@@ -93,6 +93,9 @@ class Totp
 
     public static function verify(string $secret, string $otp): bool
     {
+        if (!$secret) {
+            return true;
+        }
         $hash = static::calculateHash($secret);
         $match = static::calculateOtp($hash);
         return static::safeStringCompare($otp, $match);

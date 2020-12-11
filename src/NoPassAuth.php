@@ -9,10 +9,11 @@ class NoPassAuth
     static $rememberTokenField = 'remember_token';
     static $rememberExpiresField = 'remember_expires';
     static $createdField = 'created';
+    static $totpSecretField = 'totp_secret';
     static $tokenValidity = 300;
     static $rememberDays = 90;
 
-    public static function token($username)
+    public static function token(string $username)
     {
         $query = sprintf('select * from `%s` where `%s` = ? limit 1',
             static::$usersTable,
@@ -63,7 +64,7 @@ class NoPassAuth
         }
     }
 
-    private static function doRemember($username)
+    private static function doRemember(string $username)
     {
         $name = Session::$sessionName . '_remember';
         $token = base64_encode(random_bytes(24));
@@ -85,7 +86,7 @@ class NoPassAuth
         }
     }
 
-    public static function login($token, $rememberMe = false)
+    public static function login(string $token, bool $rememberMe = false, string $totp = null)
     {
         $parts = explode('.', $token);
         $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
@@ -102,6 +103,9 @@ class NoPassAuth
             Token::$ttl = static::$tokenValidity;
             $claims = Token::getClaims($token);
             if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
+                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp)) {
+                    throw new TotpError('Check failed');
+                }
                 session_regenerate_id(true);
                 $_SESSION['user'] = $user[$table];
                 if ($rememberMe) {
@@ -114,7 +118,7 @@ class NoPassAuth
         return $user;
     }
 
-    public static function logout()
+    public static function logout(): bool
     {
         foreach ($_SESSION as $key => $value) {
             if ($key != 'debugger') {
@@ -127,7 +131,7 @@ class NoPassAuth
         return true;
     }
 
-    public static function register($username)
+    public static function register(string $username)
     {
         $query = sprintf('insert into `%s` (`%s`,`%s`,`%s`) values (?,?,NOW())',
             static::$usersTable,
@@ -139,7 +143,7 @@ class NoPassAuth
         return DB::insert($query, $username, $password);
     }
 
-    public static function update($username)
+    public static function update(string $username)
     {
         $query = sprintf('update `%s` set `%s`=? where `%s`=?',
             static::$usersTable,
@@ -150,7 +154,16 @@ class NoPassAuth
         return DB::update($query, $password, $username);
     }
 
-    public static function exists($username)
+    public static function updateTotpSecret(string $username, string $secret)
+    {
+        $query = sprintf('update `%s` set `%s`=? where `%s`=?',
+            static::$usersTable,
+            static::$totpSecretField,
+            static::$usernameField);
+        return DB::update($query, $secret, $username);
+    }
+
+    public static function exists(string $username)
     {
         $query = sprintf('select `id` from `%s` where `%s`=?',
             static::$usersTable,
