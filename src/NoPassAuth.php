@@ -23,6 +23,11 @@ class NoPassAuth
             $table = static::$usersTable;
             $username = $user[$table][static::$usernameField];
             $password = $user[$table][static::$passwordField];
+            if (!$password) {
+                static::update($username);
+                $user = DB::selectOne($query, $username);
+                $password = $user[$table][static::$passwordField];
+            }
             Token::$secret = $password;
             Token::$ttl = static::$tokenValidity;
             $token = Token::getToken(array('user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']));
