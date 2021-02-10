@@ -376,6 +376,6 @@ class Router
       $s = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') ? 's' : '';
       $url = "http$s:$url";
     }
-    return $url;
+    return rtrim($url,'/').'/';
   }
 }
