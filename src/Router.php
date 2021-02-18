@@ -262,7 +262,8 @@ class Router
     $request = static::removePrefix($request, static::$baseUrl);
     if (static::$original === null) static::$original = $request;
 
-    $csrfOk = static::$method != 'POST' ?: Session::checkCsrfToken();
+    $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') == 'xmlhttprequest';
+    $csrfOk = in_array(static::$method, ['GET','OPTIONS']) ?: ($isAjax || Session::checkCsrfToken());
 
     $getParameters = array();
     $questionMarkPosition = strpos($request, '?');
