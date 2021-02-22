@@ -39,7 +39,7 @@ class Session
         $_SESSION[static::$csrfSessionKey] = bin2hex($buffer);
     }
 
-    public static function start()
+    public static function start($sessionId = false)
     {
         if (!static::$initialized) {
             static::initialize();
@@ -60,6 +60,9 @@ class Session
                 ini_set('session.cookie_secure', 1);
             }
             session_name(static::$sessionName);
+            if ($sessionId) {
+                session_id($sessionId);
+            }
             session_start();
             if (!static::$enabled) {
                 foreach ($_SESSION as $k => $v) {
