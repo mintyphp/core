@@ -3,6 +3,7 @@ namespace MintyPHP;
 
 class Session
 {
+    public static $sessionId = false;
     public static $sessionName = 'mintyphp';
     public static $csrfSessionKey = 'csrf_token';
     public static $enabled = true;
@@ -39,7 +40,7 @@ class Session
         $_SESSION[static::$csrfSessionKey] = bin2hex($buffer);
     }
 
-    public static function start($sessionId = false)
+    public static function start()
     {
         if (!static::$initialized) {
             static::initialize();
@@ -60,8 +61,8 @@ class Session
                 ini_set('session.cookie_secure', 1);
             }
             session_name(static::$sessionName);
-            if ($sessionId) {
-                session_id($sessionId);
+            if (static::$sessionId) {
+                session_id(static::$sessionId);
             }
             session_start();
             if (!static::$enabled) {
