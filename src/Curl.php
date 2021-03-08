@@ -111,17 +111,20 @@ class Curl
         foreach ($options as $option => $value) {
             curl_setopt($ch, constant(strtoupper($option)), $value);
         }
-
+        
+        if (is_array($data)) {
+            $data = http_build_query($data);
+            $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        } elseif (strlen($data)>0 && in_array($data[0],['{','['])) {
+            $headers['Content-Type'] = 'application/json';
+        }
+        
         $head = array();
         foreach ($headers as $key => $value) {
             $head[] = $key . ': ' . $value;
         }
         curl_setopt($ch, CURLOPT_HTTPHEADER, $head);
         curl_setopt($ch, CURLOPT_HEADER, true);
-
-        if (is_array($data)) {
-            $data = http_build_query($data);
-        }
 
         switch (strtoupper($method)) {
             case 'HEAD':
