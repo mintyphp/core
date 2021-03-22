@@ -263,7 +263,8 @@ class Router
     if (static::$original === null) static::$original = $request;
 
     $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') == 'xmlhttprequest';
-    $csrfOk = in_array(static::$method, ['GET','OPTIONS']) ?: ($isAjax || Session::checkCsrfToken());
+    $sameOrigin = parse_url($_SERVER['HTTP_ORIGIN'],PHP_URL_HOST) == parse_url($_SERVER['REQUEST_URI'],PHP_URL_HOST);
+    $csrfOk = in_array(static::$method, ['GET','OPTIONS']) ?: ($isAjax || $sameOrigin || Session::checkCsrfToken());
 
     $getParameters = array();
     $questionMarkPosition = strpos($request, '?');
