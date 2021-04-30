@@ -40,7 +40,10 @@ class NoPassAuth
     public static function remember()
     {
         $name = Session::$sessionName . '_remember';
-        $value = $_COOKIE[$name];
+        $value = $_COOKIE[$name] ?? false;
+        if (!$value) {
+            return false;
+        }
         $username = explode(':', $value, 2)[0];
         $token = explode(':', $value, 2)[1] ?? '';
         $query = sprintf('select * from `%s` where `%s` = ? and `%s` > NOW() limit 1',
@@ -64,7 +67,7 @@ class NoPassAuth
     private static function unRemember()
     {
         $name = Session::$sessionName . '_remember';
-        if ($_COOKIE[$name]) {
+        if ($_COOKIE[$name] ?? false) {
             setcookie($name, false);
         }
     }
