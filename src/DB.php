@@ -59,9 +59,9 @@ class DB
   private static function queryTyped($query)
   {
     static::connect();
+    $nargs = [''];
     if (func_num_args() > 1) {
       $args = func_get_args();
-      $nargs = [''];
       for ($i = 1; $i < count($args); $i++) {
         if (is_array($args[$i])) {
           if (count($args[$i])) {
@@ -83,6 +83,8 @@ class DB
       if (!$stmt) {
         return static::error(static::$mysqli->error);
       }
+    }
+    if (count($nargs) > 1) {
       //legacy (PHP 7.4)
       $ref    = new \ReflectionClass('mysqli_stmt');
       $method = $ref->getMethod("bind_param");
