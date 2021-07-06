@@ -58,7 +58,7 @@ class Router
   public static function redirect($url, $permanent = false)
   {
     if (!static::$initialized) static::initialize();
-    $url = parse_url($url, PHP_URL_HOST) ? $url : static::$baseUrl . $url;
+    $url = parse_url($url, PHP_URL_HOST) ? $url : static::getBaseUrl() . $url;
     $status = $permanent ? 301 : 302;
     if (Debugger::$enabled) {
       Debugger::set('redirect', $url);
@@ -262,7 +262,8 @@ class Router
     $request = static::removePrefix($request, static::$baseUrl);
     if (static::$original === null) static::$original = $request;
 
-    $csrfOk = static::$method != 'POST' ?: Session::checkCsrfToken();
+    $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') == 'xmlhttprequest';
+    $csrfOk = in_array(static::$method, ['GET','OPTIONS']) ?: ($isAjax || Session::checkCsrfToken());
 
     $getParameters = array();
     $questionMarkPosition = strpos($request, '?');
@@ -376,6 +377,6 @@ class Router
       $s = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') ? 's' : '';
       $url = "http$s:$url";
     }
-    return $url;
+    return rtrim($url,'/').'/';
   }
 }

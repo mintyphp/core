@@ -19,9 +19,11 @@ class Debugger
 
         static::$initialized = true;
         if (!static::$enabled) {
+            ini_set('display_errors', 0);
             error_reporting(0);
             return;
         }
+        ini_set('display_errors', 1);
         error_reporting(-1);
         static::$request = array('log' => array(), 'queries' => array(), 'api_calls' => array(), 'session' => array(), 'cache' => array());
         Session::start();
