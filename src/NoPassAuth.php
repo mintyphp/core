@@ -23,11 +23,6 @@ class NoPassAuth
             $table = static::$usersTable;
             $username = $user[$table][static::$usernameField];
             $password = $user[$table][static::$passwordField];
-            if (!$password) {
-                static::update($username);
-                $user = DB::selectOne($query, $username);
-                $password = $user[$table][static::$passwordField];
-            }
             Token::$secret = $password;
             Token::$ttl = static::$tokenValidity;
             $token = Token::getToken(array('user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']));
@@ -40,10 +35,7 @@ class NoPassAuth
     public static function remember()
     {
         $name = Session::$sessionName . '_remember';
-        $value = $_COOKIE[$name] ?? false;
-        if (!$value) {
-            return false;
-        }
+        $value = $_COOKIE[$name];
         $username = explode(':', $value, 2)[0];
         $token = explode(':', $value, 2)[1] ?? '';
         $query = sprintf('select * from `%s` where `%s` = ? and `%s` > NOW() limit 1',
@@ -67,7 +59,7 @@ class NoPassAuth
     private static function unRemember()
     {
         $name = Session::$sessionName . '_remember';
-        if ($_COOKIE[$name] ?? false) {
+        if ($_COOKIE[$name]) {
             setcookie($name, false);
         }
     }
@@ -112,7 +104,7 @@ class NoPassAuth
             $claims = Token::getClaims($token);
             if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
                 if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
-                    throw new TotpError('Check failed');
+                    throw new TotpError($username);
                 }
                 session_regenerate_id(true);
                 $_SESSION['user'] = $user[$table];

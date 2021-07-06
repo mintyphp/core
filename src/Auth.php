@@ -19,7 +19,7 @@ class Auth
             $table = static::$usersTable;
             if (password_verify($password, $user[$table][static::$passwordField])) {
                 if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
-                    throw new TotpError('Check failed');
+                    throw new TotpError($user[$table][static::$usernameField]);
                 }
                 session_regenerate_id(true);
                 $_SESSION['user'] = $user[$table];
