@@ -23,6 +23,11 @@ class NoPassAuth
             $table = static::$usersTable;
             $username = $user[$table][static::$usernameField];
             $password = $user[$table][static::$passwordField];
+            if (!$password) {
+                static::update($username);
+                $user = DB::selectOne($query, $username);
+                $password = $user[$table][static::$passwordField];
+            }
             Token::$secret = $password;
             Token::$ttl = static::$tokenValidity;
             $token = Token::getToken(array('user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']));
@@ -35,7 +40,10 @@ class NoPassAuth
     public static function remember()
     {
         $name = Session::$sessionName . '_remember';
-        $value = $_COOKIE[$name];
+        $value = $_COOKIE[$name] ?? false;
+        if (!$value) {
+            return false;
+        }
         $username = explode(':', $value, 2)[0];
         $token = explode(':', $value, 2)[1] ?? '';
         $query = sprintf('select * from `%s` where `%s` = ? and `%s` > NOW() limit 1',
@@ -59,7 +67,7 @@ class NoPassAuth
     private static function unRemember()
     {
         $name = Session::$sessionName . '_remember';
-        if ($_COOKIE[$name]) {
+        if ($_COOKIE[$name] ?? false) {
             setcookie($name, false);
         }
     }
@@ -91,28 +99,15 @@ class NoPassAuth
         $parts = explode('.', $token);
         $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
         $username = isset($claims['user']) ? $claims['user'] : false;
-        $query = sprintf('select * from `%s` where `%s` = ? limit 1',
-            static::$usersTable,
-            static::$usernameField);
-        $user = DB::selectOne($query, $username);
+        $user = static::getUser($token,['user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']]);
         if ($user) {
-            $table = static::$usersTable;
-            $username = $user[$table][static::$usernameField];
-            $password = $user[$table][static::$passwordField];
-            Token::$secret = $password;
-            Token::$ttl = static::$tokenValidity;
-            $claims = Token::getClaims($token);
-            if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
-                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
-                    throw new TotpError('Check failed');
-                }
-                session_regenerate_id(true);
-                $_SESSION['user'] = $user[$table];
-                if ($rememberMe) {
-                    static::doRemember($username);
-                }
-            } else {
-                $user = array();
+            if (!Totp::verify($user[static::$usersTable][static::$totpSecretField] ?? '', $totp ?: '')) {
+                throw new TotpError('Check failed');
+            }
+            session_regenerate_id(true);
+            $_SESSION['user'] = $user[static::$usersTable];
+            if ($rememberMe) {
+                static::doRemember($username);
             }
         }
         return $user;
@@ -169,6 +164,39 @@ class NoPassAuth
             static::$usersTable,
             static::$usernameField);
         return DB::selectValue($query, $username);
+    }
+
+    public static function valid(string $token)
+    {
+        $parts = explode('.', $token);
+        $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
+        $username = isset($claims['user']) ? $claims['user'] : false;
+        return static::getUser($token,['user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']]);
+    }
+
+    private static function getUser(string $token, array $claims)
+    {
+        $parts = explode('.', $token);
+        $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
+        $username = isset($claims['user']) ? $claims['user'] : false;
+        $query = sprintf('select * from `%s` where `%s` = ? limit 1',
+            static::$usersTable,
+            static::$usernameField);
+        $user = DB::selectOne($query, $username);
+        if ($user) {
+            $table = static::$usersTable;
+            $username = $user[$table][static::$usernameField];
+            $password = $user[$table][static::$passwordField];
+            Token::$secret = $password;
+            Token::$ttl = static::$tokenValidity;
+            $actualClaims = Token::getClaims($token)?:[];
+            foreach ($claims as $key => $value) {
+                if (!isset($actualClaims[$key]) || $actualClaims[$key]!=$value) {
+                    $user = [];
+                }
+            }
+        }
+        return $user;
     }
 
 }
