@@ -99,15 +99,28 @@ class NoPassAuth
         $parts = explode('.', $token);
         $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
         $username = isset($claims['user']) ? $claims['user'] : false;
-        $user = static::getUser($token,['user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']]);
+        $query = sprintf('select * from `%s` where `%s` = ? limit 1',
+            static::$usersTable,
+            static::$usernameField);
+        $user = DB::selectOne($query, $username);
         if ($user) {
-            if (!Totp::verify($user[static::$usersTable][static::$totpSecretField] ?? '', $totp ?: '')) {
-                throw new TotpError('Check failed');
-            }
-            session_regenerate_id(true);
-            $_SESSION['user'] = $user[static::$usersTable];
-            if ($rememberMe) {
-                static::doRemember($username);
+            $table = static::$usersTable;
+            $username = $user[$table][static::$usernameField];
+            $password = $user[$table][static::$passwordField];
+            Token::$secret = $password;
+            Token::$ttl = static::$tokenValidity;
+            $claims = Token::getClaims($token);
+            if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
+                if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
+                    throw new TotpError('Check failed');
+                }
+                session_regenerate_id(true);
+                $_SESSION['user'] = $user[$table];
+                if ($rememberMe) {
+                    static::doRemember($username);
+                }
+            } else {
+                $user = array();
             }
         }
         return $user;
@@ -164,39 +177,6 @@ class NoPassAuth
             static::$usersTable,
             static::$usernameField);
         return DB::selectValue($query, $username);
-    }
-
-    public static function valid(string $token)
-    {
-        $parts = explode('.', $token);
-        $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
-        $username = isset($claims['user']) ? $claims['user'] : false;
-        return static::getUser($token,['user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']]);
-    }
-
-    private static function getUser(string $token, array $claims)
-    {
-        $parts = explode('.', $token);
-        $claims = isset($parts[1]) ? json_decode(base64_decode($parts[1]), true) : false;
-        $username = isset($claims['user']) ? $claims['user'] : false;
-        $query = sprintf('select * from `%s` where `%s` = ? limit 1',
-            static::$usersTable,
-            static::$usernameField);
-        $user = DB::selectOne($query, $username);
-        if ($user) {
-            $table = static::$usersTable;
-            $username = $user[$table][static::$usernameField];
-            $password = $user[$table][static::$passwordField];
-            Token::$secret = $password;
-            Token::$ttl = static::$tokenValidity;
-            $actualClaims = Token::getClaims($token)?:[];
-            foreach ($claims as $key => $value) {
-                if (!isset($actualClaims[$key]) || $actualClaims[$key]!=$value) {
-                    $user = [];
-                }
-            }
-        }
-        return $user;
     }
 
 }
