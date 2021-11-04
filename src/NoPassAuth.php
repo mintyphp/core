@@ -59,7 +59,7 @@ class NoPassAuth
     private static function unRemember()
     {
         $name = Session::$sessionName . '_remember';
-        if ($_COOKIE[$name]) {
+        if (isset($_COOKIE[$name])) {
             setcookie($name, false);
         }
     }
