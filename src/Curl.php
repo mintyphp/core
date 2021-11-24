@@ -72,7 +72,9 @@ class Curl
             $_SESSION['curl_cookies'] = file_get_contents($cookieJar);
             unlink($cookieJar);
         } else {
-            unset($_SESSION['curl_cookies']);
+            if (isset($_SESSION['curl_cookies'])) {
+                unset($_SESSION['curl_cookies']);
+            }
         }
 
         if (strpos($result, "\r\n\r\n") === false) {
