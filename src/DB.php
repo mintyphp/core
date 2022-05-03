@@ -198,8 +198,13 @@ class DB
     if (!is_array($result)) return false;
     $list = array();
     foreach ($result as $record) {
-      $firstTable = array_shift($record);
-      $list[array_shift($firstTable)] = array_shift($firstTable);
+      if (!is_array($record)) return false;
+      $columns = [];
+      foreach ($record as $table) {
+        if (!is_array($table)) return false;
+        $columns = array_merge($columns,$table);
+      }
+      $list[array_shift($columns)] = array_shift($columns);
     }
     return $list;
   }
