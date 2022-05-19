@@ -109,7 +109,7 @@ class Debugger
         $html .= '<a href="#" onclick="' . $javascript . '" style="float:right;">close</a>';
         $request = static::$request;
         $parts = array();
-        $parts[] = date('H:i:s', $request['start']);
+        $parts[] = date('H:i:s', (int)$request['start']);
         $parts[] = strtolower($request['router']['method']) . ' ' . htmlentities($request['router']['url']);
         if (!isset($request['type'])) {
             $parts[] = '???';
