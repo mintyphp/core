@@ -86,7 +86,7 @@ class DB
 		}
 		if (count($nargs) > 1) {
 			//legacy (PHP 7.4)
-			$ref    = new \ReflectionClass('mysqli_stmt');
+			$ref	= new \ReflectionClass('mysqli_stmt');
 			$method = $ref->getMethod("bind_param");
 			$method->invokeArgs($stmt, $nargs);
 			//$stmt->bind_param(...$args);
@@ -121,7 +121,7 @@ class DB
 			}
 		}
 		//legacy (PHP 7.4)
-		$ref    = new \ReflectionClass('mysqli_stmt');
+		$ref	= new \ReflectionClass('mysqli_stmt');
 		$method = $ref->getMethod("bind_result");
 		$method->invokeArgs($stmt, $params);
 		//$stmt->bind_result(...$params);
