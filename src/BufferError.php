@@ -1,4 +1,7 @@
 <?php
+
 namespace MintyPHP;
 
-class BufferError extends \Exception {};
+class BufferError extends \Exception
+{
+};

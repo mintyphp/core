@@ -1,4 +1,7 @@
 <?php
+
 namespace MintyPHP;
 
-class CurlError extends \Exception {};
+class CurlError extends \Exception
+{
+};

@@ -1,16 +1,17 @@
 <?php
+
 namespace MintyPHP;
 
 class Flash
 {
 	static $flashSessionKey = 'flash';
-	
-	public static function set($type,$message)
+
+	public static function set($type, $message)
 	{
 		if (!isset($_SESSION[static::$flashSessionKey])) $_SESSION[static::$flashSessionKey] = array();
 		$_SESSION[static::$flashSessionKey][$type] = $message;
 	}
-	
+
 	public static function get()
 	{
 		if (isset($_SESSION[static::$flashSessionKey])) {
@@ -19,7 +20,6 @@ class Flash
 		} else {
 			$flash = array();
 		}
-		return $flash;	
+		return $flash;
 	}
-	
 }

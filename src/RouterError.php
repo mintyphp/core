@@ -1,4 +1,7 @@
 <?php
+
 namespace MintyPHP;
 
-class RouterError extends \Exception {};
+class RouterError extends \Exception
+{
+};
