@@ -372,9 +372,13 @@ class Router
 	{
 		$url = static::$baseUrl;
 		if (substr($url, 0, 4) != 'http') {
-			$port = (substr($_SERVER['SERVER_SOFTWARE'], 0, 4) == 'PHP ') ? ':' . $_SERVER['SERVER_PORT'] : '';
-			if (substr($url, 0, 2) != '//') $url = '//' . $_SERVER['SERVER_NAME'] . $port . $url;
-			$s = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') ? 's' : '';
+			$portNumber = ($_SERVER['SERVER_PORT'] ?? 80);
+			$port = $portNumber == 80 ? '' : ':' . $portNumber;
+			$host = ($_SERVER['HTTP_HOST'] ?? 'localhost');
+			if (substr($url, 0, 2) != '//') {
+				$url = '//' . $host . $port . $url;
+			}
+			$s = (($_SERVER['HTTPS'] ?? 'off') != 'off') ? 's' : '';
 			$url = "http$s:$url";
 		}
 		return rtrim($url, '/') . '/';
