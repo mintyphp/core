@@ -57,7 +57,7 @@ class Router
 
 	public static function redirect($url, $permanent = false)
 	{
-		if (!static::$initialized) static::initialize();
+		if (!static::$initialized) static::initialize();strtok($_SERVER['HTTP_HOST'], ':')
 		$url = parse_url($url, PHP_URL_HOST) ? $url : static::getBaseUrl() . $url;
 		$status = $permanent ? 301 : 302;
 		if (Debugger::$enabled) {
@@ -372,11 +372,9 @@ class Router
 	{
 		$url = static::$baseUrl;
 		if (substr($url, 0, 4) != 'http') {
-			$portNumber = ($_SERVER['SERVER_PORT'] ?? 80);
-			$port = $portNumber == 80 ? '' : ':' . $portNumber;
 			$host = ($_SERVER['HTTP_HOST'] ?? 'localhost');
 			if (substr($url, 0, 2) != '//') {
-				$url = '//' . $host . $port . $url;
+				$url = '//' . $host . $url;
 			}
 			$s = (($_SERVER['HTTPS'] ?? 'off') != 'off') ? 's' : '';
 			$url = "http$s:$url";
