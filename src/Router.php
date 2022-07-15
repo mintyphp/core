@@ -57,7 +57,7 @@ class Router
 
 	public static function redirect($url, $permanent = false)
 	{
-		if (!static::$initialized) static::initialize();strtok($_SERVER['HTTP_HOST'], ':')
+		if (!static::$initialized) static::initialize();
 		$url = parse_url($url, PHP_URL_HOST) ? $url : static::getBaseUrl() . $url;
 		$status = $permanent ? 301 : 302;
 		if (Debugger::$enabled) {
