@@ -35,11 +35,7 @@ class Auth
 
 	public static function logout(): bool
 	{
-		foreach ($_SESSION as $key => $value) {
-			if ($key != 'debugger') {
-				unset($_SESSION[$key]);
-			}
-		}
+		unset($_SESSION['user']);
 		session_regenerate_id(true);
 		return true;
 	}
