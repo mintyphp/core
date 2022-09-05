@@ -24,7 +24,7 @@ class Auth
 				if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
 					throw new TotpError($user[$table][static::$usernameField]);
 				}
-				session_regenerate_id(true);
+				Session::regenerate();
 				$_SESSION['user'] = $user[$table];
 			} else {
 				$user = array();
@@ -36,7 +36,7 @@ class Auth
 	public static function logout(): bool
 	{
 		unset($_SESSION['user']);
-		session_regenerate_id(true);
+		Session::regenerate();
 		return true;
 	}
 

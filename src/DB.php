@@ -20,6 +20,7 @@ class DB
 			static::error('Database can only be used in MintyPHP action');
 		}
 		if (!static::$mysqli) {
+			mysqli_report(MYSQLI_REPORT_STRICT ^ MYSQLI_REPORT_STRICT);
 			$reflect = new \ReflectionClass('mysqli');
 			$args = array(static::$host, static::$username, static::$password, static::$database, static::$port, static::$socket);
 			while (isset($args[count($args) - 1]) && $args[count($args) - 1] !== null) array_pop($args);

@@ -6,7 +6,7 @@ use MintyPHP\DB;
 
 class DBTest extends \PHPUnit\Framework\TestCase
 {
-	public static function setUpBeforeClass()
+	public static function setUpBeforeClass(): void
 	{
 		DB::$username = 'mintyphp_test';
 		DB::$password = 'mintyphp_test';

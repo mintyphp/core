@@ -172,7 +172,7 @@ class Router
 
 			if (substr($url, -7) == '//index') $redirect = substr($url, 0, -7);
 			if (substr(static::$original, -6) == '/index') $redirect = substr($url, 0, -6);
-			if (count($parameters) > count($parameterNames) || count(array_diff(array_keys($getParameters), $parameterNames)) > 0) {
+			if (count($parameters) > count($parameterNames) /*|| count(array_diff(array_keys($getParameters), $parameterNames)) > 0*/) {
 				if (substr($url, -6) == '/index') $url = substr($url, 0, -6);
 				if ($url == 'index') $url = '';
 				$redirect = $url;
@@ -303,6 +303,15 @@ class Router
 	{
 		if (!static::$initialized) static::initialize();
 		return static::$url;
+	}
+
+	public static function getCanonical()
+	{
+		$canonical = static::$url;
+		if (substr($canonical, -6) == '/index' || $canonical == 'index') {
+			$canonical = substr($canonical, 0, -5);
+		}
+		return $canonical . implode('/', static::$parameters);
 	}
 
 	public static function addRoute($sourcePath, $destinationPath)

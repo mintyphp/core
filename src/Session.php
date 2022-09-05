@@ -41,6 +41,17 @@ class Session
 		$_SESSION[static::$csrfSessionKey] = bin2hex($buffer);
 	}
 
+	public static function regenerate()
+	{
+		if (!static::$enabled) {
+			return;
+		}
+
+		session_regenerate_id(true);
+		unset($_SESSION[static::$csrfSessionKey]);
+		static::setCsrfToken();
+	}
+
 	public static function start()
 	{
 		if (!static::$initialized) {

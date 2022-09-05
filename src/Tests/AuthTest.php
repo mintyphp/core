@@ -7,7 +7,7 @@ class AuthTest extends \PHPUnit\Framework\TestCase
 {
 	public static $db;
 
-	public static function setUpBeforeClass()
+	public static function setUpBeforeClass(): void
 	{
 		DBTest::setUpBeforeClass();
 		self::$db = new DBTest();
@@ -24,10 +24,10 @@ class AuthTest extends \PHPUnit\Framework\TestCase
 	public function testLogin()
 	{
 		try {
-			var_dump(Auth::login('test', 'test'));
+			Auth::login('test', 'test');
 			$session_regenerated = false;
 		} catch (\Exception $e) {
-			$session_regenerated = $e->getMessage() == "session_regenerate_id(): Cannot regenerate session id - session is not active";
+			$session_regenerated = explode(':',$e->getMessage())[0] == "session_regenerate_id()";
 		}
 		$this->assertTrue($session_regenerated, 'session not regenerated');
 	}
@@ -35,19 +35,17 @@ class AuthTest extends \PHPUnit\Framework\TestCase
 	public function testLogout()
 	{
 		$_SESSION['user'] = array('id' => 1, 'username' => 'test');
-		$_SESSION['csrf_token'] = md5(time());
 		try {
 			Auth::logout();
 			$session_regenerated = false;
 		} catch (\Exception $e) {
-			$session_regenerated = $e->getMessage() == "session_regenerate_id(): Cannot regenerate session id - session is not active";
+			$session_regenerated = explode(':',$e->getMessage())[0] == "session_regenerate_id()";
 		}
 		$this->assertTrue($session_regenerated, 'session not regenerated');
 		$this->assertFalse(isset($_SESSION['user']), 'user not unset');
-		$this->assertFalse(isset($_SESSION['csrf_token']), 'csrf token not unset');
 	}
 
-	public static function tearDownAfterClass()
+	public static function tearDownAfterClass(): void
 	{
 		self::$db->testDropUsers();
 	}
