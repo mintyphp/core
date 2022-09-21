@@ -40,13 +40,13 @@ class DB
 		if (Debugger::$enabled) {
 			$time = microtime(true);
 		}
-		$result = forward_static_call_array('DB::queryTyped', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::queryTyped', func_get_args());
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$arguments = func_get_args();
 			if (strtoupper(substr(trim($query), 0, 6)) == 'SELECT') {
 				$arguments[0] = 'explain ' . $query;
-				$explain = forward_static_call_array('DB::queryTyped', $arguments);
+				$explain = forward_static_call_array('MintyPHP\\DB::queryTyped', $arguments);
 			} else {
 				$explain = false;
 			}
@@ -139,7 +139,7 @@ class DB
 
 	public static function insert($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_int($result)) return false;
 		if (!$result) return false;
 		return static::$mysqli->insert_id;
@@ -147,28 +147,28 @@ class DB
 
 	public static function update($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_int($result)) return false;
 		return $result;
 	}
 
 	public static function delete($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_int($result)) return false;
 		return $result;
 	}
 
 	public static function select($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_array($result)) return false;
 		return $result;
 	}
 
 	public static function selectValue($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_array($result)) return false;
 		if (!isset($result[0])) return false;
 		$record = $result[0];
@@ -181,7 +181,7 @@ class DB
 
 	public static function selectValues($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_array($result)) return false;
 		$list = array();
 		foreach ($result as $record) {
@@ -195,7 +195,7 @@ class DB
 
 	public static function selectPairs($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_array($result)) return false;
 		$list = array();
 		foreach ($result as $record) {
@@ -212,7 +212,7 @@ class DB
 
 	public static function selectOne($query)
 	{
-		$result = forward_static_call_array('DB::query', func_get_args());
+		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
 		if (!is_array($result)) return false;
 		if (isset($result[0])) return $result[0];
 		return $result;
