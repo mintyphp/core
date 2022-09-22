@@ -35,7 +35,7 @@ class Debugger
 
 		static::set('start', microtime(true));
 		static::set('user', get_current_user());
-		register_shutdown_function('Debugger::end', 'abort');
+		register_shutdown_function('MintyPHP\\Debugger::end', 'abort');
 	}
 
 	public static function logSession($title)
