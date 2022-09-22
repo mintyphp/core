@@ -36,7 +36,7 @@ class Firewall
 		$key = static::getKey();
 		$start = microtime(true);
 		Cache::add($key, 0, static::$intervalSeconds);
-		register_shutdown_function('Firewall::end');
+		register_shutdown_function('MintyPHP\\Firewall::end');
 		while (Cache::increment($key) > static::$concurrency) {
 			Cache::decrement($key);
 			if (!static::$spinLockSeconds || microtime(true) - $start > static::$intervalSeconds) {
