@@ -117,5 +117,5 @@ class Loader
 }
 
 class_alias(__NAMESPACE__ . '\\Loader', 'Loader');
-spl_autoload_register(array('Loader', 'loadCore'));
-spl_autoload_register(array('Loader', 'load'));
+spl_autoload_register(array('MintyPHP\\Loader', 'loadCore'));
+spl_autoload_register(array('MintyPHP\\Loader', 'load'));
