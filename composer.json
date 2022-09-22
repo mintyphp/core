@@ -12,10 +12,5 @@
         "php": ">=5.3.0",
         "ext-memcache": "*",
         "ext-mysqli": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "MintyPHP\\": "src/"
-        }
     }
 }
