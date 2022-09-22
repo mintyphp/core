@@ -63,6 +63,10 @@ class Loader
 
 	public static function loadCore($class)
 	{
+		if (substr($class, 0, strlen(__NAMESPACE__ . static::$nsChar)) == __NAMESPACE__ . static::$nsChar) {
+			$class = substr($class, strlen(__NAMESPACE__ . static::$nsChar));
+		}
+		
 		if (class_exists(__NAMESPACE__ . static::$nsChar . $class, false)) {
 			return true;
 		}
