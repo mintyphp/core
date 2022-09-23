@@ -88,6 +88,22 @@ class Debugger
 		return isset(static::$request[$key]) ? static::$request[$key] : false;
 	}
 
+	private static function getLoadedFiles()
+	{
+		$result = [];
+		$classes = get_declared_classes();
+		$afterComposer = false;
+		foreach ($classes as $class) {
+			if (substr($class, 0, 8) == 'Composer') {
+				$afterComposer = true;
+			} elseif ($afterComposer) {
+				$reflection = new ReflectionClass($class);
+				$result[] = $reflection->getFileName();
+			}
+		}
+		return $result;
+	}
+
 	public static function end($type)
 	{
 		if (static::get('type')) {
@@ -98,7 +114,7 @@ class Debugger
 		static::set('type', $type);
 		static::set('duration', microtime(true) - static::get('start'));
 		static::set('memory', memory_get_peak_usage(true));
-		static::set('classes', Loader::getFiles());
+		static::set('classes', static::getLoadedFiles());
 	}
 
 	public static function toolbar()
