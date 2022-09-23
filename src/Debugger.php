@@ -97,7 +97,7 @@ class Debugger
 			if (substr($class, 0, 8) == 'Composer') {
 				$afterComposer = true;
 			} elseif ($afterComposer) {
-				$reflection = new ReflectionClass($class);
+				$reflection = new \ReflectionClass($class);
 				$result[] = $reflection->getFileName();
 			}
 		}
