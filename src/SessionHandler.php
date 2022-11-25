@@ -28,9 +28,10 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
      * Coolision detection is absolute requirement for secure session.
      */
 
-    public function __construct()
+    public function __construct($save_path)
     {
-        $save_path = getcwd() . '/data/sessions';
+        $save_path = realpath($save_path);
+        //echo "Create [{$save_path}]\n";
         if (!file_exists($save_path)) {
             mkdir($save_path, 0755, true);
         }
@@ -136,9 +137,9 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
 
         $session_save_path = $this->sessionSavePath;
         $gc_cnt = 0;
-        $directory = opendir($session_save_path . "/");
+        $directory = opendir("$session_save_path/");
         while (($file = readdir($directory)) !== false) {
-            $qualified = ($session_save_path . "/" . $file);
+            $qualified = "$session_save_path/$file";
             if (is_file($qualified) === true) {
                 if (filemtime($qualified) + $maxlifetime <= time()) {
                     unlink($qualified);
