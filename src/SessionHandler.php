@@ -30,7 +30,11 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
 
     public function __construct()
     {
-        $this->sessionSavePath = getcwd() . '/data/sessions';
+        $save_path = getcwd() . '/data/sessions';
+        if (!file_exists($save_path)) {
+            mkdir($save_path, 0755, true);
+        }
+        $this->sessionSavePath = $save_path;
         $this->sessionId = '';
     }
 
