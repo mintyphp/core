@@ -8,6 +8,9 @@ use SessionUpdateTimestampHandlerInterface;
 
 class SessionHandler implements SessionHandlerInterface, SessionIdInterface, SessionUpdateTimestampHandlerInterface
 {
+	public static $sessionSavePath = 'data/sessions';
+    public static $sessionIdSize = 16;
+    
     private string $sessionSavePath;
     //private $sessionName;
     private string $sessionId;
@@ -28,9 +31,9 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
      * Coolision detection is absolute requirement for secure session.
      */
 
-    public function __construct($save_path)
+    public function __construct()
     {
-        $save_path = realpath($save_path);
+        $save_path = realpath(static::$sessionSavePath);
         //echo "Create [{$save_path}]\n";
         if (!file_exists($save_path)) {
             mkdir($save_path, 0755, true);
@@ -165,7 +168,7 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
         //       must generate secure session ID by yourself.
         //       e.g. hash('sha2', random_bytes(64)) or use /dev/urandom
 
-        $id = bin2hex(random_bytes(16));
+        $id = bin2hex(random_bytes(static::$sessionIdSize));
         //echo "CreateID [{$id}]\n";
 
         // MUST return session ID string.
