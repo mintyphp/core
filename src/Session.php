@@ -6,7 +6,6 @@ class Session
 {
 	public static $sessionId = false;
 	public static $sessionName = 'mintyphp';
-	//public static $sessionSavePath = 'data/sessions';
 	public static $csrfSessionKey = 'csrf_token';
 	public static $enabled = true;
 	public static $csrfLength = 16;
@@ -24,7 +23,7 @@ class Session
 
 		static::$initialized = true;
 		//if (session_module_name() == 'files') {
-		//	session_set_save_handler(new SessionHandler(static::$sessionSavePath), true);
+		//	session_set_save_handler(new SessionHandler(), true);
 		//}
 		static::start();
 		static::setCsrfToken();
