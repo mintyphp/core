@@ -22,6 +22,9 @@ class Session
 		}
 
 		static::$initialized = true;
+		//if (session_module_name() == 'files') {
+		//	session_set_save_handler(new SessionHandler(), true);
+		//}
 		static::start();
 		static::setCsrfToken();
 	}
@@ -72,6 +75,12 @@ class Session
 			if (!ini_get('session.cookie_secure') && isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
 				ini_set('session.cookie_secure', 1);
 			}
+			//if (!ini_get('session.use_strict_mode')) {
+			//	ini_set('session.use_strict_mode', 1);
+			//}
+			//if (!ini_get('session.lazy_write')) {
+			//	ini_set('session.lazy_write', 1);
+			//}
 			session_name(static::$sessionName);
 			if (static::$sessionId) {
 				session_id(static::$sessionId);
