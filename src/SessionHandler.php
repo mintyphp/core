@@ -8,7 +8,7 @@ use SessionUpdateTimestampHandlerInterface;
 
 class SessionHandler implements SessionHandlerInterface, SessionIdInterface, SessionUpdateTimestampHandlerInterface
 {
-	public static $sessionSavePath = 'data/sessions';
+    public static $sessionSavePath = 'data/sessions';
     public static $sessionIdSize = 16;
     
     private string $sessionSavePath;
