@@ -204,7 +204,7 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
         //       support time stamp updating, you must not define this.
 
         $session_save_path = $this->sessionSavePath;
-        //echo "Update [{$session_save_path},{$id}]\n";
+        //echo "UpdateTimestamp [{$session_save_path},{$id}]\n";
         $session_file = "$session_save_path/$id";
         $ret = touch($session_file);
 
