@@ -23,7 +23,7 @@ class Session
 
 		static::$initialized = true;
 		//if (session_module_name() == 'files') {
-		//	session_set_save_handler(new SessionHandler(), true);
+		//	session_set_save_handler(new FilesSessionHandler(), true);
 		//}
 		static::start();
 		static::setCsrfToken();
@@ -85,7 +85,7 @@ class Session
 			if (static::$sessionId) {
 				session_id(static::$sessionId);
 			}
-			session_start();
+			session_start(/*['read_and_close' => $_SERVER['REQUEST_METHOD'] == 'GET']*/);
 			if (!static::$enabled) {
 				foreach ($_SESSION as $k => $v) {
 					if ($k != Debugger::$sessionKey) {
