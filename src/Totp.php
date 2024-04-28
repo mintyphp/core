@@ -55,21 +55,21 @@ class Totp
 	{
 		$offset = unpack('C', substr($hash, -1))[1] & 0xF;
 		$code = unpack('N', substr($hash, $offset, 4))[1] & 0x7FFFFFFF;
-		$otp = $code % (10 ** static::$digits);
-		return sprintf('%0' . static::$digits . 'd', $otp);
+		$otp = $code % (10 ** self::$digits);
+		return sprintf('%0' . self::$digits . 'd', $otp);
 	}
 
 	private static function calculateHash(string $secret): string
 	{
-		$secret = static::decodeBase32($secret);
-		$data = pack('J', intval((static::$timestamp ?: time()) / static::$period));
-		$hash = hash_hmac(static::$algorithm, $data, $secret, true);
+		$secret = self::decodeBase32($secret);
+		$data = pack('J', intval((self::$timestamp ?: time()) / self::$period));
+		$hash = hash_hmac(self::$algorithm, $data, $secret, true);
 		return $hash;
 	}
 
 	public static function generateSecret(): string
 	{
-		return static::encodeBase32(random_bytes(static::$secretLength));
+		return self::encodeBase32(random_bytes(self::$secretLength));
 	}
 
 	public static function generateURI(string $company, string $username, string $secret): string
@@ -80,12 +80,11 @@ class Totp
 			'digits' => 6,
 		];
 		$current = [
-			'period' => static::$period,
-			'algorithm' => static::$algorithm,
-			'digits' => static::$digits,
+			'period' => self::$period,
+			'algorithm' => self::$algorithm,
 			'issuer' => $company,
 			'secret' => $secret,
-			'digits' => static::$digits,
+			'digits' => self::$digits,
 		];
 		$parameters = http_build_query(array_diff_assoc(array_filter($current), $defaults));
 		$parameterString = str_replace(['+', '%7E'], ['%20', '~'], $parameters);
@@ -97,8 +96,8 @@ class Totp
 		if (!$secret) {
 			return true;
 		}
-		$hash = static::calculateHash($secret);
-		$match = static::calculateOtp($hash);
-		return static::safeStringCompare($otp, $match);
+		$hash = self::calculateHash($secret);
+		$match = self::calculateOtp($hash);
+		return self::safeStringCompare($otp, $match);
 	}
 }

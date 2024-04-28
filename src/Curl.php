@@ -4,35 +4,61 @@ namespace MintyPHP;
 
 class Curl
 {
-	public static $options = array();
-	public static $headers = array();
-	public static $cookies = false;
+	/** @var array<string,mixed> */
+	public static array $options = [];
+	/** @var array<string,string> */
+	public static array $headers = [];
+	public static bool $cookies = false;
 
-	public static function navigateCached($expire, $method, $url, $data, $headers = array(), $options = array())
+	/**
+	 * @param string|array<mixed> $data
+	 * @param array<string,string> $headers
+	 * @param array<string,mixed> $options
+	 * @return array<string,mixed> 
+	 */
+	public static function navigateCached(int $expire, string $method, string $url, string|array $data, array $headers = [], array $options = []): array
 	{
-		return static::callCached($expire, $method, $url, $data, $headers, array_merge($options, array('CURLOPT_FOLLOWLOCATION' => true)));
+		return self::callCached($expire, $method, $url, $data, $headers, array_merge($options, ['CURLOPT_FOLLOWLOCATION' => true]));
 	}
 
-	public static function callCached($expire, $method, $url, $data, $headers = array(), $options = array())
+	/**
+	 * @param string|array<mixed> $data
+	 * @param array<string,string> $headers
+	 * @param array<string,mixed> $options
+	 * @return array<string,mixed> 
+	 */
+	public static function callCached(int $expire, string $method, string $url, string|array $data, array $headers = [], array $options = []): array
 	{
 		$key = $method . '_' . $url . '_' . json_encode($data) . '_' . json_encode($headers) . '_' . json_encode($options);
 		$result = Cache::get($key);
 		if ($result) {
 			return $result;
 		}
-		$result = static::call($method, $url, $data, $headers, $options);
+		$result = self::call($method, $url, $data, $headers, $options);
 		if ($result['status'] == 200) {
 			Cache::set($key, $result, $expire);
 		}
 		return $result;
 	}
 
-	public static function navigate($method, $url, $data = '', $headers = array(), $options = array())
+	/**
+	 * @param string|array<mixed> $data
+	 * @param array<string,string> $headers
+	 * @param array<string,mixed> $options
+	 * @return array<string,mixed> 
+	 */
+	public static function navigate(string $method, string $url, string|array $data = '', array $headers = [], array $options = []): array
 	{
-		return static::call($method, $url, $data, $headers, array_merge($options, array('CURLOPT_FOLLOWLOCATION' => true)));
+		return self::call($method, $url, $data, $headers, array_merge($options, array('CURLOPT_FOLLOWLOCATION' => true)));
 	}
 
-	public static function call($method, $url, $data = '', $headers = array(), $options = array())
+	/**
+	 * @param string|array<mixed> $data
+	 * @param array<string,string> $headers
+	 * @param array<string,mixed> $options
+	 * @return array<string,mixed> 
+	 */
+	public static function call(string $method, string $url, string|array $data = '', array $headers = [], array $options = []): array
 	{
 		if (Debugger::$enabled) {
 			$time = microtime(true);
@@ -40,25 +66,25 @@ class Curl
 
 		$ch = curl_init();
 
-		if (static::$cookies) {
+		if (self::$cookies) {
 			$cookieJar = tempnam(sys_get_temp_dir(), "curl_cookies-");
-			if (isset($_SESSION['curl_cookies'])) {
+			if ($cookieJar && isset($_SESSION['curl_cookies'])) {
 				file_put_contents($cookieJar, $_SESSION['curl_cookies']);
 			}
 			curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieJar);
 			curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieJar);
 		}
 
-		$headers = array_merge(static::$headers, $headers);
-		$options = array_merge(static::$options, $options);
-		static::setOptions($ch, $method, $url, $data, $headers, $options);
+		$headers = array_merge(self::$headers, $headers);
+		$options = array_merge(self::$options, $options);
+		self::setOptions($ch, $method, $url, $data, $headers, $options);
 
-		$result = curl_exec($ch);
+		$result = strval(curl_exec($ch));
 		$status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$location = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
 
 		if (Debugger::$enabled) {
-			$timing = array();
+			$timing = [];
 			$timing['name_lookup'] = curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME);
 			$timing['connect'] = curl_getinfo($ch, CURLINFO_CONNECT_TIME);
 			$timing['pre_transfer'] = curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME);
@@ -69,7 +95,7 @@ class Curl
 
 		curl_close($ch);
 
-		if (static::$cookies) {
+		if (self::$cookies && $cookieJar) {
 			$_SESSION['curl_cookies'] = file_get_contents($cookieJar);
 			unlink($cookieJar);
 		} else {
@@ -88,7 +114,7 @@ class Curl
 		}
 
 		$result = array('status' => $status);
-		$result['headers'] = array();
+		$result['headers'] = [];
 		$result['data'] = $body;
 		$result['url'] = $location;
 
@@ -108,7 +134,12 @@ class Curl
 		return $result;
 	}
 
-	protected static function setOptions($ch, $method, &$url, &$data, $headers, $options)
+	/**
+	 * @param string|array<mixed> $data
+	 * @param array<string,string> $headers
+	 * @param array<string,mixed> $options
+	 */
+	protected static function setOptions(\CurlHandle $ch, string $method, string &$url, string|array &$data, array $headers, array $options): void
 	{
 		// Set default options
 		foreach ($options as $option => $value) {
@@ -122,7 +153,7 @@ class Curl
 			$headers['Content-Type'] = 'application/json';
 		}
 
-		$head = array();
+		$head = [];
 		foreach ($headers as $key => $value) {
 			$head[] = $key . ': ' . $value;
 		}

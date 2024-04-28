@@ -1,13 +1,16 @@
 <?php
+
 namespace MintyPHP\Tests;
 
 use MintyPHP\Router;
 
 class RouterTest extends \PHPUnit\Framework\TestCase
 {
-	protected static $path = false;
-	protected static $pages = false;
-	protected static $templates = false;
+	protected static string $path = '';
+	/** @var array<string> */
+	protected static array $pages = [];
+	/** @var array<string> */
+	protected static array $templates = [];
 
 	public static function setUpBeforeClass(): void
 	{
@@ -63,14 +66,14 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 		$_SERVER['SCRIPT_NAME'] = self::$path . '/web/index.php';
 	}
 
-	protected function request($method, $uri)
+	protected function request(string $method, string $uri): void
 	{
 		$_SERVER['REQUEST_METHOD'] = $method;
 		$_SERVER['REQUEST_URI'] = $uri;
 		Router::$initialized = false;
 	}
 
-	public function testAdmin()
+	public function testAdmin(): void
 	{
 		$this->request('GET', '/admin');
 		$this->assertEquals(Router::$templateRoot . 'admin.php', Router::getTemplateAction());
@@ -79,7 +82,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals(Router::$pageRoot . 'admin/index(admin).phtml', Router::getView());
 	}
 
-	public function testRootRoute()
+	public function testRootRoute(): void
 	{
 		$this->request('GET', '/');
 		Router::addRoute('', 'home');
@@ -87,14 +90,14 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals(Router::$pageRoot . 'home(default).phtml', Router::getView());
 	}
 
-	public function testTrailingSlashOnIndex()
+	public function testTrailingSlashOnIndex(): void
 	{
 		$this->request('GET', '/admin/posts/');
 
 		$this->assertEquals('http://localhost/admin/posts', Router::getRedirect());
 	}
 
-	public function testExplicitIndexRedirect()
+	public function testExplicitIndexRedirect(): void
 	{
 		$this->request('GET', '/admin/posts/index');
 
@@ -105,21 +108,21 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals(Router::$pageRoot . 'admin/posts/index(admin).phtml', Router::getView());
 	}
 
-	public function testTrailingSlash()
+	public function testTrailingSlash(): void
 	{
 		$this->request('GET', '/admin/posts/view/12/');
 
 		$this->assertEquals('http://localhost/admin/posts/view/12', Router::getRedirect());
 	}
 
-	public function testPageNotFoundOnIndex()
+	public function testPageNotFoundOnIndex(): void
 	{
 		$this->request('GET', '/admin/posts/asdada');
 
 		$this->assertEquals('http://localhost/admin/posts', Router::getRedirect());
 	}
 
-	public function testPageNotFoundOnNoIndex()
+	public function testPageNotFoundOnNoIndex(): void
 	{
 		$this->request('GET', '/error/this-page-does-not-exist');
 
@@ -130,63 +133,63 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals(Router::$pageRoot . 'error/not_found(error).phtml', Router::getView());
 	}
 
-	public function testRootParameters()
+	public function testRootParameters(): void
 	{
 		$this->request('GET', '/2014-some-blog-title');
 		$this->assertEquals(['slug' => '2014-some-blog-title'], Router::getParameters());
 	}
 
-	public function testGetParameter()
+	public function testGetParameter(): void
 	{
 		$this->request('GET', '/admin/posts/view?id=12');
 		$this->assertEquals(['id' => '12'], Router::getParameters());
 	}
 
-	public function testGetParameters()
+	public function testGetParameters(): void
 	{
 		$this->request('GET', '/admin/auth?code=23&state=12');
 		$this->assertEquals(['code' => '23', 'state' => '12'], Router::getParameters());
 	}
 
-	public function testGetParameterWithWrongName()
+	public function testGetParameterWithWrongName(): void
 	{
 		$this->request('GET', '/admin/posts/view?idea=12');
-		$this->assertEquals(['id'=>''], Router::getParameters());
+		$this->assertEquals(['id' => ''], Router::getParameters());
 		$this->assertNull(Router::getRedirect());
 	}
 
-	public function testGetParameterHalf()
+	public function testGetParameterHalf(): void
 	{
 		$this->request('GET', '/admin/auth/23?state=12');
 		$this->assertEquals(['code' => '23', 'state' => '12'], Router::getParameters());
 	}
 
-	public function testGetParameterWrongOrder()
+	public function testGetParameterWrongOrder(): void
 	{
 		$this->request('GET', '/admin/auth?state=12&code=23');
 		$this->assertEquals(['code' => '23', 'state' => '12'], Router::getParameters());
 	}
 
-	public function testGetParameterFirstOnly()
+	public function testGetParameterFirstOnly(): void
 	{
 		$this->request('GET', '/admin/auth?code=23');
 		$this->assertEquals(['code' => '23', 'state' => null], Router::getParameters());
 	}
 
-	public function testGetParameterLastOnly()
+	public function testGetParameterLastOnly(): void
 	{
 		$this->request('GET', '/admin/auth?state=12');
 		$this->assertEquals(['code' => null, 'state' => '12'], Router::getParameters());
 	}
 
-	public function testGetParametersTooMany()
+	public function testGetParametersTooMany(): void
 	{
 		$this->request('GET', '/admin/posts/view?state=12&code=23&id=4');
 		$this->assertEquals(['id' => 4], Router::getParameters());
 		$this->assertNull(Router::getRedirect());
 	}
 
-	public function testActionWithoutView()
+	public function testActionWithoutView(): void
 	{
 		$this->request('GET', '/rss');
 		$this->assertEquals(false, Router::getTemplateAction());
@@ -199,5 +202,4 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 	{
 		system('rm -Rf ' . self::$path);
 	}
-
 }

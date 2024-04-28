@@ -13,7 +13,7 @@ class Template
 		return $string;
 	}
 
-	public static function render($template, $data, $functions = array(), $escape = 'html'): TemplateString
+	public static function render($template, $data, $functions = [], $escape = 'html'): TemplateString
 	{
 		$tokens = Template::tokenize($template);
 		$tree = Template::createSyntaxTree($tokens);
@@ -23,7 +23,7 @@ class Template
 
 	private static function createNode($type, $expression)
 	{
-		return (object) array('type' => $type, 'expression' => $expression, 'children' => array(), 'value' => null);
+		return (object) array('type' => $type, 'expression' => $expression, 'children' => [], 'value' => null);
 	}
 
 	private static function tokenize($template)
@@ -89,7 +89,7 @@ class Template
 	{
 		$root = Template::createNode('root', false);
 		$current = $root;
-		$stack = array();
+		$stack = [];
 		foreach ($tokens as $i => $token) {
 			if ($i % 2 == 1) {
 				if ($token == 'endif') {
@@ -119,11 +119,13 @@ class Template
 						$current = array_pop($stack);
 					}
 				}
-				if (in_array($type, array('if', 'for', 'var', 'elseif', 'else'))) {
+				if (in_array($type, array('var'))) {
 					$node = Template::createNode($type, $expression);
 					array_push($current->children, $node);
 				}
 				if (in_array($type, array('if', 'for', 'elseif', 'else'))) {
+					$node = Template::createNode($type, $expression);
+					array_push($current->children, $node);
 					array_push($stack, $current);
 					$current = $node;
 				}
@@ -137,7 +139,7 @@ class Template
 	private static function renderChildren($node, $data, $functions, $escape)
 	{
 		$result = '';
-		$ifNodes = array();
+		$ifNodes = [];
 		foreach ($node->children as $child) {
 			switch ($child->type) {
 				case 'if':
@@ -150,19 +152,19 @@ class Template
 					break;
 				case 'else':
 					$result .= Template::renderElseNode($child, $ifNodes, $data, $functions, $escape);
-					$ifNodes = array();
+					$ifNodes = [];
 					break;
 				case 'for':
 					$result .= Template::renderForNode($child, $data, $functions, $escape);
-					$ifNodes = array();
+					$ifNodes = [];
 					break;
 				case 'var':
 					$result .= Template::renderVarNode($child, $data, $functions, $escape);
-					$ifNodes = array();
+					$ifNodes = [];
 					break;
 				case 'lit':
 					$result .= $child->expression;
-					$ifNodes = array();
+					$ifNodes = [];
 					break;
 			}
 		}
@@ -293,7 +295,7 @@ class Template
 		foreach ($parts as $part) {
 			$function = Template::explode('(', rtrim($part, ')'), 2);
 			$f = $function[0];
-			$arguments = isset($function[1]) ? Template::explode(',', $function[1]) : array();
+			$arguments = isset($function[1]) ? Template::explode(',', $function[1]) : [];
 			$arguments = array_map(function ($argument) use ($data) {
 				$argument = trim($argument);
 				$len = strlen($argument);

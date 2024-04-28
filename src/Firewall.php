@@ -14,8 +14,9 @@ class Firewall
 
 	protected static function getClientIp()
 	{
-		if (static::$reverseProxy && isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-			$ip = array_pop(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+		if (self::$reverseProxy && isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			$ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+			$ip = array_pop($ips);
 		} else {
 			$ip = $_SERVER['REMOTE_ADDR'];
 		}
@@ -24,31 +25,31 @@ class Firewall
 
 	protected static function getKey()
 	{
-		if (!static::$key) {
-			static::$key = static::$cachePrefix . '_' . static::getClientIp();
+		if (!self::$key) {
+			self::$key = self::$cachePrefix . '_' . self::getClientIp();
 		}
-		return static::$key;
+		return self::$key;
 	}
 
 	public static function start()
 	{
 		header_remove('X-Powered-By');
-		$key = static::getKey();
+		$key = self::getKey();
 		$start = microtime(true);
-		Cache::add($key, 0, static::$intervalSeconds);
+		Cache::add($key, 0, self::$intervalSeconds);
 		register_shutdown_function('MintyPHP\\Firewall::end');
-		while (Cache::increment($key) > static::$concurrency) {
+		while (Cache::increment($key) > self::$concurrency) {
 			Cache::decrement($key);
-			if (!static::$spinLockSeconds || microtime(true) - $start > static::$intervalSeconds) {
+			if (!self::$spinLockSeconds || microtime(true) - $start > self::$intervalSeconds) {
 				http_response_code(429);
 				die('429: Too Many Requests');
 			}
-			usleep(static::$spinLockSeconds * 1000000);
+			usleep(self::$spinLockSeconds * 1000000);
 		}
 	}
 
 	public static function end()
 	{
-		Cache::decrement(static::getKey());
+		Cache::decrement(self::getKey());
 	}
 }

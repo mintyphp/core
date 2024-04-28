@@ -8,17 +8,17 @@ class Flash
 
 	public static function set($type, $message)
 	{
-		if (!isset($_SESSION[static::$flashSessionKey])) $_SESSION[static::$flashSessionKey] = array();
-		$_SESSION[static::$flashSessionKey][$type] = $message;
+		if (!isset($_SESSION[self::$flashSessionKey])) $_SESSION[self::$flashSessionKey] = [];
+		$_SESSION[self::$flashSessionKey][$type] = $message;
 	}
 
 	public static function get()
 	{
-		if (isset($_SESSION[static::$flashSessionKey])) {
-			$flash = $_SESSION[static::$flashSessionKey];
-			unset($_SESSION[static::$flashSessionKey]);
+		if (isset($_SESSION[self::$flashSessionKey])) {
+			$flash = $_SESSION[self::$flashSessionKey];
+			unset($_SESSION[self::$flashSessionKey]);
 		} else {
-			$flash = array();
+			$flash = [];
 		}
 		return $flash;
 	}

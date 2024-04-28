@@ -17,57 +17,57 @@ class Session
 
 	protected static function initialize()
 	{
-		if (static::$initialized) {
+		if (self::$initialized) {
 			return;
 		}
 
-		static::$initialized = true;
+		self::$initialized = true;
 		//if (session_module_name() == 'files') {
 		//	session_set_save_handler(new FilesSessionHandler(), true);
 		//}
-		static::start();
-		static::setCsrfToken();
+		self::start();
+		self::setCsrfToken();
 	}
 
 	protected static function setCsrfToken()
 	{
-		if (!static::$enabled) {
+		if (!self::$enabled) {
 			return;
 		}
 
-		if (isset($_SESSION[static::$csrfSessionKey])) {
+		if (isset($_SESSION[self::$csrfSessionKey])) {
 			return;
 		}
 
-		$buffer = random_bytes(static::$csrfLength);
+		$buffer = random_bytes(self::$csrfLength);
 
-		$_SESSION[static::$csrfSessionKey] = bin2hex($buffer);
+		$_SESSION[self::$csrfSessionKey] = bin2hex($buffer);
 	}
 
 	public static function regenerate()
 	{
-		if (!static::$enabled) {
+		if (!self::$enabled) {
 			return;
 		}
 
 		session_regenerate_id(true);
-		unset($_SESSION[static::$csrfSessionKey]);
-		static::setCsrfToken();
+		unset($_SESSION[self::$csrfSessionKey]);
+		self::setCsrfToken();
 	}
 
 	public static function start()
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		if (static::$started) {
+		if (self::$started) {
 			return;
 		}
 
-		if (static::$enabled || Debugger::$enabled) {
+		if (self::$enabled || Debugger::$enabled) {
 			if (!ini_get('session.cookie_samesite')) {
-				ini_set('session.cookie_samesite', static::$sameSite);
+				ini_set('session.cookie_samesite', self::$sameSite);
 			}
 			if (!ini_get('session.cookie_httponly')) {
 				ini_set('session.cookie_httponly', 1);
@@ -81,12 +81,12 @@ class Session
 			//if (!ini_get('session.lazy_write')) {
 			//	ini_set('session.lazy_write', 1);
 			//}
-			session_name(static::$sessionName);
-			if (static::$sessionId) {
-				session_id(static::$sessionId);
+			session_name(self::$sessionName);
+			if (self::$sessionId) {
+				session_id(self::$sessionId);
 			}
 			session_start(/*['read_and_close' => $_SERVER['REQUEST_METHOD'] == 'GET']*/);
-			if (!static::$enabled) {
+			if (!self::$enabled) {
 				foreach ($_SESSION as $k => $v) {
 					if ($k != Debugger::$sessionKey) {
 						unset($_SESSION[$k]);
@@ -94,10 +94,10 @@ class Session
 				}
 			}
 		}
-		static::$started = true;
+		self::$started = true;
 		if (Debugger::$enabled) {
 			if (!isset($_SESSION[Debugger::$sessionKey])) {
-				$_SESSION[Debugger::$sessionKey] = array();
+				$_SESSION[Debugger::$sessionKey] = [];
 			}
 			Debugger::logSession('before');
 		}
@@ -105,16 +105,16 @@ class Session
 
 	public static function end()
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		if (static::$ended) {
+		if (self::$ended) {
 			return;
 		}
 
-		static::$ended = true;
-		if (static::$enabled && !Debugger::$enabled) {
+		self::$ended = true;
+		if (self::$enabled && !Debugger::$enabled) {
 			session_write_close();
 		}
 
@@ -131,17 +131,17 @@ class Session
 
 	public static function checkCsrfToken()
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		if (!static::$enabled) {
+		if (!self::$enabled) {
 			return true;
 		}
 
 		$success = false;
-		if (isset($_POST[static::$csrfSessionKey])) {
-			$success = $_POST[static::$csrfSessionKey] == $_SESSION[static::$csrfSessionKey];
+		if (isset($_POST[self::$csrfSessionKey])) {
+			$success = $_POST[self::$csrfSessionKey] == $_SESSION[self::$csrfSessionKey];
 			//unset($_POST['csrf_token']);
 		}
 		return $success;
@@ -149,15 +149,15 @@ class Session
 
 	public static function getCsrfInput()
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		if (!static::$enabled) {
+		if (!self::$enabled) {
 			return;
 		}
 
-		static::setCsrfToken();
-		echo '<input type="hidden" name="' . static::$csrfSessionKey . '" value="' . $_SESSION[static::$csrfSessionKey] . '"/>';
+		self::setCsrfToken();
+		echo '<input type="hidden" name="' . self::$csrfSessionKey . '" value="' . $_SESSION[self::$csrfSessionKey] . '"/>';
 	}
 }

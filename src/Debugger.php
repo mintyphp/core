@@ -4,47 +4,47 @@ namespace MintyPHP;
 
 class Debugger
 {
-	public static $history = 10;
-	public static $enabled = false;
-	public static $sessionKey = 'debugger';
+	public static int $history = 10;
+	public static bool $enabled = false;
+	public static string $sessionKey = 'debugger';
 
-	protected static $request = null;
+	protected static mixed $request = null;
 
-	protected static $initialized = false;
+	protected static bool $initialized = false;
 
-	protected static function initialize()
+	protected static function initialize(): void
 	{
-		if (static::$initialized) {
+		if (self::$initialized) {
 			return;
 		}
 
-		static::$initialized = true;
-		if (!static::$enabled) {
+		self::$initialized = true;
+		if (!self::$enabled) {
 			ini_set('display_errors', 0);
 			error_reporting(0);
 			return;
 		}
 		ini_set('display_errors', 1);
 		error_reporting(-1);
-		static::$request = array('log' => array(), 'queries' => array(), 'api_calls' => array(), 'session' => array(), 'cache' => array());
+		self::$request = array('log' => [], 'queries' => [], 'api_calls' => [], 'session' => [], 'cache' => []);
 		Session::start();
-		$_SESSION[static::$sessionKey][] = &static::$request;
-		while (count($_SESSION[static::$sessionKey]) > static::$history) {
-			array_shift($_SESSION[static::$sessionKey]);
+		$_SESSION[self::$sessionKey][] = &self::$request;
+		while (count($_SESSION[self::$sessionKey]) > self::$history) {
+			array_shift($_SESSION[self::$sessionKey]);
 		}
 
-		static::set('start', microtime(true));
-		static::set('user', get_current_user());
+		self::set('start', microtime(true));
+		self::set('user', get_current_user());
 		register_shutdown_function('MintyPHP\\Debugger::end', 'abort');
 	}
 
-	public static function logSession($title)
+	public static function logSession($title): void
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		$session = array();
+		$session = [];
 		foreach ($_SESSION as $k => $v) {
 			if ($k == 'debugger') {
 				$v = true;
@@ -52,40 +52,40 @@ class Debugger
 
 			$session[$k] = $v;
 		}
-		$data = static::debug($session);
+		$data = self::debug($session);
 		$data = substr($data, strpos($data, "\n"));
-		static::$request['session'][$title] = trim($data);
-		array_pop(static::$request['log']);
+		self::$request['session'][$title] = trim($data);
+		array_pop(self::$request['log']);
 	}
 
-	public static function set($key, $value)
+	public static function set($key, $value): void
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		static::$request[$key] = $value;
+		self::$request[$key] = $value;
 	}
 
-	public static function add($key, $value)
+	public static function add($key, $value): void
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		if (!isset(static::$request[$key])) {
-			static::$request[$key] = array();
+		if (!isset(self::$request[$key])) {
+			self::$request[$key] = [];
 		}
-		static::$request[$key][] = $value;
+		self::$request[$key][] = $value;
 	}
 
-	public static function get($key)
+	public static function get($key): mixed
 	{
-		if (!static::$initialized) {
-			static::initialize();
+		if (!self::$initialized) {
+			self::initialize();
 		}
 
-		return isset(static::$request[$key]) ? static::$request[$key] : false;
+		return isset(self::$request[$key]) ? self::$request[$key] : false;
 	}
 
 	private static function getLoadedFiles()
@@ -106,26 +106,26 @@ class Debugger
 
 	public static function end($type)
 	{
-		if (static::get('type')) {
+		if (self::get('type')) {
 			return;
 		}
 
 		Session::end();
-		static::set('type', $type);
-		static::set('duration', microtime(true) - static::get('start'));
-		static::set('memory', memory_get_peak_usage(true));
-		static::set('classes', static::getLoadedFiles());
+		self::set('type', $type);
+		self::set('duration', microtime(true) - self::get('start'));
+		self::set('memory', memory_get_peak_usage(true));
+		self::set('classes', self::getLoadedFiles());
 	}
 
 	public static function toolbar()
 	{
-		static::end('ok');
+		self::end('ok');
 		$html = '<div id="debugger-bar" style="position: fixed; width:100%; left: 0; bottom: 0; border-top: 1px solid silver; background: white;">';
 		$html .= '<div style="margin:6px;">';
 		$javascript = "document.getElementById('debugger-bar').style.display='none'; return false;";
 		$html .= '<a href="#" onclick="' . $javascript . '" style="float:right;">close</a>';
-		$request = static::$request;
-		$parts = array();
+		$request = self::$request;
+		$parts = [];
 		$parts[] = date('H:i:s', (int)$request['start']);
 		$parts[] = strtolower($request['router']['method']) . ' ' . htmlentities($request['router']['url']);
 		if (!isset($request['type'])) {
@@ -142,9 +142,9 @@ class Debugger
 		echo $html;
 	}
 
-	public static function debug($variable, $strlen = 100, $width = 25, $depth = 10, $i = 0, &$objects = array())
+	public static function debug($variable, $strlen = 100, $width = 25, $depth = 10, $i = 0, &$objects = [])
 	{
-		if (!static::$enabled) {
+		if (!self::$enabled) {
 			return;
 		}
 
@@ -200,7 +200,7 @@ class Debugger
 							break;
 						}
 						$string .= "\n" . $spaces . "  [$key] => ";
-						$string .= static::debug($variable[$key], $strlen, $width, $depth, $i + 1, $objects);
+						$string .= self::debug($variable[$key], $strlen, $width, $depth, $i + 1, $objects);
 						$count++;
 					}
 					$string .= "\n" . $spaces . '}';
@@ -221,7 +221,7 @@ class Debugger
 					foreach ($properties as $property) {
 						$name = str_replace("\0", ':', trim($property));
 						$string .= "\n" . $spaces . "  [$name] => ";
-						$string .= static::debug($array[$property], $strlen, $width, $depth, $i + 1, $objects);
+						$string .= self::debug($array[$property], $strlen, $width, $depth, $i + 1, $objects);
 					}
 					$string .= "\n" . $spaces . '}';
 				}
@@ -232,16 +232,14 @@ class Debugger
 			return $string;
 		}
 
-		$backtrace = debug_backtrace(false);
+		$backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 		do $caller = array_shift($backtrace);
 		while ($caller && !isset($caller['file']));
 		if ($caller) {
 			$string = $caller['file'] . ':' . $caller['line'] . "\n" . $string;
 		}
 
-		if (static::$enabled) {
-			static::add('log', $string);
-		}
+		self::add('log', $string);
 
 		return $string;
 	}

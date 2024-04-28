@@ -18,16 +18,16 @@ class NoPassAuth
 	{
 		$query = sprintf(
 			'select * from `%s` where `%s` = ? limit 1',
-			static::$usersTable,
-			static::$usernameField
+			self::$usersTable,
+			self::$usernameField
 		);
 		$user = DB::selectOne($query, $username);
 		if ($user) {
-			$table = static::$usersTable;
-			$username = $user[$table][static::$usernameField];
-			$password = $user[$table][static::$passwordField];
+			$table = self::$usersTable;
+			$username = $user[$table][self::$usernameField];
+			$password = $user[$table][self::$passwordField];
 			Token::$secret = $password;
-			Token::$ttl = static::$tokenValidity;
+			Token::$ttl = self::$tokenValidity;
 			$token = Token::getToken(array('user' => $username, 'ip' => $_SERVER['REMOTE_ADDR']));
 		} else {
 			$token = '';
@@ -43,15 +43,15 @@ class NoPassAuth
 		$token = explode(':', $value, 2)[1] ?? '';
 		$query = sprintf(
 			'select * from `%s` where `%s` = ? and `%s` > NOW() limit 1',
-			static::$usersTable,
-			static::$usernameField,
-			static::$rememberExpiresField
+			self::$usersTable,
+			self::$usernameField,
+			self::$rememberExpiresField
 		);
 		$user = DB::selectOne($query, $username);
 		if ($user) {
-			$table = static::$usersTable;
-			$username = $user[$table][static::$usernameField];
-			$hash = $user[$table][static::$rememberTokenField];
+			$table = self::$usersTable;
+			$username = $user[$table][self::$usernameField];
+			$hash = $user[$table][self::$rememberTokenField];
 			if (password_verify($token, $hash)) {
 				session_regenerate_id(true);
 				$_SESSION['user'] = $user[$table];
@@ -65,7 +65,7 @@ class NoPassAuth
 	{
 		$name = Session::$sessionName . '_remember';
 		if (isset($_COOKIE[$name])) {
-			setcookie($name, false);
+			setcookie($name, '');
 		}
 	}
 
@@ -76,14 +76,14 @@ class NoPassAuth
 		$hash = password_hash($token, PASSWORD_DEFAULT);
 		$query = sprintf(
 			'update `%s` set `%s` = ?, `%s` = DATE_ADD(NOW(), INTERVAL ? DAY) where `%s` = ? limit 1',
-			static::$usersTable,
-			static::$rememberTokenField,
-			static::$rememberExpiresField,
-			static::$usernameField
+			self::$usersTable,
+			self::$rememberTokenField,
+			self::$rememberExpiresField,
+			self::$usernameField
 		);
-		DB::update($query, $hash, static::$rememberDays, $username);
+		DB::update($query, $hash, self::$rememberDays, $username);
 		$value = "$username:$token";
-		$expires = strtotime('+' . static::$rememberDays . ' days');
+		$expires = strtotime('+' . self::$rememberDays . ' days');
 		$path = Router::$baseUrl;
 		$domain = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
 		if (!$domain || $domain == 'localhost') {
@@ -100,28 +100,28 @@ class NoPassAuth
 		$username = isset($claims['user']) ? $claims['user'] : false;
 		$query = sprintf(
 			'select * from `%s` where `%s` = ? limit 1',
-			static::$usersTable,
-			static::$usernameField
+			self::$usersTable,
+			self::$usernameField
 		);
 		$user = DB::selectOne($query, $username);
 		if ($user) {
-			$table = static::$usersTable;
-			$username = $user[$table][static::$usernameField];
-			$password = $user[$table][static::$passwordField];
+			$table = self::$usersTable;
+			$username = $user[$table][self::$usernameField];
+			$password = $user[$table][self::$passwordField];
 			Token::$secret = $password;
-			Token::$ttl = static::$tokenValidity;
+			Token::$ttl = self::$tokenValidity;
 			$claims = Token::getClaims($token);
 			if ($claims && $claims['user'] == $username && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
-				if (!Totp::verify($user[$table][static::$totpSecretField] ?? '', $totp ?: '')) {
+				if (!Totp::verify($user[$table][self::$totpSecretField] ?? '', $totp ?: '')) {
 					throw new TotpError($username);
 				}
 				session_regenerate_id(true);
 				$_SESSION['user'] = $user[$table];
 				if ($rememberMe) {
-					static::doRemember($username);
+					self::doRemember($username);
 				}
 			} else {
-				$user = array();
+				$user = [];
 			}
 		}
 		return $user;
@@ -135,7 +135,7 @@ class NoPassAuth
 			}
 		}
 		session_regenerate_id(true);
-		static::unRemember();
+		self::unRemember();
 		return true;
 	}
 
@@ -143,10 +143,10 @@ class NoPassAuth
 	{
 		$query = sprintf(
 			'insert into `%s` (`%s`,`%s`,`%s`) values (?,?,NOW())',
-			static::$usersTable,
-			static::$usernameField,
-			static::$passwordField,
-			static::$createdField
+			self::$usersTable,
+			self::$usernameField,
+			self::$passwordField,
+			self::$createdField
 		);
 		$password = bin2hex(random_bytes(16));
 		$password = password_hash($password, PASSWORD_DEFAULT);
@@ -157,9 +157,9 @@ class NoPassAuth
 	{
 		$query = sprintf(
 			'update `%s` set `%s`=? where `%s`=?',
-			static::$usersTable,
-			static::$passwordField,
-			static::$usernameField
+			self::$usersTable,
+			self::$passwordField,
+			self::$usernameField
 		);
 		$password = bin2hex(random_bytes(16));
 		$password = password_hash($password, PASSWORD_DEFAULT);
@@ -170,9 +170,9 @@ class NoPassAuth
 	{
 		$query = sprintf(
 			'update `%s` set `%s`=? where `%s`=?',
-			static::$usersTable,
-			static::$totpSecretField,
-			static::$usernameField
+			self::$usersTable,
+			self::$totpSecretField,
+			self::$usernameField
 		);
 		return DB::update($query, $secret, $username);
 	}
@@ -181,8 +181,8 @@ class NoPassAuth
 	{
 		$query = sprintf(
 			'select `id` from `%s` where `%s`=?',
-			static::$usersTable,
-			static::$usernameField
+			self::$usersTable,
+			self::$usernameField
 		);
 		return DB::selectValue($query, $username);
 	}

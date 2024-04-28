@@ -4,31 +4,31 @@ namespace MintyPHP;
 
 class Cache
 {
-	public static $prefix = 'mintyphp';
-	public static $servers = '127.0.0.1';
-	public static $compressTreshold = 20000;
-	public static $compressSavings = 0.2;
+	public static string $prefix = 'mintyphp';
+	public static string $servers = '127.0.0.1';
+	public static int $compressTreshold = 20000;
+	public static float $compressSavings = 0.2;
 
-	protected static $memcache = null;
+	protected static ?\Memcache $memcache = null;
 
-	protected static function initialize()
+	protected static function initialize(): void
 	{
-		if (!static::$memcache) {
-			static::$memcache = new \Memcache();
-			$servers = explode(',', static::$servers);
+		if (!self::$memcache) {
+			self::$memcache = new \Memcache();
+			$servers = explode(',', self::$servers);
 			$servers = array_map(function ($server) {
 				$server = explode(':', trim($server));
 				if (count($server) == 1) $server[1] = '11211';
 				return $server;
 			}, $servers);
 			foreach ($servers as $server) {
-				static::$memcache->addServer($server[0], $server[1]);
+				self::$memcache->addServer($server[0], intval($server[1]));
 			}
-			static::$memcache->setCompressThreshold(static::$compressTreshold, static::$compressSavings);
+			self::$memcache->setCompressThreshold(self::$compressTreshold, self::$compressSavings);
 		}
 	}
 
-	protected static function variable($var)
+	protected static function variable(mixed $var): string
 	{
 		$type = gettype($var);
 		switch ($type) {
@@ -53,111 +53,111 @@ class Cache
 		return $result;
 	}
 
-	public static function add($key, $var, $expire = 0)
+	public static function add(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->add(static::$prefix . $key, $var, 0, $expire);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->add(self::$prefix . $key, $var, 0, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'add';
-			$arguments = array($key, static::variable($var));
+			$arguments = array($key, self::variable($var));
 			if ($expire) $arguments[] = $expire;
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;
 	}
 
-	public static function decrement($key, $value = 1)
+	public static function decrement(string $key, int $value = 1): int
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->decrement(static::$prefix . $key, $value);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->decrement(self::$prefix . $key, $value);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'decrement';
 			$arguments = array($key);
 			if ($value > 1) $arguments[] = $value;
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;
 	}
 
-	public static function delete($key)
+	public static function delete(string $key): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->delete(static::$prefix . $key, 0);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->delete(self::$prefix . $key, 0);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'delete';
 			$arguments = array($key);
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;
 	}
 
-	public static function get($key)
+	public static function get(string $key): mixed
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->get(static::$prefix . $key);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->get(self::$prefix . $key);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'get';
 			$arguments = array($key);
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;
 	}
 
-	public static function increment($key, $value = 1)
+	public static function increment(string $key, int $value = 1): int
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->increment(static::$prefix . $key, $value);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->increment(self::$prefix . $key, $value);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'increment';
 			$arguments = array($key);
 			if ($value > 1) $arguments[] = $value;
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;
 	}
 
-	public static function replace($key, $var, $expire = 0)
+	public static function replace(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->replace(static::$prefix . $key, $var, 0, $expire);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->replace(self::$prefix . $key, $var, 0, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'replace';
-			$arguments = array($key, static::variable($var));
+			$arguments = array($key, self::variable($var));
 			if ($expire) $arguments[] = $expire;
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;
 	}
 
-	public static function set($key, $var, $expire = 0)
+	public static function set(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->set(static::$prefix . $key, $var, 0, $expire);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->set(self::$prefix . $key, $var, 0, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'set';
-			$arguments = array($key, static::variable($var));
+			$arguments = array($key, self::variable($var));
 			if ($expire) $arguments[] = $expire;
-			$result = static::variable($res);
+			$result = self::variable($res);
 			Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
 		}
 		return $res;

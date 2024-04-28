@@ -13,19 +13,19 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		DB::$database = 'mintyphp_test';
 	}
 
-	public function testDropPostsBefore()
+	public function testDropPostsBefore(): void
 	{
 		$result = DB::query('DROP TABLE IF EXISTS `posts`;');
 		$this->assertNotFalse($result, 'drop posts failed');
 	}
 
-	public function testDropUsersBefore()
+	public function testDropUsersBefore(): void
 	{
 		$result = DB::query('DROP TABLE IF EXISTS `users`;');
 		$this->assertNotFalse($result, 'drop users failed');
 	}
 
-	public function testCreateUsers()
+	public function testCreateUsers(): void
 	{
 		$result = DB::query('CREATE TABLE `users` (
 			`id` int(11) NOT NULL AUTO_INCREMENT,
@@ -38,7 +38,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$this->assertNotFalse($result, 'create users failed');
 	}
 
-	public function testCreatePosts()
+	public function testCreatePosts(): void
 	{
 		$result = DB::query('CREATE TABLE `posts` (
 			`id` int(11) NOT NULL AUTO_INCREMENT,
@@ -57,7 +57,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$this->assertNotFalse($result, 'create posts failed');
 	}
 
-	public function testInsertUsers()
+	public function testInsertUsers(): void
 	{
 		$result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `created`) VALUES (NULL, 'test1', 'c32ac6310706acdadea74c901c3f08fe06c44c61', '2014-05-28 22:58:22');");
 		$this->assertNotFalse($result, 'insert user failed 1');
@@ -67,7 +67,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals(2, $result);
 	}
 
-	public function testInsertPosts()
+	public function testInsertPosts(): void
 	{
 		$result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test1', '', 'test', 'test', '2014-05-28 22:58:22', NULL, 1);");
 		$this->assertNotFalse($result, 'insert post failed 1');
@@ -77,14 +77,14 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals(2, $result);
 	}
 
-	public function testUpdatePosts()
+	public function testUpdatePosts(): void
 	{
 		$result = DB::update("UPDATE `posts` SET `created`='2014-05-28 22:58:20' WHERE `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???);", 1, [1, 2], 1, [1], 1, []);
 		$this->assertNotFalse($result, 'update posts failed');
 		$this->assertEquals(2, $result);
 	}
 
-	public function testSelectPosts()
+	public function testSelectPosts(): void
 	{
 		$result = DB::select("SELECT * FROM `posts`;");
 		$this->assertEquals(2, count($result));
@@ -99,28 +99,28 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$result = DB::select("some bogus query;");
 	}
 
-	public function testSelectOne()
+	public function testSelectOne(): void
 	{
 		$result = DB::selectOne("SELECT * FROM `posts` limit 1;");
 		$this->assertEquals('posts', array_keys($result)[0]);
 		$this->assertEquals('id', array_keys($result['posts'])[0]);
 		$result = DB::selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");
-		$this->assertEquals(array(), $result);
+		$this->assertEquals([], $result);
 		$this->expectException('MintyPHP\DBError');
 		$result = DB::selectOne("some bogus query;");
 	}
 
-	public function testSelectValues()
+	public function testSelectValues(): void
 	{
 		$result = DB::selectValues("SELECT username FROM `users`;");
 		$this->assertEquals(array('test1', 'test2'), $result);
 		$result = DB::selectValues("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
-		$this->assertEquals(array(), $result);
+		$this->assertEquals([], $result);
 		$this->expectException('MintyPHP\DBError');
 		$result = DB::selectValues("some bogus query;");
 	}
 
-	public function testSelectValue()
+	public function testSelectValue(): void
 	{
 		$result = DB::selectValue("SELECT username FROM `users` limit 1;");
 		$this->assertEquals('test1', $result);
@@ -130,7 +130,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$result = DB::selectValue("some bogus query;");
 	}
 
-	public function testQuery()
+	public function testQuery(): void
 	{
 		$result = DB::query("SELECT * FROM `posts` limit 1;");
 		$this->assertNotEquals(false, $result);
@@ -138,27 +138,27 @@ class DBTest extends \PHPUnit\Framework\TestCase
 		$result = DB::query("some bogus query;");
 	}
 
-	public function testDeletePosts()
+	public function testDeletePosts(): void
 	{
 		$result = DB::delete('DELETE FROM `posts`;');
 		$this->assertNotFalse($result, 'delete posts failed');
 		$this->assertEquals(2, $result);
 	}
 
-	public function testDeleteUsers()
+	public function testDeleteUsers(): void
 	{
 		$result = DB::delete('DELETE FROM `users`;');
 		$this->assertNotFalse($result, 'delete users failed');
 		$this->assertEquals(2, $result);
 	}
 
-	public function testDropPosts()
+	public function testDropPosts(): void
 	{
 		$result = DB::query('DROP TABLE `posts`;');
 		$this->assertNotFalse($result, 'drop posts failed');
 	}
 
-	public function testDropUsers()
+	public function testDropUsers(): void
 	{
 		$result = DB::query('DROP TABLE `users`;');
 		$this->assertNotFalse($result, 'drop users failed');

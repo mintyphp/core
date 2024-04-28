@@ -4,39 +4,41 @@ namespace MintyPHP;
 
 class Buffer
 {
-	protected static $stack = array();
-	protected static $data = array();
+	/** @var array<string> */
+	protected static array $stack = [];
+	/** @var array<string,string> */
+	protected static array $data = [];
 
-	protected static function error($message)
+	protected static function error(string $message): never
 	{
 		throw new BufferError($message);
 	}
 
-	public static function start($name)
+	public static function start(string $name): void
 	{
-		array_push(static::$stack, $name);
+		array_push(self::$stack, $name);
 		ob_start();
 	}
 
-	public static function end($name)
+	public static function end(string $name): void
 	{
-		$top = array_pop(static::$stack);
+		$top = array_pop(self::$stack);
 		if ($top != $name) {
-			static::error("Buffer::end('$name') called, but Buffer::end('$top') expected.");
+			self::error("Buffer::end('$name') called, but Buffer::end('$top') expected.");
 		}
-		static::$data[$name] = ob_get_contents();
+		self::$data[$name] = ob_get_contents() ?: '';
 		ob_end_clean();
 	}
 
-	public static function set($name, $string)
+	public static function set(string $name, string $string): void
 	{
-		static::$data[$name] = $string;
+		self::$data[$name] = $string;
 	}
 
-	public static function get($name)
+	public static function get(string $name): bool
 	{
-		if (!isset(static::$data[$name])) return false;
-		echo static::$data[$name];
+		if (!isset(self::$data[$name])) return false;
+		echo self::$data[$name];
 		return true;
 	}
 }

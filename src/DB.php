@@ -4,62 +4,59 @@ namespace MintyPHP;
 
 class DB
 {
-	public static $host = null;
-	public static $username = null;
-	public static $password = null;
-	public static $database = null;
-	public static $port = null;
-	public static $socket = null;
+	public static ?string $host = null;
+	public static ?string $username = null;
+	public static ?string $password = null;
+	public static ?string $database = null;
+	public static ?int $port = null;
+	public static ?string $socket = null;
 
-	protected static $mysqli = null;
-	protected static $closed = false;
+	protected static ?\mysqli $mysqli = null;
+	protected static bool $closed = false;
 
 	protected static function connect()
 	{
-		if (static::$closed) {
-			static::error('Database can only be used in MintyPHP action');
+		if (self::$closed) {
+			self::error('Database can only be used in MintyPHP action');
 		}
-		if (!static::$mysqli) {
-			mysqli_report(MYSQLI_REPORT_STRICT ^ MYSQLI_REPORT_STRICT);
-			$reflect = new \ReflectionClass('mysqli');
-			$args = array(static::$host, static::$username, static::$password, static::$database, static::$port, static::$socket);
-			while (isset($args[count($args) - 1]) && $args[count($args) - 1] !== null) array_pop($args);
-			static::$mysqli = $reflect->newInstanceArgs($args);
-			if (mysqli_connect_errno()) static::error(mysqli_connect_error());
-			if (!static::$mysqli->set_charset('utf8mb4')) static::error(mysqli_error(static::$mysqli));
+		if (!self::$mysqli) {
+			mysqli_report(MYSQLI_REPORT_STRICT);
+			self::$mysqli = mysqli_connect(self::$host, self::$username, self::$password, self::$database, self::$port, self::$socket);
+			if (mysqli_connect_errno()) self::error(mysqli_connect_error());
+			if (!self::$mysqli->set_charset('utf8mb4')) self::error(mysqli_error(self::$mysqli));
 		}
 	}
 
-	protected static function error($message)
+	protected static function error($message): void
 	{
 		throw new DBError($message);
 	}
 
-	public static function query($query)
+	public static function query($query): mixed
 	{
 		if (Debugger::$enabled) {
 			$time = microtime(true);
 		}
-		$result = forward_static_call_array('MintyPHP\\DB::queryTyped', func_get_args());
+		$result = self::queryTyped(...func_get_args());
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$arguments = func_get_args();
 			if (strtoupper(substr(trim($query), 0, 6)) == 'SELECT') {
 				$arguments[0] = 'explain ' . $query;
-				$explain = forward_static_call_array('MintyPHP\\DB::queryTyped', $arguments);
+				$explain = self::queryTyped(...$arguments);
 			} else {
 				$explain = false;
 			}
 			$arguments = array_slice(func_get_args(), 1);
-			$equery = static::$mysqli->real_escape_string($query);
+			$equery = self::$mysqli->real_escape_string($query);
 			Debugger::add('queries', compact('duration', 'query', 'equery', 'arguments', 'result', 'explain'));
 		}
 		return $result;
 	}
 
-	private static function queryTyped($query)
+	private static function queryTyped($query): mixed
 	{
-		static::connect();
+		self::connect();
 		$nargs = [''];
 		if (func_num_args() > 1) {
 			$args = func_get_args();
@@ -80,28 +77,19 @@ class DB
 					$nargs[] = &$args[$i];
 				}
 			}
-			$stmt = static::$mysqli->prepare($query);
-			if (!$stmt) {
-				return static::error(static::$mysqli->error);
-			}
-		}
-		if (count($nargs) > 1) {
-			//legacy (PHP 7.4)
-			$ref	= new \ReflectionClass('mysqli_stmt');
-			$method = $ref->getMethod("bind_param");
-			$method->invokeArgs($stmt, $nargs);
-			//$stmt->bind_param(...$args);
+			$stmt = self::$mysqli->prepare($query);
+			$stmt->bind_param(...$nargs);
 		} else {
-			$stmt = static::$mysqli->prepare($query);
-			if (!$stmt) {
-				return static::error(static::$mysqli->error);
-			}
+			$stmt = self::$mysqli->prepare($query);
+		}
+		if (!$stmt) {
+			self::error(self::$mysqli->error);
 		}
 		$stmt->execute();
 		if ($stmt->errno) {
-			$error = static::$mysqli->error;
+			$error = self::$mysqli->error;
 			$stmt->close();
-			return static::error($error);
+			self::error($error);
 		}
 		if ($stmt->affected_rows > -1) {
 			$result = $stmt->affected_rows;
@@ -109,25 +97,21 @@ class DB
 			return $result;
 		}
 		$stmt->store_result();
-		$params = array();
+		$params = [];
 		$meta = $stmt->result_metadata();
-		$row = array();
+		$row = [];
 		while ($field = $meta->fetch_field()) {
 			if (!$field->table && strpos($field->name, '.')) {
 				$parts = explode('.', $field->name, 2);
 				$params[] = &$row[$parts[0]][$parts[1]];
 			} else {
-				if (!isset($row[$field->table])) $row[$field->table] = array();
+				if (!isset($row[$field->table])) $row[$field->table] = [];
 				$params[] = &$row[$field->table][$field->name];
 			}
 		}
-		//legacy (PHP 7.4)
-		$ref	= new \ReflectionClass('mysqli_stmt');
-		$method = $ref->getMethod("bind_result");
-		$method->invokeArgs($stmt, $params);
-		//$stmt->bind_result(...$params);
+		$stmt->bind_result(...$params);
 
-		$result = array();
+		$result = [];
 		while ($stmt->fetch()) {
 			$result[] = unserialize(serialize($row));
 		}
@@ -137,38 +121,38 @@ class DB
 		return $result;
 	}
 
-	public static function insert($query)
+	public static function insert($query): int
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
-		if (!is_int($result)) return false;
-		if (!$result) return false;
-		return static::$mysqli->insert_id;
+		$result = self::query(...func_get_args());
+		if (!is_int($result)) return 0;
+		if (!$result) return 0;
+		return self::$mysqli->insert_id;
 	}
 
-	public static function update($query)
+	public static function update($query): int
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
-		if (!is_int($result)) return false;
+		$result = self::query(...func_get_args());
+		if (!is_int($result)) return 0;
 		return $result;
 	}
 
-	public static function delete($query)
+	public static function delete($query): int
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
-		if (!is_int($result)) return false;
+		$result = self::query(...func_get_args());
+		if (!is_int($result)) return 0;
 		return $result;
 	}
 
-	public static function select($query)
+	public static function select($query): array
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
-		if (!is_array($result)) return false;
+		$result = self::query(...func_get_args());
+		if (!is_array($result)) return [];
 		return $result;
 	}
 
-	public static function selectValue($query)
+	public static function selectValue($query): mixed
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
+		$result = self::query(...func_get_args());
 		if (!is_array($result)) return false;
 		if (!isset($result[0])) return false;
 		$record = $result[0];
@@ -179,30 +163,30 @@ class DB
 	}
 
 
-	public static function selectValues($query)
+	public static function selectValues($query): array
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
-		if (!is_array($result)) return false;
-		$list = array();
+		$result = self::query(...func_get_args());
+		if (!is_array($result)) return [];
+		$list = [];
 		foreach ($result as $record) {
-			if (!is_array($record)) return false;
+			if (!is_array($record)) return [];
 			$firstTable = array_shift($record);
-			if (!is_array($firstTable)) return false;
+			if (!is_array($firstTable)) return [];
 			$list[] = array_shift($firstTable);
 		}
 		return $list;
 	}
 
-	public static function selectPairs($query)
+	public static function selectPairs($query): array
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
-		if (!is_array($result)) return false;
-		$list = array();
+		$result = self::query(...func_get_args());
+		if (!is_array($result)) return [];
+		$list = [];
 		foreach ($result as $record) {
-			if (!is_array($record)) return false;
+			if (!is_array($record)) return [];
 			$columns = [];
 			foreach ($record as $table) {
-				if (!is_array($table)) return false;
+				if (!is_array($table)) return [];
 				$columns = array_merge($columns, $table);
 			}
 			$list[array_shift($columns)] = array_shift($columns);
@@ -212,7 +196,7 @@ class DB
 
 	public static function selectOne($query)
 	{
-		$result = forward_static_call_array('MintyPHP\\DB::query', func_get_args());
+		$result = self::query(...func_get_args());
 		if (!is_array($result)) return false;
 		if (isset($result[0])) return $result[0];
 		return $result;
@@ -220,18 +204,18 @@ class DB
 
 	public static function close()
 	{
-		if (static::$mysqli) {
-			static::$mysqli->close();
-			static::$mysqli = null;
+		if (self::$mysqli) {
+			self::$mysqli->close();
+			self::$mysqli = null;
 		}
-		static::$closed = true;
+		self::$closed = true;
 	}
 
 	// Undocumented
 	public static function handle()
 	{
-		static::$closed = false;
-		static::connect();
-		return static::$mysqli;
+		self::$closed = false;
+		self::connect();
+		return self::$mysqli;
 	}
 }

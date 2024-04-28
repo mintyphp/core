@@ -85,7 +85,7 @@ class Token
 			return false;
 		}
 		if (isset($claims['iat']) && !isset($claims['exp'])) {
-			if ($time - $leeway > $claims['iat'] + $ttl) {
+			if ($time - $leeway > intval($claims['iat']) + $ttl) {
 				return false;
 			}
 		}
@@ -98,14 +98,14 @@ class Token
 			return false;
 		}
 		$time = time();
-		$leeway = static::$leeway;
-		$ttl = static::$ttl;
-		$secret = static::$secret;
-		$requirements = array();
-		$requirements['alg'] = array_filter(array_map('trim', explode(',', static::$algorithms)));
-		$requirements['aud'] = array_filter(array_map('trim', explode(',', static::$audiences)));
-		$requirements['iss'] = array_filter(array_map('trim', explode(',', static::$issuers)));
-		return static::getVerifiedClaims($token, $time, $leeway, $ttl, $secret, $requirements);
+		$leeway = self::$leeway;
+		$ttl = self::$ttl;
+		$secret = self::$secret;
+		$requirements = [];
+		$requirements['alg'] = array_filter(array_map('trim', explode(',', self::$algorithms)));
+		$requirements['aud'] = array_filter(array_map('trim', explode(',', self::$audiences)));
+		$requirements['iss'] = array_filter(array_map('trim', explode(',', self::$issuers)));
+		return self::getVerifiedClaims($token, $time, $leeway, $ttl, $secret, $requirements);
 	}
 
 	protected static function generateToken($claims, $time, $ttl, $algorithm, $secret)
@@ -118,10 +118,10 @@ class Token
 			'RS384' => 'sha384',
 			'RS512' => 'sha512',
 		);
-		$header = array();
+		$header = [];
 		$header['typ'] = 'JWT';
 		$header['alg'] = $algorithm;
-		$token = array();
+		$token = [];
 		$token[0] = rtrim(strtr(base64_encode(json_encode((object) $header)), '+/', '-_'), '=');
 		$claims['iat'] = $time;
 		$claims['exp'] = $time + $ttl;
@@ -138,6 +138,8 @@ class Token
 			case 'R':
 				$signature = (openssl_sign($data, $signature, $secret, $hmac) ? $signature : '');
 				break;
+			default:
+				return false;
 		}
 		$token[2] = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
 		return implode('.', $token);
@@ -146,15 +148,15 @@ class Token
 	public static function getToken($claims)
 	{
 		$time = time();
-		$ttl = static::$ttl;
-		$algorithm = static::$algorithm;
-		$secret = static::$secret;
-		if (!isset($claims['aud']) && static::$audience) {
-			$claims['aud'] = static::$audience;
+		$ttl = self::$ttl;
+		$algorithm = self::$algorithm;
+		$secret = self::$secret;
+		if (!isset($claims['aud']) && self::$audience) {
+			$claims['aud'] = self::$audience;
 		}
-		if (!isset($claims['iss']) && static::$issuer) {
-			$claims['iss'] = static::$issuer;
+		if (!isset($claims['iss']) && self::$issuer) {
+			$claims['iss'] = self::$issuer;
 		}
-		return static::generateToken($claims, $time, $ttl, $algorithm, $secret);
+		return self::generateToken($claims, $time, $ttl, $algorithm, $secret);
 	}
 }

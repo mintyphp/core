@@ -1,11 +1,12 @@
 <?php
+
 namespace MintyPHP\Tests;
 
 use MintyPHP\Totp;
 
 class TotpTest extends \PHPUnit\Framework\TestCase
 {
-	public function testDefaultToken()
+	public function testDefaultToken(): void
 	{
 		Totp::$timestamp = 319690800;
 		$match = Totp::verify('JDDK4U6G3BJLEZ7Y', '762124');
@@ -15,5 +16,4 @@ class TotpTest extends \PHPUnit\Framework\TestCase
 		$match = Totp::generateURI('TQdev', 'maurits@vdschee.nl', '1234567890123456');
 		$this->assertEquals('otpauth://totp/TQdev%3Amaurits%40vdschee.nl?issuer=TQdev&secret=1234567890123456', $match);
 	}
-
 }

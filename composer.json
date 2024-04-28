@@ -2,19 +2,20 @@
     "name": "mintyphp/core",
     "license": "MIT",
     "authors": [
-    {
-        "name": "Maurits van der Schee",
-        "email": "maurits@vdschee.nl",
-        "homepage": "https://www.tqdev.com"
-    }
+        {
+            "name": "Maurits van der Schee",
+            "email": "maurits@vdschee.nl",
+            "homepage": "https://www.tqdev.com"
+        }
     ],
     "require": {
-        "php": ">=5.3.0",
+        "php": ">=8",
         "ext-memcache": "*",
         "ext-mysqli": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "*",
+        "phpstan/phpstan": "*"
     },
     "autoload": {
         "psr-4": {
