@@ -6,15 +6,16 @@ class Cache
 {
 	public static $prefix = 'mintyphp';
 	public static $servers = '127.0.0.1';
-	public static $compressTreshold = 20000;
-	public static $compressSavings = 0.2;
 
+	/**
+	 * @var \Memcached
+	 */
 	protected static $memcache = null;
 
 	protected static function initialize()
 	{
 		if (!static::$memcache) {
-			static::$memcache = new \Memcache();
+			static::$memcache = new \Memcached();
 			$servers = explode(',', static::$servers);
 			$servers = array_map(function ($server) {
 				$server = explode(':', trim($server));
@@ -24,7 +25,6 @@ class Cache
 			foreach ($servers as $server) {
 				static::$memcache->addServer($server[0], $server[1]);
 			}
-			static::$memcache->setCompressThreshold(static::$compressTreshold, static::$compressSavings);
 		}
 	}
 
@@ -57,7 +57,7 @@ class Cache
 	{
 		if (Debugger::$enabled) $time = microtime(true);
 		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->add(static::$prefix . $key, $var, 0, $expire);
+		$res = static::$memcache->add(static::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'add';
@@ -135,7 +135,7 @@ class Cache
 	{
 		if (Debugger::$enabled) $time = microtime(true);
 		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->replace(static::$prefix . $key, $var, 0, $expire);
+		$res = static::$memcache->replace(static::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'replace';
@@ -151,7 +151,7 @@ class Cache
 	{
 		if (Debugger::$enabled) $time = microtime(true);
 		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->set(static::$prefix . $key, $var, 0, $expire);
+		$res = static::$memcache->set(static::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'set';
