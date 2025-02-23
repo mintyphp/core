@@ -7,7 +7,35 @@ class I18n
     private static $strings = [];
 
     public static $domain = 'default';
-    public static $locale = '';
+    public static $locale = ''; // should be either: 'en', 'de', 'fr', 'nl'
+
+    public static $formats = [
+        'currency' => [
+            'en' => ['thousandSeparator' => ',', 'decimalSeparator' => '.'],
+            'de' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+            'fr' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+            'nl' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+        ],
+        'datetime' => [
+            'en' => ['date' => 'm/d/Y', 'datetime' => 'm/d/Y g:i:s A', 'time' => 'g:i:s A'],
+            'de' => ['date' => 'd.m.Y', 'datetime' => 'd.m.Y H:i:s', 'time' => 'H:i:s'],
+            'fr' => ['date' => 'd-m-Y', 'datetime' => 'd-m-Y H:i:s', 'time' => 'H:i:s'],
+            'nl' => ['date' => 'd-m-Y', 'datetime' => 'd-m-Y H:i:s', 'time' => 'H:i:s'],
+        ],
+        'weekDays' => [
+            'en' => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            'de' => ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+            'fr' => ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'],
+            'nl' => ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'],
+        ],
+        'monthNames' => [
+            'en' => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            'de' => ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+            'fr' => ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+            'nl' => ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'],
+        ]
+
+    ];
 
     public static function price($price, $minDecimals = 2, $maxDecimals = 2): string
     {
@@ -19,12 +47,7 @@ class I18n
     {
         if ($currency === null) return '';
 
-        $formats = [
-            'en' => ['thousandSeparator' => ',', 'decimalSeparator' => '.'],
-            'de' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
-            'fr' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
-            'nl' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
-        ];
+        $formats = self::$formats['currency'];
 
         $number = rtrim(sprintf("%0.{$maxDecimals}F", $currency), '0');
         $decimalPos = strpos($number, '.');
@@ -47,60 +70,50 @@ class I18n
 
     public static function date($str): string
     {
-        return $str ? self::format('date', "$str") : '';
+        return $str ? self::formatDateTime('date', "$str") : '';
     }
 
     public static function dateUtc($str): string
     {
-        return $str ? self::format('date', "$str UTC") : '';
+        return $str ? self::formatDateTime('date', "$str UTC") : '';
     }
 
 
     public static function datetime($str): string
     {
-        return $str ? self::format('datetime', "$str") : '';
+        return $str ? self::formatDateTime('datetime', "$str") : '';
     }
 
     public static function datetimeUtc($str): string
     {
-        return $str ? self::format('datetime', "$str UTC") : '';
+        return $str ? self::formatDateTime('datetime', "$str UTC") : '';
     }
 
     public static function time(int $hours, int $minutes, int $seconds = 0): string
     {
-        return self::format('time', date('Y-m-d ') . sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds));
+        return self::formatDateTime('time', date('Y-m-d ') . sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds));
     }
 
     public static function timeUtc(int $hours, int $minutes, int $seconds = 0): string
     {
-        return self::format('time', date('Y-m-d ') . sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds) . 'UTC');
+        return self::formatDateTime('time', date('Y-m-d ') . sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds) . 'UTC');
     }
 
     public static function weekDay(int $dayOfWeek): string
     {
-        $weekDays = [
-            'nl' => ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'],
-        ];
+        $weekDays = self::$formats['weekDays'];
         return $weekDays[self::$locale][$dayOfWeek] ?? $weekDays['nl'][$dayOfWeek];
     }
 
     public static function monthName(int $monthOfYear): string
     {
-        $monthNames = [
-            'nl' => ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'],
-        ];
+        $monthNames = self::$formats['monthNames'];
         return $monthNames[self::$locale][$monthOfYear - 1] ?? $monthNames['nl'][$monthOfYear - 1];
     }
 
-    private static function format(string $type, string $str): string
+    private static function formatDateTime(string $type, string $str): string
     {
-        $formats = [
-            'nl' => [
-                'date' => 'd-m-Y',
-                'datetime' => 'd-m-Y H:i:s',
-                'time' => 'H:i:s',
-            ],
-        ];
+        $formats = self::$formats['datetime'];
         $format = $formats[self::$locale] ?? $formats['nl'];
         return date($format[$type], strtotime($str));
     }
