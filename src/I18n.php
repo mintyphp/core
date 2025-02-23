@@ -8,6 +8,7 @@ class I18n
 
     public static $domain = 'default';
     public static $locale = ''; // should be either: 'en', 'de', 'fr', 'nl'
+    public static $defaultLocale = 'en';
 
     public static $formats = [
         'currency' => [
@@ -62,7 +63,7 @@ class I18n
             $sign = '';
         }
         $whole = (string) $whole;
-        $format = $formats[self::$locale] ?? $formats['nl'];
+        $format = $formats[self::$locale] ?? $formats[self::$defaultLocale];
         $whole = strrev(implode($format['thousandSeparator'], str_split(strrev($whole), 3)));
         $fraction = str_pad($fraction, $minDecimals, '0');
         return $sign . $whole . $format['decimalSeparator'] . $fraction;
@@ -102,19 +103,19 @@ class I18n
     public static function weekDay(int $dayOfWeek): string
     {
         $weekDays = self::$formats['weekDays'];
-        return $weekDays[self::$locale][$dayOfWeek] ?? $weekDays['nl'][$dayOfWeek];
+        return $weekDays[self::$locale][$dayOfWeek] ?? $weekDays[self::$defaultLocale][$dayOfWeek];
     }
 
     public static function monthName(int $monthOfYear): string
     {
         $monthNames = self::$formats['monthNames'];
-        return $monthNames[self::$locale][$monthOfYear - 1] ?? $monthNames['nl'][$monthOfYear - 1];
+        return $monthNames[self::$locale][$monthOfYear - 1] ?? $monthNames[self::$defaultLocale][$monthOfYear - 1];
     }
 
     private static function formatDateTime(string $type, string $str): string
     {
         $formats = self::$formats['datetime'];
-        $format = $formats[self::$locale] ?? $formats['nl'];
+        $format = $formats[self::$locale] ?? $formats[self::$defaultLocale];
         return date($format[$type], strtotime($str));
     }
 
