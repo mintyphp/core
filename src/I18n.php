@@ -20,10 +20,10 @@ class I18n
         if ($currency === null) return '';
 
         $formats = [
-            'nl' => [
-                'thousandSeparator' => '.',
-                'decimalSeparator' => ',',
-            ],
+            'en' => ['thousandSeparator' => ',', 'decimalSeparator' => '.'],
+            'de' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+            'fr' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+            'nl' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
         ];
 
         $number = rtrim(sprintf("%0.{$maxDecimals}F", $currency), '0');
