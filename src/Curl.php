@@ -128,6 +128,7 @@ class Curl
 		}
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $head);
 		curl_setopt($ch, CURLOPT_HEADER, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
 		switch (strtoupper($method)) {
 			case 'HEAD':
