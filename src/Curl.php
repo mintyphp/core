@@ -83,7 +83,7 @@ class Curl
 		} else {
 			list($head, $body) = explode("\r\n\r\n", $result, 2);
 			$statusCodes = [100];
-			if ($options['CURLOPT_FOLLOWLOCATION']) {
+			if ($options['CURLOPT_FOLLOWLOCATION'] ?? false) {
 				$statusCodes[] = 301;
 				$statusCodes[] = 302;
 			}
