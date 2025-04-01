@@ -119,6 +119,27 @@ class I18n
         return date($format[$type], strtotime($str));
     }
 
+    public static function datetimeShort($str): string
+    {
+        if (!$str) {
+            return '';
+        }
+        if (date('Y', strtotime($str)) !=  date('Y')) {
+            return implode('-', array_map('intval', explode('-', self::formatDateTime('date', "$str"))));
+        }
+        if (time() - strtotime($str)  < 24 * 60 * 60) {
+            return implode(':', array_slice(explode(':', self::formatDateTime('time', "$str")), 0, 2));
+        }
+        if (time() - strtotime($str)  < 7 * 24 * 60 * 60) {
+            $day = substr(self::weekDay(date('N', strtotime($str))), 0, 2);
+            $time = implode(':', array_slice(explode(':', self::formatDateTime('time', "$str")), 0, 2));
+            return "$day $time";
+        }
+        $day = substr(self::weekDay(date('N', strtotime($str))), 0, 2);
+        $date = implode('-', array_map('intval', array_slice(explode('-', self::formatDateTime('date', "$str")), 0, 2)));
+        return "$day $date";
+    }
+
     public static function translate(string $id)
     {
         // read from disk or cache
