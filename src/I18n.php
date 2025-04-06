@@ -124,8 +124,9 @@ class I18n
         if (!$str) {
             return '';
         }
+        $sep = self::$formats['datetime']['en']['date'][1];
         if (date('Y', strtotime($str)) !=  date('Y')) {
-            return implode('-', array_map('intval', explode('-', self::formatDateTime('date', "$str"))));
+            return implode($sep, array_map('intval', explode($sep, self::formatDateTime('date', "$str"))));
         }
         if (time() - strtotime($str)  < 24 * 60 * 60) {
             return implode(':', array_slice(explode(':', self::formatDateTime('time', "$str")), 0, 2));
@@ -136,7 +137,7 @@ class I18n
             return "$day $time";
         }
         $day = substr(self::weekDay(date('N', strtotime($str))), 0, 2);
-        $date = implode('-', array_map('intval', array_slice(explode('-', self::formatDateTime('date', "$str")), 0, 2)));
+        $date = implode($sep, array_map('intval', array_slice(explode($sep, self::formatDateTime('date', "$str")), 0, 2)));
         return "$day $date";
     }
 
