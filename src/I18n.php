@@ -79,6 +79,20 @@ class I18n
         return $str ? self::formatDateTime('date', "$str UTC") : '';
     }
 
+    public static function duration(int $seconds, bool $trim = false): string
+    {
+        $hours = floor($seconds / 3600);
+        $seconds -= $hours * 3600;
+        $minutes = floor($seconds / 60);
+        $seconds -= $minutes * 60;
+        $formatted = sprintf("%02d:%02d:%02d", $hours, $minutes, $seconds);
+        if ($trim) {
+            if (substr($formatted, 0, 3) == '00:') {
+                $formatted = substr($formatted, 3);
+            }
+        }
+        return $formatted;
+    }
 
     public static function datetime($str): string
     {
