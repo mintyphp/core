@@ -18,7 +18,7 @@ class I18n
             'nl' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
         ],
         'datetime' => [
-            'en' => ['date' => 'm/d/Y', 'datetime' => 'm/d/Y g:i:s A', 'time' => 'g:i:s A'],
+            'en' => ['date' => 'm/d/Y', 'datetime' => 'm/d/Y H:i:s', 'time' => 'H:i:s'],
             'de' => ['date' => 'd.m.Y', 'datetime' => 'd.m.Y H:i:s', 'time' => 'H:i:s'],
             'fr' => ['date' => 'd-m-Y', 'datetime' => 'd-m-Y H:i:s', 'time' => 'H:i:s'],
             'nl' => ['date' => 'd-m-Y', 'datetime' => 'd-m-Y H:i:s', 'time' => 'H:i:s'],
