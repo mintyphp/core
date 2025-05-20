@@ -108,7 +108,13 @@ class Curl
 			list($head, $body) = array($result, '');
 		} else {
 			list($head, $body) = explode("\r\n\r\n", $result, 2);
-			while (preg_match('|\s+100\s+Continue|', explode("\r\n", $head)[0])) {
+			$statusCodes = [100];
+			if ($options['CURLOPT_FOLLOWLOCATION'] ?? false) {
+				$statusCodes[] = 301;
+				$statusCodes[] = 302;
+			}
+			$regex = '/\s+(' . implode('|', $statusCodes) . ')\s+/';
+			while (preg_match($regex, explode("\r\n", $head)[0])) {
 				list($head, $body) = explode("\r\n\r\n", $body, 2);
 			}
 		}

@@ -4,18 +4,19 @@ namespace MintyPHP;
 
 class Cache
 {
-	public static string $prefix = 'mintyphp';
-	public static string $servers = '127.0.0.1';
-	public static int $compressTreshold = 20000;
-	public static float $compressSavings = 0.2;
+	public static $prefix = 'mintyphp';
+	public static $servers = '127.0.0.1';
 
-	protected static ?\Memcache $memcache = null;
+	/**
+	 * @var \Memcached
+	 */
+	protected static $memcache = null;
 
 	protected static function initialize(): void
 	{
-		if (!self::$memcache) {
-			self::$memcache = new \Memcache();
-			$servers = explode(',', self::$servers);
+		if (!static::$memcache) {
+			static::$memcache = new \Memcached();
+			$servers = explode(',', static::$servers);
 			$servers = array_map(function ($server) {
 				$server = explode(':', trim($server));
 				if (count($server) == 1) $server[1] = '11211';
@@ -24,7 +25,6 @@ class Cache
 			foreach ($servers as $server) {
 				self::$memcache->addServer($server[0], intval($server[1]));
 			}
-			self::$memcache->setCompressThreshold(self::$compressTreshold, self::$compressSavings);
 		}
 	}
 
@@ -56,8 +56,8 @@ class Cache
 	public static function add(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!self::$memcache) self::initialize();
-		$res = self::$memcache->add(self::$prefix . $key, $var, 0, $expire);
+		if (!static::$memcache) static::initialize();
+		$res = static::$memcache->add(static::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'add';
@@ -134,8 +134,8 @@ class Cache
 	public static function replace(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!self::$memcache) self::initialize();
-		$res = self::$memcache->replace(self::$prefix . $key, $var, 0, $expire);
+		if (!static::$memcache) static::initialize();
+		$res = static::$memcache->replace(static::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'replace';
@@ -150,8 +150,8 @@ class Cache
 	public static function set(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!self::$memcache) self::initialize();
-		$res = self::$memcache->set(self::$prefix . $key, $var, 0, $expire);
+		if (!static::$memcache) static::initialize();
+		$res = static::$memcache->set(static::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'set';
