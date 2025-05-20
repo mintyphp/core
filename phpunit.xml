@@ -6,7 +6,7 @@
 >
     <testsuites>
         <testsuite name="default">
-            <directory>src/Tests</directory>
+            <directory>tests</directory>
         </testsuite>
     </testsuites>
 
