@@ -5,7 +5,7 @@ namespace MintyPHP;
 class Orm
 {
     /**
-     * @var array<string, ?string> $object
+     * @param array<string, ?string> $object
      */
     public static function insert(string $tableName, array $object): int
     {
