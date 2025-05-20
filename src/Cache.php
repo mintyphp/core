@@ -2,21 +2,23 @@
 
 namespace MintyPHP;
 
+use Memcached;
+
 class Cache
 {
-	public static $prefix = 'mintyphp';
-	public static $servers = '127.0.0.1';
+	public static string $prefix = 'mintyphp';
+	public static string $servers = '127.0.0.1';
 
 	/**
-	 * @var \Memcached
+	 * @var ?Memcached
 	 */
 	protected static $memcache = null;
 
 	protected static function initialize(): void
 	{
-		if (!static::$memcache) {
-			static::$memcache = new \Memcached();
-			$servers = explode(',', static::$servers);
+		if (!self::$memcache) {
+			self::$memcache = new Memcached();
+			$servers = explode(',', self::$servers);
 			$servers = array_map(function ($server) {
 				$server = explode(':', trim($server));
 				if (count($server) == 1) $server[1] = '11211';
@@ -56,8 +58,8 @@ class Cache
 	public static function add(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->add(static::$prefix . $key, $var, $expire);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->add(self::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'add';
@@ -69,7 +71,7 @@ class Cache
 		return $res;
 	}
 
-	public static function decrement(string $key, int $value = 1): int
+	public static function decrement(string $key, int $value = 1): int|false
 	{
 		if (Debugger::$enabled) $time = microtime(true);
 		if (!self::$memcache) self::initialize();
@@ -115,7 +117,7 @@ class Cache
 		return $res;
 	}
 
-	public static function increment(string $key, int $value = 1): int
+	public static function increment(string $key, int $value = 1): int|false
 	{
 		if (Debugger::$enabled) $time = microtime(true);
 		if (!self::$memcache) self::initialize();
@@ -134,8 +136,8 @@ class Cache
 	public static function replace(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->replace(static::$prefix . $key, $var, $expire);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->replace(self::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'replace';
@@ -150,8 +152,8 @@ class Cache
 	public static function set(string $key, mixed $var, int $expire = 0): bool
 	{
 		if (Debugger::$enabled) $time = microtime(true);
-		if (!static::$memcache) static::initialize();
-		$res = static::$memcache->set(static::$prefix . $key, $var, $expire);
+		if (!self::$memcache) self::initialize();
+		$res = self::$memcache->set(self::$prefix . $key, $var, $expire);
 		if (Debugger::$enabled) {
 			$duration = microtime(true) - $time;
 			$command = 'set';

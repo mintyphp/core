@@ -2,6 +2,8 @@
 
 namespace MintyPHP;
 
+use mysqli;
+
 class DB
 {
 	public static ?string $host = null;
@@ -11,7 +13,7 @@ class DB
 	public static ?int $port = null;
 	public static ?string $socket = null;
 
-	protected static ?\mysqli $mysqli = null;
+	protected static ?mysqli $mysqli = null;
 	protected static bool $closed = false;
 
 	protected static function connect()
