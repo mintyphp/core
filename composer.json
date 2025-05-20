@@ -9,13 +9,8 @@
         }
     ],
     "require": {
-<<<<<<< HEAD
-        "php": ">=8",
+        "php": ">=7.4",
         "ext-memcache": "*",
-=======
-        "php": ">=5.3.0",
-        "ext-memcached": "*",
->>>>>>> 6b6c8232749ed3772a26d7b4b4cbc99c22309371
         "ext-mysqli": "*"
     },
     "require-dev": {
