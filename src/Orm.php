@@ -5,7 +5,7 @@ namespace MintyPHP;
 class Orm
 {
     /**
-     * @param array<string, ?string> $object
+     * @param array<string, string|float|int|null> $object
      */
     public static function insert(string $tableName, array $object): int
     {
@@ -27,7 +27,7 @@ class Orm
     }
 
     /**
-     * @param array<string, ?string> $object
+     * @param array<string, string|float|int|null> $object
      */
     public static function update(string $tableName, array $object, string|int $id, string $idField = 'id'): int
     {
@@ -56,11 +56,17 @@ class Orm
     }
 
     /**
-     * @return array<string, ?string> $object
+     * @return array<string, string|float|int|null>
      */
     public static function select(string $tableName, string|int $id, string $idField = 'id'): array
     {
         $sql = "SELECT * FROM `$tableName` WHERE `$idField` = ?";
         return DB::selectOne($sql, [$id])[$tableName] ?? [];
+    }
+
+    public static function delete(string $tableName, string|int $id, string $idField = 'id'): int
+    {
+        $sql = "DELETE FROM `$tableName` WHERE `$idField` = ?";
+        return DB::delete($sql, [$id]);
     }
 }
