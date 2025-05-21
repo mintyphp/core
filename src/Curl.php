@@ -47,7 +47,7 @@ class Curl
 	 * @param array<string,mixed> $options
 	 * @return array<string,mixed> 
 	 */
-	public static function navigate(string $method, string $url, mixed $data = '', array $headers = [], array $options = []): array
+	public static function navigate(string $method, string $url, $data = '', array $headers = [], array $options = []): array
 	{
 		return self::call($method, $url, $data, $headers, array_merge($options, array('CURLOPT_FOLLOWLOCATION' => true)));
 	}
@@ -58,7 +58,7 @@ class Curl
 	 * @param array<string,mixed> $options
 	 * @return array<string,mixed> 
 	 */
-	public static function call(string $method, string $url, mixed $data = '', array $headers = [], array $options = []): array
+	public static function call(string $method, string $url, $data = '', array $headers = [], array $options = []): array
 	{
 		if (Debugger::$enabled) {
 			$time = microtime(true);
