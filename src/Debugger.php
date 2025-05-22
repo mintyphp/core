@@ -8,7 +8,7 @@ class Debugger
 	public static bool $enabled = false;
 	public static string $sessionKey = 'debugger';
 
-	protected static ?mixed $request = null;
+	protected static mixed $request = null;
 
 	protected static bool $initialized = false;
 
