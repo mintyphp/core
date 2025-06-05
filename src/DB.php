@@ -80,7 +80,9 @@ class DB
 				}
 			}
 			$stmt = self::$mysqli->prepare($query);
-			$stmt->bind_param(...$nargs);
+			if ($nargs[0]) {
+				$stmt->bind_param(...$nargs);
+			}
 		} else {
 			$stmt = self::$mysqli->prepare($query);
 		}

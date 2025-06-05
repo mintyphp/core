@@ -16,7 +16,7 @@ class Curl
 	 * @param array<string,mixed> $options
 	 * @return array<string,mixed> 
 	 */
-	public static function navigateCached(int $expire, string $method, string $url, string|array $data, array $headers = [], array $options = []): array
+	public static function navigateCached(int $expire, string $method, string $url, mixed $data, array $headers = [], array $options = []): array
 	{
 		return self::callCached($expire, $method, $url, $data, $headers, array_merge($options, ['CURLOPT_FOLLOWLOCATION' => true]));
 	}
@@ -27,7 +27,7 @@ class Curl
 	 * @param array<string,mixed> $options
 	 * @return array<string,mixed> 
 	 */
-	public static function callCached(int $expire, string $method, string $url, string|array $data, array $headers = [], array $options = []): array
+	public static function callCached(int $expire, string $method, string $url, mixed $data, array $headers = [], array $options = []): array
 	{
 		$key = $method . '_' . $url . '_' . json_encode($data) . '_' . json_encode($headers) . '_' . json_encode($options);
 		$result = Cache::get($key);
@@ -47,7 +47,7 @@ class Curl
 	 * @param array<string,mixed> $options
 	 * @return array<string,mixed> 
 	 */
-	public static function navigate(string $method, string $url, string|array $data = '', array $headers = [], array $options = []): array
+	public static function navigate(string $method, string $url, $data = '', array $headers = [], array $options = []): array
 	{
 		return self::call($method, $url, $data, $headers, array_merge($options, array('CURLOPT_FOLLOWLOCATION' => true)));
 	}
@@ -58,7 +58,7 @@ class Curl
 	 * @param array<string,mixed> $options
 	 * @return array<string,mixed> 
 	 */
-	public static function call(string $method, string $url, string|array $data = '', array $headers = [], array $options = []): array
+	public static function call(string $method, string $url, $data = '', array $headers = [], array $options = []): array
 	{
 		if (Debugger::$enabled) {
 			$time = microtime(true);
@@ -145,7 +145,7 @@ class Curl
 	 * @param array<string,string> $headers
 	 * @param array<string,mixed> $options
 	 */
-	protected static function setOptions(\CurlHandle $ch, string $method, string &$url, string|array &$data, array $headers, array $options): void
+	protected static function setOptions(\CurlHandle $ch, string $method, string &$url, mixed &$data, array $headers, array $options): void
 	{
 		// Set default options
 		foreach ($options as $option => $value) {
