@@ -11,7 +11,7 @@ class Auth
 	public static string $totpSecretField = 'totp_secret';
 
 	/** @return array<string,array<string|mixed>> */
-	public static function login(string $username, string $password, string $totp = null): array
+	public static function login(string $username, string $password, string $totp = ''): array
 	{
 		$query = sprintf(
 			'select * from `%s` where `%s` = ? limit 1',
@@ -87,3 +87,4 @@ class Auth
 		return boolval(DB::selectValue($query, $username));
 	}
 }
+
