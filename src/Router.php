@@ -386,7 +386,7 @@ class Router
 			if (substr($url, 0, 2) != '//') {
 				$url = '//' . $host . $url;
 			}
-			$s = (($_SERVER['HTTPS'] ?? 'off') != 'off') ? 's' : '';
+			$s = ($_SERVER['HTTPS'] ?? '') ? 's' : '';
 			$url = "http$s:$url";
 		}
 		return rtrim($url, '/') . '/';
