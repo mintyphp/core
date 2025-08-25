@@ -33,6 +33,7 @@ class Firewall
 
 	public static function start()
 	{
+		if (Debugger::$enabled) return;
 		header_remove('X-Powered-By');
 		$key = self::getKey();
 		$start = microtime(true);
