@@ -11,6 +11,13 @@ use MintyPHP\DB;
  */
 class Orm
 {
+    private DB $db;
+
+    public function __construct(DB $db)
+    {
+        $this->db = $db;
+    }
+
     /**
      * Inserts a new record into the specified table.
      * 
@@ -34,7 +41,7 @@ class Orm
         $fields = implode('`,`', $fields);
         $qmarks = implode(',', $qmarks);
         $sql = "INSERT INTO `$tableName` (`$fields`) VALUES ($qmarks)";
-        return DB::insert($sql, $params);
+        return $this->db->insert($sql, $params);
     }
 
     /**
@@ -68,7 +75,7 @@ class Orm
         $qmarks = implode(',', $qmarks);
         $sql = "UPDATE `$tableName` SET `$fields` = ? WHERE `$idField` = ?";
         $params[] = $id;
-        return DB::update($sql, $params) ? true : false;
+        return $this->db->update($sql, $params) ? true : false;
     }
 
     /**
@@ -82,7 +89,7 @@ class Orm
     public function select(string $tableName, string|int $id, string $idField = 'id'): array
     {
         $sql = "SELECT * FROM `$tableName` WHERE `$idField` = ?";
-        return DB::selectOne($sql, $id)[$tableName] ?? [];
+        return $this->db->selectOne($sql, $id)[$tableName] ?? [];
     }
 
     /**
@@ -96,6 +103,6 @@ class Orm
     public function delete(string $tableName, string|int $id, string $idField = 'id'): bool
     {
         $sql = "DELETE FROM `$tableName` WHERE `$idField` = ?";
-        return DB::delete($sql, $id) ? true : false;
+        return $this->db->delete($sql, $id) ? true : false;
     }
 }
