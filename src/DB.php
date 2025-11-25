@@ -30,7 +30,7 @@ class DB
 	 * @return CoreDB
 	 * @throws DBError if connection fails
 	 */
-	private static function getInstance(): CoreDB
+	public static function getInstance(): CoreDB
 	{
 		return self::$instance ??= new CoreDB(
 			self::$host,

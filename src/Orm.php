@@ -19,7 +19,7 @@ class Orm
      * Get the ORM instance
      * @return CoreOrm
      */
-    private static function getInstance(): CoreOrm
+    public static function getInstance(): CoreOrm
     {
         return self::$instance ??= new CoreOrm();
     }
