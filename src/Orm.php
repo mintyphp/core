@@ -2,8 +2,38 @@
 
 namespace MintyPHP;
 
+use MintyPHP\Core\Orm as CoreOrm;
+
+/**
+ * Static class for ORM operations using a singleton pattern.
+ */
 class Orm
 {
+    /**
+     * The ORM instance
+     * @var ?CoreOrm
+     */
+    private static ?CoreOrm $instance = null;
+
+    /**
+     * Get the ORM instance
+     * @return CoreOrm
+     */
+    private static function getInstance(): CoreOrm
+    {
+        return self::$instance ??= new CoreOrm();
+    }
+
+    /**
+     * Set the ORM instance to use
+     * @param CoreOrm $orm
+     * @return void
+     */
+    public static function setInstance(CoreOrm $orm): void
+    {
+        self::$instance = $orm;
+    }
+
     /**
      * Inserts a new record into the specified table.
      * 
@@ -13,21 +43,8 @@ class Orm
      */
     public static function insert(string $tableName, array $object): int
     {
-        if (count($object) == 0) {
-            return 0;
-        }
-        $fields = [];
-        $qmarks = [];
-        $params = [];
-        foreach ($object as $key => $value) {
-            $fields[] = $key;
-            $qmarks[] = '?';
-            $params[] = $value;
-        }
-        $fields = implode('`,`', $fields);
-        $qmarks = implode(',', $qmarks);
-        $sql = "INSERT INTO `$tableName` (`$fields`) VALUES ($qmarks)";
-        return DB::insert($sql, $params);
+        $orm = self::getInstance();
+        return $orm->insert($tableName, $object);
     }
 
     /**
@@ -41,27 +58,8 @@ class Orm
      */
     public static function update(string $tableName, array $object, string|int $id, string $idField = 'id'): bool
     {
-        if (isset($object[$idField])) {
-            unset($object[$idField]);
-        }
-        if (count($object) == 0) {
-            return 0;
-        }
-        $fields = [];
-        $qmarks = [];
-        $params = [];
-        foreach ($object as $key => $value) {
-            if (!in_array(gettype($value), ['integer', 'double', 'string', 'NULL'])) {
-                throw new \InvalidArgumentException("Invalid value type for $key: " . gettype($value));
-            }
-            $fields[] = $key;
-            $params[] = $value;
-        }
-        $fields = implode('` = ?, `', $fields);
-        $qmarks = implode(',', $qmarks);
-        $sql = "UPDATE `$tableName` SET `$fields` = ? WHERE `$idField` = ?";
-        $params[] = $id;
-        return DB::update($sql, $params) ? true : false;
+        $orm = self::getInstance();
+        return $orm->update($tableName, $object, $id, $idField);
     }
 
     /**
@@ -70,12 +68,12 @@ class Orm
      * @param string $tableName The name of the table to select from.
      * @param string|int $id The ID of the record to select.
      * @param string $idField The name of the ID field (default is 'id').
-     * @return array<string, ?string> $object An associative array representing the selected record, where keys are column names and values are the corresponding values. If no record is found, an empty array is returned.
+     * @return array<string, mixed> $object An associative array representing the selected record, where keys are column names and values are the corresponding values. If no record is found, an empty array is returned.
      */
     public static function select(string $tableName, string|int $id, string $idField = 'id'): array
     {
-        $sql = "SELECT * FROM `$tableName` WHERE `$idField` = ?";
-        return DB::selectOne($sql, $id)[$tableName] ?? [];
+        $orm = self::getInstance();
+        return $orm->select($tableName, $id, $idField);
     }
 
     /**
@@ -88,7 +86,7 @@ class Orm
      */
     public static function delete(string $tableName, string|int $id, string $idField = 'id'): bool
     {
-        $sql = "DELETE FROM `$tableName` WHERE `$idField` = ?";
-        return DB::delete($sql, $id) ? true : false;
+        $orm = self::getInstance();
+        return $orm->delete($tableName, $id, $idField);
     }
 }
