@@ -2,7 +2,7 @@
 
 namespace MintyPHP\Core;
 
-use MintyPHP\DB;
+use MintyPHP\Core\DB;
 
 /**
  * ORM (Object-Relational Mapping) layer for MintyPHP
@@ -22,7 +22,7 @@ class Orm
      * Inserts a new record into the specified table.
      * 
      * @param string $tableName The name of the table to insert into.
-     * @param array<string, ?string> $object An associative array representing the record to insert, where keys are column names and values are the corresponding values.
+     * @param array<string, int|string|float|null> $object An associative array representing the record to insert, where keys are column names and values are the corresponding values.
      * @return int The ID of the newly inserted record. If no fields are provided, returns 0.
      */
     public function insert(string $tableName, array $object): int
@@ -48,7 +48,7 @@ class Orm
      * Updates an existing record in the specified table by its ID.
      * 
      * @param string $tableName The name of the table to update.
-     * @param array<string, ?string> $object An associative array representing the record to insert, where keys are column names and values are the corresponding values.
+     * @param array<string, int|string|float|null> $object An associative array representing the record to insert, where keys are column names and values are the corresponding values.
      * @param string|int $id The ID of the record to update.
      * @param string $idField The name of the ID field (default is 'id').
      * @return bool Returns true if the update was successful, false otherwise.
