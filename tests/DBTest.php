@@ -102,6 +102,8 @@ class DBTest extends \PHPUnit\Framework\TestCase
 	public function testSelectOne(): void
 	{
 		$result = DB::selectOne("SELECT * FROM `posts` limit 1;");
+		$this->assertNotEquals(false, $result);
+		assert($result !== false);
 		$this->assertEquals('posts', array_keys($result)[0]);
 		$this->assertEquals('id', array_keys($result['posts'])[0]);
 		$result = DB::selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");

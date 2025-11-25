@@ -2,10 +2,16 @@
 
 namespace MintyPHP;
 
-use mysqli;
+use MintyPHP\Core\DB as CoreDB;
 
+/**
+ * Static class for database operations using a singleton pattern.
+ */
 class DB
 {
+	/**
+	 * The database connection parameters
+	 */
 	public static ?string $host = null;
 	public static ?string $username = null;
 	public static ?string $password = null;
@@ -13,213 +19,162 @@ class DB
 	public static ?int $port = null;
 	public static ?string $socket = null;
 
-	protected static ?mysqli $mysqli = null;
-	protected static bool $closed = false;
+	/**
+	 * The database instance
+	 * @var ?CoreDB
+	 */
+	private static ?CoreDB $instance = null;
 
-	protected static function connect()
+	/**
+	 * Get the database instance
+	 * @return CoreDB
+	 * @throws DBError if connection fails
+	 */
+	private static function getInstance(): CoreDB
 	{
-		if (self::$closed) {
-			self::error('Database can only be used in MintyPHP action');
-		}
-		if (!self::$mysqli) {
-			mysqli_report(MYSQLI_REPORT_STRICT);
-			self::$mysqli = mysqli_connect(self::$host, self::$username, self::$password, self::$database, self::$port, self::$socket);
-			if (mysqli_connect_errno()) self::error(mysqli_connect_error());
-			if (!self::$mysqli->set_charset('utf8mb4')) self::error(mysqli_error(self::$mysqli));
-		}
+		return self::$instance ??= new CoreDB(
+			self::$host,
+			self::$username,
+			self::$password,
+			self::$database,
+			self::$port,
+			self::$socket
+		);
 	}
 
-	protected static function error($message): void
+	/**
+	 * Set the database instance to use
+	 * @param CoreDB $db
+	 * @return void
+	 */
+	public static function setInstance(CoreDB $db): void
 	{
-		throw new DBError($message);
+		self::$instance = $db;
 	}
 
-	public static function query($query): mixed
+	/**
+	 * Execute a database query
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return mixed
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function query(string $query, mixed ...$params): mixed
 	{
-		if (Debugger::$enabled) {
-			$time = microtime(true);
-		}
-		$result = self::queryTyped(...func_get_args());
-		if (Debugger::$enabled) {
-			$duration = microtime(true) - $time;
-			$arguments = func_get_args();
-			if (strtoupper(substr(trim($query), 0, 6)) == 'SELECT') {
-				$arguments[0] = 'explain ' . $query;
-				$explain = self::queryTyped(...$arguments);
-			} else {
-				$explain = false;
-			}
-			$arguments = array_slice(func_get_args(), 1);
-			$equery = self::$mysqli->real_escape_string($query);
-			Debugger::add('queries', compact('duration', 'query', 'equery', 'arguments', 'result', 'explain'));
-		}
-		return $result;
+		$db = self::getInstance();
+		return $db->query($query, ...$params);
 	}
 
-	private static function queryTyped($query): mixed
+	/**
+	 * Insert a new record and return the inserted ID
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return int
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function insert(string $query, mixed ...$params): int
 	{
-		self::connect();
-		$nargs = [''];
-		if (func_num_args() > 1) {
-			$args = func_get_args();
-			for ($i = 1; $i < count($args); $i++) {
-				if (is_array($args[$i])) {
-					if (count($args[$i])) {
-						$qmarks = '(' . implode(',', str_split(str_repeat('?', count($args[$i])))) . ')';
-					} else {
-						$qmarks = '(select 1 from dual where false)';
-					}
-					$query = preg_replace('/\(\?\?\?\)/', $qmarks, $query, 1);
-					foreach (array_keys($args[$i]) as $j) {
-						$nargs[0] .= 's';
-						$nargs[] = &$args[$i][$j];
-					}
-				} else {
-					$nargs[0] .= 's';
-					$nargs[] = &$args[$i];
-				}
-			}
-			$stmt = self::$mysqli->prepare($query);
-			if ($nargs[0]) {
-				$stmt->bind_param(...$nargs);
-			}
-		} else {
-			$stmt = self::$mysqli->prepare($query);
-		}
-		if (!$stmt) {
-			self::error(self::$mysqli->error);
-		}
-		$stmt->execute();
-		if ($stmt->errno) {
-			$error = self::$mysqli->error;
-			$stmt->close();
-			self::error($error);
-		}
-		if ($stmt->affected_rows > -1) {
-			$result = $stmt->affected_rows;
-			$stmt->close();
-			return $result;
-		}
-		$stmt->store_result();
-		$params = [];
-		$meta = $stmt->result_metadata();
-		$row = [];
-		while ($field = $meta->fetch_field()) {
-			if (!$field->table && strpos($field->name, '.')) {
-				$parts = explode('.', $field->name, 2);
-				$params[] = &$row[$parts[0]][$parts[1]];
-			} else {
-				if (!isset($row[$field->table])) $row[$field->table] = [];
-				$params[] = &$row[$field->table][$field->name];
-			}
-		}
-		$stmt->bind_result(...$params);
-
-		$result = [];
-		while ($stmt->fetch()) {
-			$result[] = unserialize(serialize($row));
-		}
-
-		$stmt->close();
-
-		return $result;
+		$db = self::getInstance();
+		return $db->insert($query, ...$params);
 	}
 
-	public static function insert($query): int
+	/**
+	 * Update existing records and return the number of affected rows
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return int
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function update(string $query, mixed ...$params): int
 	{
-		$result = self::query(...func_get_args());
-		if (!is_int($result)) return 0;
-		if (!$result) return 0;
-		return self::$mysqli->insert_id;
+		$db = self::getInstance();
+		return $db->update($query, ...$params);
 	}
 
-	public static function update($query): int
+	/**
+	 * Delete records and return the number of affected rows
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return int
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function delete(string $query, mixed ...$params): int
 	{
-		$result = self::query(...func_get_args());
-		if (!is_int($result)) return 0;
-		return $result;
+		$db = self::getInstance();
+		return $db->delete($query, ...$params);
 	}
 
-	public static function delete($query): int
+	/**
+	 * Select records from the database
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return array<int, array<string, array<string, mixed>>>
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function select(string $query, mixed ...$params): array
 	{
-		$result = self::query(...func_get_args());
-		if (!is_int($result)) return 0;
-		return $result;
+		$db = self::getInstance();
+		return $db->select($query, ...$params);
 	}
 
-	public static function select($query): array
+	/**
+	 * Select a single record from the database
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return array<string, array<string, mixed>>|false
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function selectOne(string $query, mixed ...$params): array|false
 	{
-		$result = self::query(...func_get_args());
-		if (!is_array($result)) return [];
-		return $result;
+		$db = self::getInstance();
+		return $db->selectOne($query, ...$params);
 	}
 
-	public static function selectValue($query): mixed
+	/**
+	 * Select a single value from the database
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return mixed
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function selectValue(string $query, mixed ...$params): mixed
 	{
-		$result = self::query(...func_get_args());
-		if (!is_array($result)) return false;
-		if (!isset($result[0])) return false;
-		$record = $result[0];
-		if (!is_array($record)) return false;
-		$firstTable = array_shift($record);
-		if (!is_array($firstTable)) return false;
-		return array_shift($firstTable);
+		$db = self::getInstance();
+		return $db->selectValue($query, ...$params);
 	}
 
-
-	public static function selectValues($query): array
+	/**
+	 * Select multiple values from the database
+	 * @param string $query
+	 * @param mixed ...$params
+	 * @return array<int, mixed>
+	 * @throws DBError if query execution fails or database is closed
+	 */
+	public static function selectValues(string $query, mixed ...$params): array
 	{
-		$result = self::query(...func_get_args());
-		if (!is_array($result)) return [];
-		$list = [];
-		foreach ($result as $record) {
-			if (!is_array($record)) return [];
-			$firstTable = array_shift($record);
-			if (!is_array($firstTable)) return [];
-			$list[] = array_shift($firstTable);
-		}
-		return $list;
+		$db = self::getInstance();
+		return $db->selectValues($query, ...$params);
 	}
 
-	public static function selectPairs($query): array
+	/**
+	 * Close the database connection
+	 * @return void
+	 * @throws DBError if connection fails
+	 */
+	public static function close(): void
 	{
-		$result = self::query(...func_get_args());
-		if (!is_array($result)) return [];
-		$list = [];
-		foreach ($result as $record) {
-			if (!is_array($record)) return [];
-			$columns = [];
-			foreach ($record as $table) {
-				if (!is_array($table)) return [];
-				$columns = array_merge($columns, $table);
-			}
-			$list[array_shift($columns)] = array_shift($columns);
-		}
-		return $list;
+		$db = self::getInstance();
+		$db->close();
 	}
 
-	public static function selectOne($query)
+	/**
+	 * Handle any pending database operations
+	 * @return void
+	 * @throws DBError if connection fails
+	 */
+	public static function handle(): void
 	{
-		$result = self::query(...func_get_args());
-		if (!is_array($result)) return false;
-		if (isset($result[0])) return $result[0];
-		return $result;
-	}
-
-	public static function close()
-	{
-		if (self::$mysqli) {
-			self::$mysqli->close();
-			self::$mysqli = null;
-		}
-		self::$closed = true;
-	}
-
-	// Undocumented
-	public static function handle()
-	{
-		self::$closed = false;
-		self::connect();
-		return self::$mysqli;
+		$db = self::getInstance();
+		$db->handle();
 	}
 }
