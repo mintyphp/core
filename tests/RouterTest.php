@@ -200,6 +200,11 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 
 	public static function tearDownAfterClass(): void
 	{
-		system('rm -Rf ' . self::$path);
+		// Cleanup temporary files and directories
+		// Ensure removal is in the temp directory
+		if (file_exists(self::$path) && strpos(self::$path, sys_get_temp_dir()) === 0) {
+			// Remove the temporary directory and its contents
+			system('rm -Rf ' . escapeshellarg(self::$path));
+		}
 	}
 }

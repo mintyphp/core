@@ -263,6 +263,10 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
     }
     public static function tearDownAfterClass(): void
     {
-        system('rm -Rf ' . escapeshellarg(self::$path));
+        // Cleanup temporary files and directories
+        // Ensure removal is in the temp directory
+        if (file_exists(self::$path) && strpos(self::$path, sys_get_temp_dir()) === 0) {
+            system('rm -Rf ' . escapeshellarg(self::$path));
+        }
     }
 }
