@@ -15,6 +15,10 @@ class Router
 	public static string $__templateRoot = 'templates/';
 	public static bool $__executeRedirect = true;
 	public static bool $__initialized = false;
+	/** @var array<string, string> */
+	public array $__serverGlobal;
+	/** @var array<string, string> */
+	public static array $__routes = [];
 
 	// Configuration properties
 	private string $baseUrl;
@@ -23,6 +27,8 @@ class Router
 	private bool $executeRedirect;
 	/** @var array<string, string> */
 	private array $serverGlobal;
+	/** @var array<string, string> */
+	private array $routes = [];
 
 	// Request state properties
 	private string $method;
@@ -38,10 +44,6 @@ class Router
 	/** @var array<string, string|null> */
 	private array $parameters;
 	private string $redirect;
-
-	// Route mappings
-	/** @var array<string, string> */
-	private array $routes = [];
 
 	/**
 	 * Constructor

@@ -182,7 +182,7 @@ echo "Done!\n";
  * Generate the wrapper class content
  * @param array<int, array{visibility: string, type: string, name: string, default: string}> $staticVars
  * @param array<int, array{visibility: string, name: string, paramSignature: string, returnType: string}> $staticFunctions
- * @param array<int, array{type: string, name: string}> $constructorParams
+ * @param array<int, array{type: string, name: string}> $coreConstructorParams
  * @param array<int, array{name: string, params: array<int, string>, paramNames: array<int, string>, paramSignature: string, returnType: string}> $methods
  */
 function generateWrapperClass(
@@ -191,7 +191,7 @@ function generateWrapperClass(
     string $coreNamespace,
     array $staticVars,
     array $staticFunctions,
-    array $constructorParams,
+    array $coreConstructorParams,
     array $methods
 ): string {
     $coreClassName = "Core$className";
@@ -261,7 +261,7 @@ function generateWrapperClass(
 
     // Match constructor parameters with static variables
     $constructorArgs = [];
-    foreach ($constructorParams as $param) {
+    foreach ($coreConstructorParams as $param) {
         // Check if we have a matching static variable
         $found = false;
         foreach ($staticVars as $var) {
