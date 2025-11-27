@@ -118,33 +118,50 @@ foreach ($classes as $className) {
         ];
     }
 
-    // Find public methods in Core class (excluding constructor)
-    preg_match_all('/public\s+function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*:\s*([^{]+)/', $coreContent, $methodMatches, PREG_SET_ORDER);
+    // Find public methods in Core class (excluding constructor) with their docblocks
+    // Match docblock followed by public function, where docblock doesn't contain another docblock
+    preg_match_all('/(\/\*\*(?:(?!\*\/).)*?\*\/)\s*public\s+function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*:\s*([^{]+)|public\s+function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*:\s*([^{]+)/s', $coreContent, $methodMatches, PREG_SET_ORDER);
 
     $methods = [];
     foreach ($methodMatches as $match) {
-        $methodName = $match[1];
+        // Handle two cases: with docblock and without docblock
+        if (isset($match[2]) && $match[2]) {
+            // Has docblock
+            $docblock = trim($match[1]);
+            $methodName = $match[2];
+            $paramSignature = trim($match[3]);
+            $returnType = trim($match[4]);
+        } else {
+            // No docblock
+            $docblock = '';
+            $methodName = $match[5];
+            $paramSignature = trim($match[6]);
+            $returnType = trim($match[7]);
+        }
+
         if ($methodName === '__construct') {
             continue;
         }
 
-        $paramSignature = trim($match[2]);
-        $returnType = trim($match[3]);
+        // Warn if method has no docblock
+        if (empty($docblock)) {
+            echo "  Warning: Method $methodName() has no docblock\n";
+        }
 
         // Parse parameters
         $params = [];
         $paramNames = [];
         if ($paramSignature) {
-            // Handle variadic parameters and complex signatures
-            if (preg_match('/\.\.\.\$([a-zA-Z_]+)/', $paramSignature, $variadicMatch)) {
-                $params[] = $paramSignature;
-                $paramNames[] = '...$' . $variadicMatch[1];
-            } else {
-                $paramParts = explode(',', $paramSignature);
-                foreach ($paramParts as $paramPart) {
-                    $paramPart = trim($paramPart);
-                    if (preg_match('/\$([a-zA-Z_]+)/', $paramPart, $paramNameMatch)) {
-                        $params[] = $paramPart;
+            // Split by comma and process each parameter
+            $paramParts = explode(',', $paramSignature);
+            foreach ($paramParts as $paramPart) {
+                $paramPart = trim($paramPart);
+                if (preg_match('/\$([a-zA-Z_]+)/', $paramPart, $paramNameMatch)) {
+                    $params[] = $paramPart;
+                    // Check if this parameter is variadic
+                    if (preg_match('/\.\.\.\$' . $paramNameMatch[1] . '/', $paramPart)) {
+                        $paramNames[] = '...$' . $paramNameMatch[1];
+                    } else {
                         $paramNames[] = '$' . $paramNameMatch[1];
                     }
                 }
@@ -156,8 +173,23 @@ foreach ($classes as $className) {
             'params' => $params,
             'paramNames' => $paramNames,
             'paramSignature' => $paramSignature,
-            'returnType' => $returnType
+            'returnType' => $returnType,
+            'docblock' => $docblock
         ];
+    }
+
+    // Check for constructor parameters without matching static variables
+    foreach ($coreConstructorParams as $param) {
+        $found = false;
+        foreach ($staticVars as $var) {
+            if ($var['name'] === $param['name']) {
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            echo "  Warning: Constructor parameter \${$param['name']} has no matching static variable \$__{$param['name']}\n";
+        }
     }
 
     // Generate wrapper class
@@ -183,7 +215,7 @@ echo "Done!\n";
  * @param array<int, array{visibility: string, type: string, name: string, default: string}> $staticVars
  * @param array<int, array{visibility: string, name: string, paramSignature: string, returnType: string}> $staticFunctions
  * @param array<int, array{type: string, name: string}> $coreConstructorParams
- * @param array<int, array{name: string, params: array<int, string>, paramNames: array<int, string>, paramSignature: string, returnType: string}> $methods
+ * @param array<int, array{name: string, params: array<int, string>, paramNames: array<int, string>, paramSignature: string, returnType: string, docblock: string}> $methods
  */
 function generateWrapperClass(
     string $className,
@@ -272,8 +304,19 @@ function generateWrapperClass(
             }
         }
         if (!$found) {
-            // No matching static variable, use null or appropriate default
-            $constructorArgs[] = "\t\t\tnull";
+            // No matching static variable
+            // Check if the parameter type is a Core class
+            $paramType = $param['type'];
+            // Remove optional marker and extract base type
+            $baseType = str_replace('?', '', $paramType);
+            // Check if it's a known Core class (simple name without namespace)
+            if (preg_match('/^[A-Z][a-zA-Z]*$/', $baseType)) {
+                // It's likely a Core class, call getInstance()
+                $constructorArgs[] = "\t\t\t$baseType::getInstance()";
+            } else {
+                // Not a Core class, use null
+                $constructorArgs[] = "\t\t\tnull";
+            }
         }
     }
 
@@ -295,23 +338,15 @@ function generateWrapperClass(
     // Generate wrapper methods
     foreach ($methods as $method) {
         $code .= "\n";
-        $code .= "\t/**\n";
-        $code .= "\t * {$method['name']}\n";
 
-        // Add param docs
-        foreach ($method['params'] as $param) {
-            if (preg_match('/^(.*?)(\.\.\.)?\$([a-zA-Z_]+)/', $param, $match)) {
-                $paramType = trim($match[1]);
-                $isVariadic = !empty($match[2]);
-                $paramName = $match[3];
-                if ($paramType) {
-                    $code .= "\t * @param $paramType " . ($isVariadic ? '...' : '') . "\$$paramName\n";
-                }
+        // Use the original docblock from Core class if available
+        if (!empty($method['docblock'])) {
+            // Indent the docblock properly - remove existing leading whitespace and add single tab
+            $docblockLines = explode("\n", $method['docblock']);
+            foreach ($docblockLines as $line) {
+                $code .= "\t" . ltrim($line) . "\n";
             }
         }
-
-        $code .= "\t * @return {$method['returnType']}\n";
-        $code .= "\t */\n";
 
         // Method signature
         $paramSig = $method['paramSignature'] ? $method['paramSignature'] : '';
@@ -319,9 +354,14 @@ function generateWrapperClass(
         $code .= "\t{\n";
         $code .= "\t\t\$instance = self::getInstance();\n";
 
-        // Method call
+        // Method call - handle void return type differently
         $paramCall = implode(', ', $method['paramNames']);
-        $code .= "\t\treturn \$instance->{$method['name']}($paramCall);\n";
+        $returnType = trim($method['returnType']);
+        if ($returnType === 'void') {
+            $code .= "\t\t\$instance->{$method['name']}($paramCall);\n";
+        } else {
+            $code .= "\t\treturn \$instance->{$method['name']}($paramCall);\n";
+        }
         $code .= "\t}\n";
     }
 

@@ -36,6 +36,6 @@ class TemplateTest extends \PHPUnit\Framework\TestCase
 		$this->assertEquals("hello one two three", Template::render('hello{{for:i:counts}} {{if:i|eq(1)}}one{{elseif:i|eq(2)}}two{{else}}three{{endif}}{{endfor}}', ['counts' => [1, 2, 3]], ['eq' => function ($a, $b) {
 			return $a == $b;
 		}]));
-		$this->assertEquals("hello <b>Maurits</b>", Template::render('hello {{content}}', ['content' => Template::render('<b>{{name}}</b>', ['name' => 'Maurits'])]));
+		$this->assertEquals("hello <b>Maurits</b>", Template::render('hello {{content|raw}}', ['content' => Template::render('<b>{{name}}</b>', ['name' => 'Maurits'])]));
 	}
 }

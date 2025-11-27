@@ -16,7 +16,7 @@ class Router
 	public static bool $__executeRedirect = true;
 	public static bool $__initialized = false;
 	/** @var array<string, string> */
-	public array $__serverGlobal;
+	public static array $__serverGlobal = [];
 	/** @var array<string, string> */
 	public static array $__routes = [];
 
@@ -122,6 +122,11 @@ class Router
 		}
 	}
 
+	/**
+	 * Output JSON response and terminate execution
+	 * @param mixed $object The object to encode as JSON
+	 * @return void
+	 */
 	public function json(mixed $object): void
 	{
 		if (Debugger::$enabled) {
@@ -131,6 +136,12 @@ class Router
 		die(json_encode($object));
 	}
 
+	/**
+	 * Initiate file download with provided data and terminate execution
+	 * @param string $filename The name of the file to download
+	 * @param string $data The file content data
+	 * @return void
+	 */
 	public function download(string $filename, string $data): void
 	{
 		if (Debugger::$enabled) {
@@ -143,6 +154,12 @@ class Router
 		die($data);
 	}
 
+	/**
+	 * Initiate file download from filesystem and terminate execution
+	 * @param string $filename The name for the downloaded file
+	 * @param string $filepath The path to the file on the filesystem
+	 * @return void
+	 */
 	public function file(string $filename, string $filepath): void
 	{
 		if (Debugger::$enabled) {
@@ -255,13 +272,15 @@ class Router
 	}
 
 	/**
-	 * @param string $templateRoot
-	 * @param string $root
-	 * @param string $dir
-	 * @param string $path
-	 * @param array<int, string> $parameters
-	 * @param array<int|string, mixed> $getParameters
-	 * @return string|false
+	 * Process a matched file and extract routing information
+	 * Sets the view, action, template, and parameters for the current route
+	 * @param string $templateRoot The root directory for templates
+	 * @param string $root The root directory for pages
+	 * @param string $dir The directory path within the root
+	 * @param string $path The matched file path
+	 * @param array<int, string> $parameters URL path parameters
+	 * @param array<int|string, mixed> $getParameters Query string parameters
+	 * @return string|false Redirect URL if needed, false otherwise
 	 */
 	private function routeFile(string $templateRoot, string $root, string $dir, string $path, array $parameters, array $getParameters): string|false
 	{
@@ -318,11 +337,11 @@ class Router
 	}
 
 	/**
-	 * Find matching files for a pattern
-	 * @param string $root
-	 * @param string $dir
-	 * @param string $pattern
-	 * @return array<string>
+	 * Find matching files for a pattern, checking .phtml first then .php
+	 * @param string $root The root directory to search in
+	 * @param string $dir The subdirectory within root
+	 * @param string $pattern The file pattern to match (without extension)
+	 * @return array<string> Array of matching file paths
 	 */
 	private function findFiles(string $root, string $dir, string $pattern): array
 	{
@@ -334,13 +353,15 @@ class Router
 	}
 
 	/**
-	 * @param bool $csrfOk
-	 * @param string $templateRoot
-	 * @param string $root
-	 * @param string $dir
-	 * @param array<int, string> $parameters
-	 * @param array<int|string, mixed> $getParameters
-	 * @return array{0: int, 1: string|false}
+	 * Route a directory by finding matching files and handling errors
+	 * Returns HTTP status code and optional redirect URL
+	 * @param bool $csrfOk Whether CSRF validation passed
+	 * @param string $templateRoot The root directory for templates
+	 * @param string $root The root directory for pages
+	 * @param string $dir The directory path to route
+	 * @param array<int, string> $parameters URL path parameters
+	 * @param array<int|string, mixed> $getParameters Query string parameters
+	 * @return array{0: int, 1: string|false} Tuple of [HTTP status code, redirect URL or false]
 	 */
 	private function routeDir(bool $csrfOk, string $templateRoot, string $root, string $dir, array $parameters, array $getParameters): array
 	{
@@ -427,8 +448,9 @@ class Router
 	}
 
 	/**
-	 * Parse and normalize the request URI
-	 * @return string
+	 * Parse and normalize the request URI by removing script name and base URL
+	 * Also stores the original normalized request for later reference
+	 * @return string The normalized request path
 	 */
 	private function parseRequest(): string
 	{
@@ -439,8 +461,9 @@ class Router
 	}
 
 	/**
-	 * Check CSRF protection for non-safe methods
-	 * @return bool
+	 * Check CSRF protection for non-safe HTTP methods
+	 * Safe methods (GET, OPTIONS) always pass. Other methods require AJAX header or valid CSRF token
+	 * @return bool True if CSRF check passes, false otherwise
 	 */
 	private function checkCsrfProtection(): bool
 	{
@@ -466,11 +489,20 @@ class Router
 	// Public Getters
 	// ========================================
 
+	/**
+	 * Get the matched URL path (view or action name with directory)
+	 * @return string The URL path
+	 */
 	public function getUrl(): string
 	{
 		return $this->url;
 	}
 
+	/**
+	 * Get the canonical URL with parameters appended
+	 * Removes trailing 'index' from the URL if present
+	 * @return string The canonical URL path
+	 */
 	public function getCanonical(): string
 	{
 		$canonical = $this->url;
@@ -480,26 +512,46 @@ class Router
 		return $canonical . implode('/', $this->parameters);
 	}
 
+	/**
+	 * Get the current request URI
+	 * @return string The request URI
+	 */
 	public function getRequest(): string
 	{
 		return $this->request;
 	}
 
+	/**
+	 * Get the matched action file path
+	 * @return string The full path to the action PHP file, or empty string if none
+	 */
 	public function getAction(): string
 	{
 		return $this->action;
 	}
 
+	/**
+	 * Get the redirect URL if one was set during routing
+	 * @return string|null The redirect URL, or null if no redirect
+	 */
 	public function getRedirect(): ?string
 	{
 		return (isset($this->redirect) && $this->redirect !== '') ? $this->redirect : null;
 	}
 
+	/**
+	 * Get the matched view file path
+	 * @return string The full path to the view PHTML file, or empty string if none
+	 */
 	public function getView(): string
 	{
 		return $this->view;
 	}
 
+	/**
+	 * Get the template view file path if it exists
+	 * @return string The full path to the template PHTML file, or empty string if none
+	 */
 	public function getTemplateView(): string
 	{
 		if (!$this->template) return '';
@@ -507,6 +559,10 @@ class Router
 		return file_exists($filename) ? $filename : '';
 	}
 
+	/**
+	 * Get the template action file path if it exists
+	 * @return string The full path to the template PHP file, or empty string if none
+	 */
 	public function getTemplateAction(): string
 	{
 		if (!$this->template) return '';
@@ -523,6 +579,11 @@ class Router
 		return $this->parameters;
 	}
 
+	/**
+	 * Get the base URL with protocol and host
+	 * Constructs full URL from base path, adding protocol and host if needed
+	 * @return string The complete base URL with trailing slash
+	 */
 	public function getBaseUrl(): string
 	{
 		$url = $this->baseUrl;

@@ -2,17 +2,28 @@
 
 namespace MintyPHP\Core;
 
+/**
+ * Internal class to mark values that should not be escaped
+ */
+class RawValue
+{
+    public function __construct(public string $value) {}
+}
+
 class Template
 {
     /**
      * Escapes a string based on the specified escape type.
      *
      * @param string $escape The escape type ('html' for HTML escaping, or 'none' for no escaping).
-     * @param string $string The string to escape.
+     * @param string|RawValue $string The string to escape.
      * @return string The escaped string.
      */
-    public function escape(string $escape, string $string): string
+    public function escape(string $escape, string|RawValue $string): string
     {
+        if ($string instanceof RawValue) {
+            return $string->value;
+        }
         switch ($escape) {
             case 'html':
                 return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
@@ -33,6 +44,10 @@ class Template
     {
         $tokens = $this->tokenize($template);
         $tree = $this->createSyntaxTree($tokens);
+        // Add built-in 'raw' filter
+        $functions['raw'] = function ($value) {
+            return new RawValue((string)$value);
+        };
         return $this->renderChildren($tree, $data, $functions, $escape);
     }
 
@@ -415,6 +430,9 @@ class Template
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
             return $this->escape($escape, '{{' . $node->expression . '!!' . $e->getMessage() . '}}');
+        }
+        if ($value instanceof RawValue) {
+            return $this->escape($escape, $value);
         }
         if (!is_string($value) && !is_numeric($value)) {
             $value = '';
