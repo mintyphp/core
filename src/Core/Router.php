@@ -8,6 +8,14 @@ use MintyPHP\RouterError;
 
 class Router
 {
+
+	// Default static configuration
+	public static string $__baseUrl = '/';
+	public static string $__pageRoot = 'pages/';
+	public static string $__templateRoot = 'templates/';
+	public static bool $__executeRedirect = true;
+	public static bool $__initialized = false;
+
 	// Configuration properties
 	private string $baseUrl;
 	private string $pageRoot;
