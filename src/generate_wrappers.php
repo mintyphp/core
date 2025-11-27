@@ -3,13 +3,22 @@
 /**
  * Wrapper Generator for MintyPHP Core Classes
  * 
- * This script generates static wrapper classes for Core classes by:
- * 1. Finding all static variables (public/private/protected) starting with __ in Core classes
- * 2. Creating matching static variables (without __) in wrapper
- * 3. Copying any static functions starting with __ to the wrapper
- * 4. Creating getInstance() that passes static variables to Core constructor
- * 5. Finding public methods in Core classes
- * 6. Creating static wrapper methods that call the instance methods
+ * This script automatically generates static wrapper classes that provide a facade pattern
+ * for instance-based Core classes. For each Core class (e.g., Core/Template.php), it creates
+ * a corresponding wrapper class (e.g., Template.php) that uses a singleton pattern to provide
+ * a convenient static API.
+ * 
+ * The generator performs the following operations:
+ * 1. Scans Core classes for static variables starting with __ (configuration parameters)
+ * 2. Creates public static variables in the wrapper (without __ prefix) for configuration
+ * 3. Copies static utility functions starting with __ from Core to wrapper
+ * 4. Generates getInstance() method that instantiates Core class with static variables
+ * 5. Generates setInstance() method for dependency injection and testing
+ * 6. Creates static wrapper methods for all public Core instance methods
+ * 7. Preserves all PHPDoc comments from Core methods in the generated wrappers
+ * 
+ * This allows users to call Template::render() instead of Template::getInstance()->render()
+ * while maintaining proper dependency injection and testability through setInstance().
  */
 
 // Configuration
