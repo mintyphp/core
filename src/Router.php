@@ -2,393 +2,219 @@
 
 namespace MintyPHP;
 
+use MintyPHP\Core\Router as CoreRouter;
+
 class Router
 {
-	protected static $method = null;
-	protected static $original = null;
-	protected static $request = null;
-	protected static $script = null;
+	public static string $baseUrl = '/';
+	public static string $pageRoot = 'pages/';
+	public static string $templateRoot = 'templates/';
+	public static bool $executeRedirect = true;
+	public static bool $initialized = false;
 
-	public static $baseUrl = '/';
-	public static $pageRoot = 'pages/';
-	public static $templateRoot = 'templates/';
-	public static $executeRedirect = true;
+	/**
+	 * The router instance
+	 * @var ?CoreRouter
+	 */
+	private static ?CoreRouter $instance = null;
 
-	protected static $url = null;
-	protected static $view = null;
-	protected static $action = null;
-	protected static $template = null;
-	protected static $parameters = null;
-	protected static $redirect = null;
+	/**
+	 * Routes mapping
+	 * @var array<string, string>
+	 */
+	private static array $routes = [];
 
-	protected static $routes = [];
-
-	public static $initialized = false;
-
-	protected static function initialize()
+	/**
+	 * Get the router instance
+	 * @return CoreRouter
+	 */
+	public static function getInstance(): CoreRouter
 	{
-		if (self::$initialized) return;
-		self::$initialized = true;
-		self::$method = $_SERVER['REQUEST_METHOD'];
-		self::$request = $_SERVER['REQUEST_URI'];
-		self::$script = $_SERVER['SCRIPT_NAME'];
-		self::$original = null;
-		self::$redirect = null;
-		self::applyRoutes();
-		self::route();
+		if (!self::$initialized || self::$instance === null) {
+			self::$instance = new CoreRouter(
+				self::$baseUrl,
+				self::$pageRoot,
+				self::$templateRoot,
+				self::$executeRedirect,
+				$_SERVER,
+				self::$routes,
+			);
+			self::$initialized = true;
+		}
+		return self::$instance;
 	}
 
-	protected static function error($message)
+	/**
+	 * Set the router instance to use
+	 * @param CoreRouter $router
+	 * @return void
+	 */
+	public static function setInstance(CoreRouter $router): void
 	{
-		if (Debugger::$enabled) {
-			Debugger::set('status', 500);
-		}
-		throw new RouterError($message);
+		self::$instance = $router;
 	}
 
-	protected static function removePrefix($string, $prefix)
+	/**
+	 * Add a route mapping
+	 * @param string $sourcePath
+	 * @param string $destinationPath
+	 * @return void
+	 */
+	public static function addRoute(string $sourcePath, string $destinationPath): void
 	{
-		if (substr($string, 0, strlen($prefix)) == $prefix) {
-			$string = substr($string, strlen($prefix));
-		}
-
-		return $string;
-	}
-
-	public static function redirect($url, $permanent = false)
-	{
-		if (!self::$initialized) self::initialize();
-		$url = parse_url($url, PHP_URL_HOST) ? $url : self::getBaseUrl() . $url;
-		$status = $permanent ? 301 : 302;
-		if (Debugger::$enabled) {
-			Debugger::set('redirect', $url);
-			Debugger::set('status', $status);
-			Debugger::end('redirect');
-		}
-		if (self::$executeRedirect) {
-			header("Location: $url", true, $permanent ? 301 : 302);
-			die();
+		if (self::$initialized && self::$instance !== null) {
+			// Router already initialized, add route directly
+			self::$instance->addRoute($sourcePath, $destinationPath);
 		} else {
-			self::$redirect = $url;
+			// Store route for later when router is initialized
+			self::$routes[$destinationPath] = $sourcePath;
 		}
 	}
 
-	public static function json($object)
+	/**
+	 * Redirect to a URL
+	 * @param string $url
+	 * @param bool $permanent
+	 * @return void
+	 */
+	public static function redirect(string $url, bool $permanent = false): void
 	{
-		if (!self::$initialized) self::initialize();
-		if (Debugger::$enabled) {
-			Debugger::end('json');
-		}
-		header('Content-Type: application/json');
-		die(json_encode($object));
+		$router = self::getInstance();
+		$router->redirect($url, $permanent);
 	}
 
-	public static function download($filename, $data)
+	/**
+	 * Output JSON and terminate
+	 * @param mixed $object
+	 * @return void
+	 */
+	public static function json(mixed $object): void
 	{
-		if (!self::$initialized) self::initialize();
-		if (Debugger::$enabled) {
-			Debugger::end('download');
-		}
-		header('Content-Type: application/octet-stream');
-		header("Content-Transfer-Encoding: Binary");
-		header("Content-disposition: attachment; filename=\"" . $filename . "\"");
-		header('Content-Length: ' . strlen($data));
-		die($data);
+		$router = self::getInstance();
+		$router->json($object);
 	}
 
-	public static function file($filename, $filepath)
+	/**
+	 * Download data as a file
+	 * @param string $filename
+	 * @param string $data
+	 * @return void
+	 */
+	public static function download(string $filename, string $data): void
 	{
-		if (!self::$initialized) self::initialize();
-		if (Debugger::$enabled) {
-			Debugger::end('download');
-		}
-		header('Content-Type: application/octet-stream');
-		header("Content-Transfer-Encoding: Binary");
-		header("Content-disposition: attachment; filename=\"" . $filename . "\"");
-		header('Content-Length: ' . filesize($filepath));
-		readfile($filepath);
-		die();
+		$router = self::getInstance();
+		$router->download($filename, $data);
 	}
 
-	protected static function extractParts($root, $dir, $match)
+	/**
+	 * Download a file from the filesystem
+	 * @param string $filename
+	 * @param string $filepath
+	 * @return void
+	 */
+	public static function file(string $filename, string $filepath): void
 	{
-		$view = false;
-		$template = false;
-		$action = false;
-		$parameters = false;
-
-		$filename = basename($match);
-		$parts = preg_split('/\(|\)/', $filename);
-		$extension = array_pop($parts);
-		if ($extension == '.phtml') {
-			$template = array_pop($parts);
-			$view = array_pop($parts);
-			$matches = glob($root . $dir . $view . '(*).php');
-			if (count($matches) > 0) {
-				$filename = basename($matches[0]);
-				$parts = preg_split('/\(|\)/', $filename);
-				$extension = array_pop($parts);
-				$parameters = array_pop($parts);
-				preg_match_all('/,?(\$([^,\)]+))+/', $parameters, $matches);
-				$parameters = $matches[2];
-				$action = array_pop($parts);
-			}
-		} else {
-			$parameters = array_pop($parts);
-			preg_match_all('/,?(\$([^,\)]+))+/', $parameters, $matches);
-			$parameters = $matches[2];
-			$action = array_pop($parts);
-			$matches = glob($root . $dir . $action . '(*).phtml');
-			if (count($matches) > 0) {
-				$filename = basename($matches[0]);
-				$parts = preg_split('/\(|\)/', $filename);
-				$extension = array_pop($parts);
-				$template = array_pop($parts);
-				$view = array_pop($parts);
-			}
-		}
-		return array($view, $template, $action, $parameters);
+		$router = self::getInstance();
+		$router->file($filename, $filepath);
 	}
 
-	protected static function routeFile($templateRoot, $root, $dir, $path, $parameters, $getParameters)
+	/**
+	 * Get the current URL
+	 * @return string
+	 */
+	public static function getUrl(): string
 	{
-		$redirect = false;
-
-		list($view, $template, $action, $parameterNames) = self::extractParts($root, $dir, $path);
-
-		if ($view) $url = $dir . $view;
-		else $url = $dir . $action;
-
-		if ($view) {
-			self::$view = $root . $dir . $view . '(' . $template . ').phtml';
-			self::$template = $template == 'none' ? false : $templateRoot . $template;
-		} else {
-			self::$view = false;
-			self::$template = false;
-		}
-
-		if ($action) {
-			if (!count($parameterNames)) self::$action = $root . $dir . $action . '().php';
-			else self::$action = $root . $dir . $action . '($' . implode(',$', $parameterNames) . ').php';
-
-			if (substr($url, -7) == '//index') $redirect = substr($url, 0, -7);
-			if (substr(self::$original, -6) == '/index') $redirect = substr($url, 0, -6);
-			if (count($parameters) > count($parameterNames) /*|| count(array_diff(array_keys($getParameters), $parameterNames)) > 0*/) {
-				if (substr($url, -6) == '/index') $url = substr($url, 0, -6);
-				if ($url == 'index') $url = '';
-				$redirect = $url;
-				for ($i = 0; $i < min(count($parameters), count($parameterNames)); $i++) {
-					$redirect .= '/' . $parameters[$i];
-				}
-				$query = http_build_query(array_intersect_key($getParameters, array_flip($parameterNames)));
-				$redirect .= $query ? '?' . $query : '';
-			}
-			$parameters = array_map('urldecode', $parameters);
-			if (count($parameters) < count($parameterNames)) {
-				for ($i = count($parameters); $i < count($parameterNames); $i++) {
-					array_push($parameters, isset($getParameters[$parameterNames[$i]]) ? $getParameters[$parameterNames[$i]] : null);
-				}
-			}
-			if (!$redirect && count($parameterNames)) {
-				self::$parameters = array_combine($parameterNames, $parameters);
-			} else {
-				self::$parameters = [];
-			}
-		} else {
-			self::$action = false;
-			self::$parameters = [];
-		}
-
-		self::$url = $url;
-
-		return $redirect;
+		$router = self::getInstance();
+		return $router->getUrl();
 	}
 
-	protected static function routeDir($csrfOk, $templateRoot, $root, $dir, $parameters, $getParameters)
+	/**
+	 * Get the canonical URL
+	 * @return string
+	 */
+	public static function getCanonical(): string
 	{
-		$status = 200;
-		$matches = [];
-
-		// route 403
-		if (!$csrfOk) {
-			$status = 403;
-			$dir = 'error/';
-			$matches = glob($root . $dir . 'forbidden(*).phtml');
-			if (count($matches) == 0) {
-				$matches = glob($root . $dir . 'forbidden(*).php');
-			}
-		}
-		// normal route
-		else {
-			if (count($parameters)) {
-				$part = array_shift($parameters);
-				$matches = glob($root . $dir . $part . '(*).phtml');
-				if (count($matches) == 0) {
-					$matches = glob($root . $dir . $part . '(*).php');
-				}
-				if (count($matches) == 0) {
-					array_unshift($parameters, $part);
-				}
-			}
-			if (count($matches) == 0) {
-				$matches = glob($root . $dir . 'index(*).phtml');
-				if (count($matches) == 0) {
-					$matches = glob($root . $dir . 'index(*).php');
-				}
-			}
-		}
-		// route 404
-		if (count($matches) == 0) {
-			$status = 404;
-			$dir = 'error/';
-			$matches = glob($root . $dir . 'not_found(*).phtml');
-			if (count($matches) == 0) {
-				$matches = glob($root . $dir . 'not_found(*).php');
-			}
-			if (count($matches) == 0) {
-				self::error('Could not find 404');
-			}
-		}
-		return array($status, self::routeFile($templateRoot, $root, $dir, $matches[0], $parameters, $getParameters));
+		$router = self::getInstance();
+		return $router->getCanonical();
 	}
 
-	protected static function route()
+	/**
+	 * Get the request URI
+	 * @return string
+	 */
+	public static function getRequest(): string
 	{
-		$root = self::$pageRoot;
-		$dir = '';
-		$redirect = false;
-		$status = false;
-
-		$request = self::removePrefix(self::$request, self::$script ?: '');
-		$request = self::removePrefix($request, self::$baseUrl);
-		if (self::$original === null) self::$original = $request;
-
-		$isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') == 'xmlhttprequest';
-		$csrfOk = in_array(self::$method, ['GET', 'OPTIONS']) ?: ($isAjax || Session::checkCsrfToken());
-
-		$getParameters = [];
-		$questionMarkPosition = strpos($request, '?');
-		if ($questionMarkPosition !== false) {
-			list($request, $query) = explode('?', $request, 2);
-			parse_str($query, $getParameters);
-		}
-
-		$parts = explode('/', $request);
-		for ($i = count($parts); $i >= 0; $i--) {
-			if ($i == 0) $dir = '';
-			else $dir = implode('/', array_slice($parts, 0, $i)) . '/';
-			if (file_exists($root . $dir) && is_dir($root . $dir)) {
-				$parameters = array_slice($parts, $i, count($parts) - $i);
-				list($status, $redirect) = self::routeDir($csrfOk, self::$templateRoot, $root, $dir, $parameters, $getParameters);
-				break;
-			}
-		}
-		if (Debugger::$enabled) {
-			$method = self::$method;
-			$request = '/' . self::$original;
-			$url = '/' . self::$url;
-			$viewFile = self::$view;
-			$actionFile = self::$action;
-			$templateFile = self::$template;
-			$parameters = [];
-			$parameters['url'] = self::$parameters;
-			$parameters['get'] = $_GET;
-			$parameters['post'] = $_POST;
-			Debugger::set('router', compact('method', 'csrfOk', 'request', 'url', 'dir', 'viewFile', 'actionFile', 'templateFile', 'parameters'));
-			Debugger::set('status', $status);
-		}
-		if ($redirect) self::redirect($redirect);
+		$router = self::getInstance();
+		return $router->getRequest();
 	}
 
-	public static function getUrl()
+	/**
+	 * Get the action file path
+	 * @return string
+	 */
+	public static function getAction(): string
 	{
-		if (!self::$initialized) self::initialize();
-		return self::$url;
+		$router = self::getInstance();
+		return $router->getAction();
 	}
 
-	public static function getCanonical()
+	/**
+	 * Get the redirect URL if set
+	 * @return ?string
+	 */
+	public static function getRedirect(): ?string
 	{
-		$canonical = self::$url;
-		if (substr($canonical, -6) == '/index' || $canonical == 'index') {
-			$canonical = substr($canonical, 0, -5);
-		}
-		return $canonical . implode('/', self::$parameters);
+		$router = self::getInstance();
+		return $router->getRedirect();
 	}
 
-	public static function addRoute($sourcePath, $destinationPath)
+	/**
+	 * Get the view file path
+	 * @return string
+	 */
+	public static function getView(): string
 	{
-		self::$routes[$destinationPath] = $sourcePath;
+		$router = self::getInstance();
+		return $router->getView();
 	}
 
-	protected static function applyRoutes()
+	/**
+	 * Get the template view file path
+	 * @return string
+	 */
+	public static function getTemplateView(): string
 	{
-		if (!self::$initialized) self::initialize();
-		foreach (self::$routes as $destinationPath => $sourcePath) {
-			if (rtrim(self::$request, '/') == rtrim(self::$baseUrl . $sourcePath, '/')) {
-				self::$request = self::$baseUrl . $destinationPath;
-				break;
-			}
-		}
+		$router = self::getInstance();
+		return $router->getTemplateView();
 	}
 
-	public static function getRequest()
+	/**
+	 * Get the template action file path
+	 * @return string
+	 */
+	public static function getTemplateAction(): string
 	{
-		if (!self::$initialized) self::initialize();
-		return self::$request;
+		$router = self::getInstance();
+		return $router->getTemplateAction();
 	}
 
-	public static function getAction()
+	/**
+	 * Get parameters extracted from the URL
+	 * @return array<string, string|null>
+	 */
+	public static function getParameters(): array
 	{
-		if (!self::$initialized) self::initialize();
-		return self::$action;
+		$router = self::getInstance();
+		return $router->getParameters();
 	}
 
-	public static function getRedirect()
+	/**
+	 * Get the base URL
+	 * @return string
+	 */
+	public static function getBaseUrl(): string
 	{
-		if (!self::$initialized) self::initialize();
-		return self::$redirect;
-	}
-
-	public static function getView()
-	{
-		if (!self::$initialized) self::initialize();
-		return self::$view;
-	}
-
-	public static function getTemplateView()
-	{
-		if (!self::$initialized) self::initialize();
-		if (!self::$template) return false;
-		$filename = self::$template . '.phtml';
-		return file_exists($filename) ? $filename : false;
-	}
-
-	public static function getTemplateAction()
-	{
-		if (!self::$initialized) self::initialize();
-		if (!self::$template) return false;
-		$filename = self::$template . '.php';
-		return file_exists($filename) ? $filename : false;
-	}
-
-	public static function getParameters()
-	{
-		if (!self::$initialized) self::initialize();
-		if (!self::$parameters) return [];
-		else return self::$parameters;
-	}
-
-	public static function getBaseUrl()
-	{
-		$url = self::$baseUrl;
-		if (substr($url, 0, 4) != 'http') {
-			$host = ($_SERVER['HTTP_HOST'] ?? 'localhost');
-			if (substr($url, 0, 2) != '//') {
-				$url = '//' . $host . $url;
-			}
-			$s = ($_SERVER['HTTPS'] ?? '') ? 's' : '';
-			$url = "http$s:$url";
-		}
-		return rtrim($url, '/') . '/';
+		$router = self::getInstance();
+		return $router->getBaseUrl();
 	}
 }

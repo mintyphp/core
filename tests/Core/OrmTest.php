@@ -1,34 +1,43 @@
 <?php
 
-namespace MintyPHP\Tests;
+namespace MintyPHP\Tests\Core;
 
-use MintyPHP\DB;
-use MintyPHP\Orm;
+use MintyPHP\Core\DB;
+use MintyPHP\Core\Orm;
+use PHPUnit\Framework\TestCase;
 
-class OrmTest extends \PHPUnit\Framework\TestCase
+class OrmTest extends TestCase
 {
+	private static DB $db;
+	private static Orm $orm;
+
 	public static function setUpBeforeClass(): void
 	{
-		DB::$username = 'mintyphp_test';
-		DB::$password = 'mintyphp_test';
-		DB::$database = 'mintyphp_test';
+		// Create database connection
+		self::$db = new DB(null, 'mintyphp_test', 'mintyphp_test', 'mintyphp_test', null, null);
+
+		// Create Core ORM instance
+		self::$orm = new Orm(self::$db);
 	}
 
 	public function testDropPostsBefore(): void
 	{
-		$result = DB::query('DROP TABLE IF EXISTS `posts`;');
+		$this->assertNotNull(self::$db);
+		$result = self::$db->query('DROP TABLE IF EXISTS `posts`;');
 		$this->assertNotFalse($result, 'drop posts failed');
 	}
 
 	public function testDropUsersBefore(): void
 	{
-		$result = DB::query('DROP TABLE IF EXISTS `users`;');
+		$this->assertNotNull(self::$db);
+		$result = self::$db->query('DROP TABLE IF EXISTS `users`;');
 		$this->assertNotFalse($result, 'drop users failed');
 	}
 
 	public function testCreateUsers(): void
 	{
-		$result = DB::query('CREATE TABLE `users` (
+		$this->assertNotNull(self::$db);
+		$result = self::$db->query('CREATE TABLE `users` (
 			`id` int(11) NOT NULL AUTO_INCREMENT,
 			`username` varchar(255) COLLATE utf8_bin NOT NULL,
 			`password` varchar(255) COLLATE utf8_bin NOT NULL,
@@ -41,7 +50,8 @@ class OrmTest extends \PHPUnit\Framework\TestCase
 
 	public function testCreatePosts(): void
 	{
-		$result = DB::query('CREATE TABLE `posts` (
+		$this->assertNotNull(self::$db);
+		$result = self::$db->query('CREATE TABLE `posts` (
 			`id` int(11) NOT NULL AUTO_INCREMENT,
 			`slug` varchar(255) COLLATE utf8_bin NOT NULL,
 			`tags` varchar(255) COLLATE utf8_bin NOT NULL,
@@ -60,14 +70,15 @@ class OrmTest extends \PHPUnit\Framework\TestCase
 
 	public function testInsertUsers(): void
 	{
-		$result = Orm::insert('users', [
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->insert('users', [
 			'username' => 'test1',
 			'password' => 'c32ac6310706acdadea74c901c3f08fe06c44c61',
 			'created' => '2014-05-28 22:58:22'
 		]);
 		$this->assertNotFalse($result, 'insert user failed 1');
 		$this->assertEquals(1, $result);
-		$result = Orm::insert('users', [
+		$result = self::$orm->insert('users', [
 			'username' => 'test2',
 			'password' => 'c32ac6310706acdadea74c901c3f08fe06c44c61',
 			'created' => '2014-05-28 22:58:22'
@@ -78,7 +89,8 @@ class OrmTest extends \PHPUnit\Framework\TestCase
 
 	public function testInsertPosts(): void
 	{
-		$result = Orm::insert('posts', [
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->insert('posts', [
 			'slug' => '2014-08-test1',
 			'tags' => '',
 			'title' => 'test',
@@ -89,7 +101,7 @@ class OrmTest extends \PHPUnit\Framework\TestCase
 		]);
 		$this->assertNotFalse($result, 'insert post failed 1');
 		$this->assertEquals(1, $result);
-		$result = Orm::insert('posts', [
+		$result = self::$orm->insert('posts', [
 			'slug' => '2014-08-test2',
 			'tags' => '',
 			'title' => 'test',
@@ -104,20 +116,22 @@ class OrmTest extends \PHPUnit\Framework\TestCase
 
 	public function testUpdatePosts(): void
 	{
-		$result = Orm::update('posts', ['created' => '2014-05-28 22:58:20'], 1);
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->update('posts', ['created' => '2014-05-28 22:58:20'], 1);
 		$this->assertTrue($result, 'update post 1 failed');
-		$result = Orm::update('posts', ['created' => '2014-05-28 22:58:20'], 2);
+		$result = self::$orm->update('posts', ['created' => '2014-05-28 22:58:20'], 2);
 		$this->assertTrue($result, 'update post 2 failed');
 	}
 
 	public function testSelectPosts(): void
 	{
-		$result = Orm::select('posts', 1);
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->select('posts', 1);
 		$this->assertNotEmpty($result);
 		$this->assertEquals('1', $result['id']);
 		$this->assertEquals('2014-08-test1', $result['slug']);
 
-		$result = Orm::select('posts', 2);
+		$result = self::$orm->select('posts', 2);
 		$this->assertNotEmpty($result);
 		$this->assertEquals('2', $result['id']);
 		$this->assertEquals('2014-08-test2', $result['slug']);
@@ -125,35 +139,40 @@ class OrmTest extends \PHPUnit\Framework\TestCase
 
 	public function testSelectPostNotFound(): void
 	{
-		$result = Orm::select('posts', 999);
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->select('posts', 999);
 		$this->assertEquals([], $result);
 	}
 
 	public function testDeletePosts(): void
 	{
-		$result = Orm::delete('posts', 1);
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->delete('posts', 1);
 		$this->assertTrue($result, 'delete post 1 failed');
-		$result = Orm::delete('posts', 2);
+		$result = self::$orm->delete('posts', 2);
 		$this->assertTrue($result, 'delete post 2 failed');
 	}
 
 	public function testDeleteUsers(): void
 	{
-		$result = Orm::delete('users', 1);
+		$this->assertNotNull(self::$orm);
+		$result = self::$orm->delete('users', 1);
 		$this->assertTrue($result, 'delete user 1 failed');
-		$result = Orm::delete('users', 2);
+		$result = self::$orm->delete('users', 2);
 		$this->assertTrue($result, 'delete user 2 failed');
 	}
 
 	public function testDropPosts(): void
 	{
-		$result = DB::query('DROP TABLE `posts`;');
+		$this->assertNotNull(self::$db);
+		$result = self::$db->query('DROP TABLE `posts`;');
 		$this->assertNotFalse($result, 'drop posts failed');
 	}
 
 	public function testDropUsers(): void
 	{
-		$result = DB::query('DROP TABLE `users`;');
+		$this->assertNotNull(self::$db);
+		$result = self::$db->query('DROP TABLE `users`;');
 		$this->assertNotFalse($result, 'drop users failed');
 	}
 }

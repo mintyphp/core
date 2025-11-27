@@ -3,166 +3,450 @@
 namespace MintyPHP\Tests;
 
 use MintyPHP\DB;
+use MintyPHP\Core\DB as CoreDB;
+use MintyPHP\DBError;
+use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 
-class DBTest extends \PHPUnit\Framework\TestCase
+/**
+ * Unit tests for the DB wrapper class (static facade)
+ * 
+ * Tests that the wrapper correctly delegates to the Core\DB instance
+ */
+class DBTest extends TestCase
 {
-	public static function setUpBeforeClass(): void
-	{
-		DB::$username = 'mintyphp_test';
-		DB::$password = 'mintyphp_test';
-		DB::$database = 'mintyphp_test';
-	}
+    /** @var CoreDB&MockObject */
+    private CoreDB $mockCoreDB;
 
-	public function testDropPostsBefore(): void
-	{
-		$result = DB::query('DROP TABLE IF EXISTS `posts`;');
-		$this->assertNotFalse($result, 'drop posts failed');
-	}
+    protected function setUp(): void
+    {
+        parent::setUp();
 
-	public function testDropUsersBefore(): void
-	{
-		$result = DB::query('DROP TABLE IF EXISTS `users`;');
-		$this->assertNotFalse($result, 'drop users failed');
-	}
+        // Create a mock of CoreDB
+        $this->mockCoreDB = $this->createMock(CoreDB::class);
 
-	public function testCreateUsers(): void
-	{
-		$result = DB::query('CREATE TABLE `users` (
-			`id` int(11) NOT NULL AUTO_INCREMENT,
-			`username` varchar(255) COLLATE utf8_bin NOT NULL,
-			`password` varchar(255) COLLATE utf8_bin NOT NULL,
-			`created` datetime NOT NULL,
-			PRIMARY KEY (`id`),
-			UNIQUE KEY `username` (`username`)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;');
-		$this->assertNotFalse($result, 'create users failed');
-	}
+        // Reset the static instance before each test
+        DB::setInstance($this->mockCoreDB);
+    }
 
-	public function testCreatePosts(): void
-	{
-		$result = DB::query('CREATE TABLE `posts` (
-			`id` int(11) NOT NULL AUTO_INCREMENT,
-			`slug` varchar(255) COLLATE utf8_bin NOT NULL,
-			`tags` varchar(255) COLLATE utf8_bin NOT NULL,
-			`title` text COLLATE utf8_bin NOT NULL,
-			`content` mediumtext COLLATE utf8_bin NOT NULL,
-			`created` datetime NOT NULL,
-			`published` datetime DEFAULT NULL,
-			`user_id` int(11) NOT NULL,
-			PRIMARY KEY (`id`),
-			UNIQUE KEY `slug` (`slug`),
-			KEY `user_id` (`user_id`),
-			CONSTRAINT `posts_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;');
-		$this->assertNotFalse($result, 'create posts failed');
-	}
+    protected function tearDown(): void
+    {
+        parent::tearDown();
 
-	public function testInsertUsers(): void
-	{
-		$result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `created`) VALUES (NULL, 'test1', 'c32ac6310706acdadea74c901c3f08fe06c44c61', '2014-05-28 22:58:22');");
-		$this->assertNotFalse($result, 'insert user failed 1');
-		$this->assertEquals(1, $result);
-		$result = DB::insert("INSERT INTO `users` (`id`, `username`, `password`, `created`) VALUES (NULL, 'test2', 'c32ac6310706acdadea74c901c3f08fe06c44c61', '2014-05-28 22:58:22');");
-		$this->assertNotFalse($result, 'insert user failed 2');
-		$this->assertEquals(2, $result);
-	}
+        // Reset static properties using reflection
+        $reflection = new \ReflectionClass(DB::class);
+        $instanceProperty = $reflection->getProperty('instance');
+        $instanceProperty->setValue(null, null);
+    }
 
-	public function testInsertPosts(): void
-	{
-		$result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test1', '', 'test', 'test', '2014-05-28 22:58:22', NULL, 1);");
-		$this->assertNotFalse($result, 'insert post failed 1');
-		$this->assertEquals(1, $result);
-		$result = DB::insert("INSERT INTO `posts` (`id`, `slug`, `tags`, `title`, `content`, `created`, `published`, `user_id`) VALUES (NULL, '2014-08-test2', '', 'test', 'test', '2014-05-28 22:58:22', NULL, 1);");
-		$this->assertNotFalse($result, 'insert post failed 2');
-		$this->assertEquals(2, $result);
-	}
+    public function testGetInstance(): void
+    {
+        $instance = DB::getInstance();
+        $this->assertSame($this->mockCoreDB, $instance);
+    }
 
-	public function testUpdatePosts(): void
-	{
-		$result = DB::update("UPDATE `posts` SET `created`='2014-05-28 22:58:20' WHERE `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???) OR `id`=? OR `id` IN (???);", 1, [1, 2], 1, [1], 1, []);
-		$this->assertNotFalse($result, 'update posts failed');
-		$this->assertEquals(2, $result);
-	}
+    public function testSetInstance(): void
+    {
+        $newMock = $this->createMock(CoreDB::class);
+        DB::setInstance($newMock);
+        $this->assertSame($newMock, DB::getInstance());
+    }
 
-	public function testSelectPosts(): void
-	{
-		$result = DB::select("SELECT * FROM `posts`;");
-		$this->assertEquals(2, count($result));
-		$this->assertEquals('posts', array_keys($result[0])[0]);
-		$this->assertEquals('id', array_keys($result[0]['posts'])[0]);
-		$result = DB::select("SELECT * FROM `posts`, `users` WHERE posts.user_id = users.id and users.username = 'test1';");
-		$this->assertEquals(2, count($result));
-		$this->assertEquals(array('posts', 'users'), array_keys($result[0]));
-		$this->assertEquals('id', array_keys($result[0]['posts'])[0]);
-		$this->assertEquals('test1', $result[0]['users']['username']);
-		$this->expectException('MintyPHP\DBError');
-		$result = DB::select("some bogus query;");
-	}
+    public function testQuery(): void
+    {
+        $expectedResult = [
+            ['users' => ['id' => 1, 'name' => 'John']],
+            ['users' => ['id' => 2, 'name' => 'Jane']]
+        ];
 
-	public function testSelectOne(): void
-	{
-		$result = DB::selectOne("SELECT * FROM `posts` limit 1;");
-		$this->assertNotEquals(false, $result);
-		assert($result !== false);
-		$this->assertEquals('posts', array_keys($result)[0]);
-		$this->assertEquals('id', array_keys($result['posts'])[0]);
-		$result = DB::selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");
-		$this->assertEquals([], $result);
-		$this->expectException('MintyPHP\DBError');
-		$result = DB::selectOne("some bogus query;");
-	}
+        $this->mockCoreDB->expects($this->once())
+            ->method('query')
+            ->with('SELECT * FROM users WHERE id = ?', 1)
+            ->willReturn($expectedResult);
 
-	public function testSelectValues(): void
-	{
-		$result = DB::selectValues("SELECT username FROM `users`;");
-		$this->assertEquals(array('test1', 'test2'), $result);
-		$result = DB::selectValues("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
-		$this->assertEquals([], $result);
-		$this->expectException('MintyPHP\DBError');
-		$result = DB::selectValues("some bogus query;");
-	}
+        $result = DB::query('SELECT * FROM users WHERE id = ?', 1);
+        $this->assertSame($expectedResult, $result);
+    }
 
-	public function testSelectValue(): void
-	{
-		$result = DB::selectValue("SELECT username FROM `users` limit 1;");
-		$this->assertEquals('test1', $result);
-		$result = DB::selectValue("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
-		$this->assertEquals(false, $result);
-		$this->expectException('MintyPHP\DBError');
-		$result = DB::selectValue("some bogus query;");
-	}
+    public function testQueryWithMultipleParams(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('query')
+            ->with('SELECT * FROM users WHERE id = ? AND name = ?', 1, 'John')
+            ->willReturn([]);
 
-	public function testQuery(): void
-	{
-		$result = DB::query("SELECT * FROM `posts` limit 1;");
-		$this->assertNotEquals(false, $result);
-		$this->expectException('MintyPHP\DBError');
-		$result = DB::query("some bogus query;");
-	}
+        $result = DB::query('SELECT * FROM users WHERE id = ? AND name = ?', 1, 'John');
+        $this->assertSame([], $result);
+    }
 
-	public function testDeletePosts(): void
-	{
-		$result = DB::delete('DELETE FROM `posts`;');
-		$this->assertNotFalse($result, 'delete posts failed');
-		$this->assertEquals(2, $result);
-	}
+    public function testQueryWithArrayParam(): void
+    {
+        $ids = [1, 2, 3];
+        $this->mockCoreDB->expects($this->once())
+            ->method('query')
+            ->with('SELECT * FROM users WHERE id IN (???)', $ids)
+            ->willReturn([]);
 
-	public function testDeleteUsers(): void
-	{
-		$result = DB::delete('DELETE FROM `users`;');
-		$this->assertNotFalse($result, 'delete users failed');
-		$this->assertEquals(2, $result);
-	}
+        $result = DB::query('SELECT * FROM users WHERE id IN (???)', $ids);
+        $this->assertSame([], $result);
+    }
 
-	public function testDropPosts(): void
-	{
-		$result = DB::query('DROP TABLE `posts`;');
-		$this->assertNotFalse($result, 'drop posts failed');
-	}
+    public function testInsert(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('insert')
+            ->with('INSERT INTO users (name, email) VALUES (?, ?)', 'John', 'john@example.com')
+            ->willReturn(5);
 
-	public function testDropUsers(): void
-	{
-		$result = DB::query('DROP TABLE `users`;');
-		$this->assertNotFalse($result, 'drop users failed');
-	}
+        $result = DB::insert('INSERT INTO users (name, email) VALUES (?, ?)', 'John', 'john@example.com');
+        $this->assertSame(5, $result);
+    }
+
+    public function testInsertReturnsZero(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('insert')
+            ->with('INSERT INTO users (name) VALUES (?)', 'Test')
+            ->willReturn(0);
+
+        $result = DB::insert('INSERT INTO users (name) VALUES (?)', 'Test');
+        $this->assertSame(0, $result);
+    }
+
+    public function testUpdate(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('update')
+            ->with('UPDATE users SET name = ? WHERE id = ?', 'Jane', 3)
+            ->willReturn(1);
+
+        $result = DB::update('UPDATE users SET name = ? WHERE id = ?', 'Jane', 3);
+        $this->assertSame(1, $result);
+    }
+
+    public function testUpdateMultipleRows(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('update')
+            ->with('UPDATE users SET active = ?', 1)
+            ->willReturn(10);
+
+        $result = DB::update('UPDATE users SET active = ?', 1);
+        $this->assertSame(10, $result);
+    }
+
+    public function testUpdateWithArrayParam(): void
+    {
+        $ids = [1, 2, 3];
+        $this->mockCoreDB->expects($this->once())
+            ->method('update')
+            ->with('UPDATE users SET active = ? WHERE id IN (???)', 1, $ids)
+            ->willReturn(3);
+
+        $result = DB::update('UPDATE users SET active = ? WHERE id IN (???)', 1, $ids);
+        $this->assertSame(3, $result);
+    }
+
+    public function testDelete(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('delete')
+            ->with('DELETE FROM users WHERE id = ?', 5)
+            ->willReturn(1);
+
+        $result = DB::delete('DELETE FROM users WHERE id = ?', 5);
+        $this->assertSame(1, $result);
+    }
+
+    public function testDeleteMultipleRows(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('delete')
+            ->with('DELETE FROM users WHERE active = ?', 0)
+            ->willReturn(3);
+
+        $result = DB::delete('DELETE FROM users WHERE active = ?', 0);
+        $this->assertSame(3, $result);
+    }
+
+    public function testDeleteWithArrayParam(): void
+    {
+        $ids = [1, 2, 3];
+        $this->mockCoreDB->expects($this->once())
+            ->method('delete')
+            ->with('DELETE FROM users WHERE id IN (???)', $ids)
+            ->willReturn(3);
+
+        $result = DB::delete('DELETE FROM users WHERE id IN (???)', $ids);
+        $this->assertSame(3, $result);
+    }
+
+    public function testSelect(): void
+    {
+        $expectedResult = [
+            ['users' => ['id' => 1, 'name' => 'John', 'email' => 'john@example.com']],
+            ['users' => ['id' => 2, 'name' => 'Jane', 'email' => 'jane@example.com']]
+        ];
+
+        $this->mockCoreDB->expects($this->once())
+            ->method('select')
+            ->with('SELECT * FROM users')
+            ->willReturn($expectedResult);
+
+        $result = DB::select('SELECT * FROM users');
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testSelectWithParams(): void
+    {
+        $expectedResult = [
+            ['users' => ['id' => 1, 'name' => 'John']]
+        ];
+
+        $this->mockCoreDB->expects($this->once())
+            ->method('select')
+            ->with('SELECT * FROM users WHERE id = ?', 1)
+            ->willReturn($expectedResult);
+
+        $result = DB::select('SELECT * FROM users WHERE id = ?', 1);
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testSelectWithMultipleTables(): void
+    {
+        $expectedResult = [
+            [
+                'users' => ['id' => 1, 'name' => 'John'],
+                'posts' => ['id' => 100, 'title' => 'Hello World']
+            ]
+        ];
+
+        $this->mockCoreDB->expects($this->once())
+            ->method('select')
+            ->with('SELECT * FROM users, posts WHERE users.id = posts.user_id')
+            ->willReturn($expectedResult);
+
+        $result = DB::select('SELECT * FROM users, posts WHERE users.id = posts.user_id');
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testSelectOne(): void
+    {
+        $expectedResult = ['users' => ['id' => 1, 'name' => 'John', 'email' => 'john@example.com']];
+
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectOne')
+            ->with('SELECT * FROM users WHERE id = ?', 1)
+            ->willReturn($expectedResult);
+
+        $result = DB::selectOne('SELECT * FROM users WHERE id = ?', 1);
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testSelectOneReturnsFalse(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectOne')
+            ->with('SELECT * FROM users WHERE id = ?', 999)
+            ->willReturn(false);
+
+        $result = DB::selectOne('SELECT * FROM users WHERE id = ?', 999);
+        $this->assertFalse($result);
+    }
+
+    public function testSelectOneReturnsEmptyArray(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectOne')
+            ->with('SELECT * FROM users WHERE name = ?', 'NonExistent')
+            ->willReturn([]);
+
+        $result = DB::selectOne('SELECT * FROM users WHERE name = ?', 'NonExistent');
+        $this->assertSame([], $result);
+    }
+
+    public function testSelectValue(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValue')
+            ->with('SELECT name FROM users WHERE id = ?', 1)
+            ->willReturn('John');
+
+        $result = DB::selectValue('SELECT name FROM users WHERE id = ?', 1);
+        $this->assertSame('John', $result);
+    }
+
+    public function testSelectValueReturnsFalse(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValue')
+            ->with('SELECT name FROM users WHERE id = ?', 999)
+            ->willReturn(false);
+
+        $result = DB::selectValue('SELECT name FROM users WHERE id = ?', 999);
+        $this->assertFalse($result);
+    }
+
+    public function testSelectValueReturnsInteger(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValue')
+            ->with('SELECT COUNT(*) FROM users')
+            ->willReturn(42);
+
+        $result = DB::selectValue('SELECT COUNT(*) FROM users');
+        $this->assertSame(42, $result);
+    }
+
+    public function testSelectValues(): void
+    {
+        $expectedResult = ['John', 'Jane', 'Bob'];
+
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValues')
+            ->with('SELECT name FROM users')
+            ->willReturn($expectedResult);
+
+        $result = DB::selectValues('SELECT name FROM users');
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testSelectValuesWithParams(): void
+    {
+        $expectedResult = ['John'];
+
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValues')
+            ->with('SELECT name FROM users WHERE active = ?', 1)
+            ->willReturn($expectedResult);
+
+        $result = DB::selectValues('SELECT name FROM users WHERE active = ?', 1);
+        $this->assertSame($expectedResult, $result);
+    }
+
+    public function testSelectValuesReturnsEmpty(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValues')
+            ->with('SELECT name FROM users WHERE active = ?', 0)
+            ->willReturn([]);
+
+        $result = DB::selectValues('SELECT name FROM users WHERE active = ?', 0);
+        $this->assertSame([], $result);
+    }
+
+    public function testClose(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('close');
+
+        DB::close();
+    }
+
+    public function testHandle(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('handle');
+
+        DB::handle();
+        // No assertion needed - we just verify the method was called
+    }
+
+    public function testQueryThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('query')
+            ->with('INVALID SQL')
+            ->willThrowException(new DBError('Syntax error'));
+
+        $this->expectException(DBError::class);
+        $this->expectExceptionMessage('Syntax error');
+
+        DB::query('INVALID SQL');
+    }
+
+    public function testInsertThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('insert')
+            ->with('INSERT INTO invalid_table VALUES (?)', 'test')
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+        $this->expectExceptionMessage('Table does not exist');
+
+        DB::insert('INSERT INTO invalid_table VALUES (?)', 'test');
+    }
+
+    public function testUpdateThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('update')
+            ->with('UPDATE invalid_table SET x = ?', 1)
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+
+        DB::update('UPDATE invalid_table SET x = ?', 1);
+    }
+
+    public function testDeleteThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('delete')
+            ->with('DELETE FROM invalid_table')
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+
+        DB::delete('DELETE FROM invalid_table');
+    }
+
+    public function testSelectThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('select')
+            ->with('SELECT * FROM invalid_table')
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+
+        DB::select('SELECT * FROM invalid_table');
+    }
+
+    public function testSelectOneThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectOne')
+            ->with('SELECT * FROM invalid_table')
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+
+        DB::selectOne('SELECT * FROM invalid_table');
+    }
+
+    public function testSelectValueThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValue')
+            ->with('SELECT col FROM invalid_table')
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+
+        DB::selectValue('SELECT col FROM invalid_table');
+    }
+
+    public function testSelectValuesThrowsDBError(): void
+    {
+        $this->mockCoreDB->expects($this->once())
+            ->method('selectValues')
+            ->with('SELECT col FROM invalid_table')
+            ->willThrowException(new DBError('Table does not exist'));
+
+        $this->expectException(DBError::class);
+
+        DB::selectValues('SELECT col FROM invalid_table');
+    }
 }

@@ -155,7 +155,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 	{
 		$this->request('GET', '/admin/posts/view?idea=12');
 		$this->assertEquals(['id' => ''], Router::getParameters());
-		$this->assertNull(Router::getRedirect());
+		$this->assertEmpty(Router::getRedirect());
 	}
 
 	public function testGetParameterHalf(): void
@@ -186,7 +186,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 	{
 		$this->request('GET', '/admin/posts/view?state=12&code=23&id=4');
 		$this->assertEquals(['id' => 4], Router::getParameters());
-		$this->assertNull(Router::getRedirect());
+		$this->assertEmpty(Router::getRedirect());
 	}
 
 	public function testActionWithoutView(): void
