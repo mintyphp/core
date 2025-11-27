@@ -15,6 +15,19 @@ use MintyPHP\Debugger;
  */
 class DB
 {
+	/**
+	 * The database connection parameters (static for singleton pattern)
+	 */
+	public static ?string $__host = null;
+	public static ?string $__username = null;
+	public static ?string $__password = null;
+	public static ?string $__database = null;
+	public static ?int $__port = null;
+	public static ?string $__socket = null;
+
+	/**
+	 * The database connection parameters
+	 */
 	private ?string $host;
 	private ?string $username;
 	private ?string $password;
