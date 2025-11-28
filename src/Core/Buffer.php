@@ -2,8 +2,6 @@
 
 namespace MintyPHP\Core;
 
-use Exception;
-
 /**
  * Buffer management for MintyPHP.
  * 
@@ -39,11 +37,11 @@ class Buffer
      * 
      * @param string $message The error message.
      * @return never This method never returns as it always throws.
-     * @throws Exception Always thrown with the provided message.
+     * @throws \Exception Always thrown with the provided message.
      */
     private function error(string $message): never
     {
-        throw new Exception($message);
+        throw new \Exception($message);
     }
 
     /**
@@ -71,7 +69,7 @@ class Buffer
      * 
      * @param string $name The name of the buffer to end.
      * @return void
-     * @throws Exception If the buffer name doesn't match the top of the stack.
+     * @throws \Exception If the buffer name doesn't match the top of the stack.
      */
     public function end(string $name): void
     {
