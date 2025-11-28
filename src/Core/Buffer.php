@@ -2,7 +2,7 @@
 
 namespace MintyPHP\Core;
 
-use MintyPHP\BufferError;
+use Exception;
 
 /**
  * Buffer management for MintyPHP.
@@ -33,17 +33,17 @@ class Buffer
     private array $data = [];
 
     /**
-     * Throw a BufferError exception.
+     * Throw an exception.
      * 
      * Helper method for consistent error handling.
      * 
      * @param string $message The error message.
      * @return never This method never returns as it always throws.
-     * @throws BufferError Always thrown with the provided message.
+     * @throws Exception Always thrown with the provided message.
      */
     private function error(string $message): never
     {
-        throw new BufferError($message);
+        throw new Exception($message);
     }
 
     /**
@@ -71,7 +71,7 @@ class Buffer
      * 
      * @param string $name The name of the buffer to end.
      * @return void
-     * @throws BufferError If the buffer name doesn't match the top of the stack.
+     * @throws Exception If the buffer name doesn't match the top of the stack.
      */
     public function end(string $name): void
     {

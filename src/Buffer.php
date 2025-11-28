@@ -13,6 +13,8 @@ namespace MintyPHP;
 
 use MintyPHP\Core\Buffer as CoreBuffer;
 
+use Exception;
+
 /**
  * Static wrapper class for Buffer operations using a singleton pattern.
  */
@@ -30,9 +32,7 @@ class Buffer
      */
     public static function getInstance(): CoreBuffer
     {
-        return self::$instance ??= new CoreBuffer(
-
-        );
+        return self::$instance ??= new CoreBuffer();
     }
 
     /**
@@ -70,7 +70,7 @@ class Buffer
      * 
      * @param string $name The name of the buffer to end.
      * @return void
-     * @throws BufferError If the buffer name doesn't match the top of the stack.
+     * @throws Exception If the buffer name doesn't match the top of the stack.
      */
     public static function end(string $name): void
     {
