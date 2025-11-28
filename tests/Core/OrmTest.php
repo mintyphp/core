@@ -6,6 +6,13 @@ use MintyPHP\Core\DB;
 use MintyPHP\Core\Orm;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Note: These tests require a MySQL database named 'mintyphp_test
+ * to be set up and accessible with the appropriate credentials.
+ * Adjust the connection parameters in setUpBeforeClass() as needed.
+ * These tests will create and drop tables in the database,
+ * so ensure that it is safe to do so.
+ */
 class OrmTest extends TestCase
 {
 	private static DB $db;

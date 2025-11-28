@@ -5,6 +5,11 @@ namespace MintyPHP\Tests\Core;
 use MintyPHP\Core\Analyzer;
 use MintyPHP\Core\Router;
 
+/**
+ * Note: This test suite creates temporary files and directories
+ * in the system's temporary directory. It is important to ensure
+ * that these files are cleaned up after the tests to avoid clutter.
+ */
 class AnalyzerTest extends \PHPUnit\Framework\TestCase
 {
     protected static string $path = '';
