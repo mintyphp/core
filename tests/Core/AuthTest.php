@@ -6,6 +6,18 @@ use MintyPHP\Core\Auth;
 use MintyPHP\Core\DB;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Test suite for the Core Auth class.
+ * 
+ * This test suite covers user registration, login, and logout functionalities.
+ * It sets up a temporary users table in a test database and cleans up after tests.
+ * 
+ * Note: These tests require a MySQL database named 'mintyphp_test
+ * to be set up and accessible with the appropriate credentials.
+ * Adjust the connection parameters in setUpBeforeClass() as needed.
+ * These tests will create and drop tables in the database,
+ * so ensure that it is safe to do so.
+ */
 class AuthTest extends TestCase
 {
     private static DB $db;
