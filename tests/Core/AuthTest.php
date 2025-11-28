@@ -31,20 +31,12 @@ class AuthTest extends TestCase
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;');
 
         // Set error handler to catch session warnings
-        set_error_handler(static function (int $errno, string $errstr): never {
-            throw new \Exception($errstr, $errno);
-        }, E_ALL);
+        set_error_handler([self::class, 'throwErrorException'], E_ALL);
     }
 
-    public static function tearDownAfterClass(): void
+    public static function throwErrorException(int $errNo, string $errstr, string $errFile, int $errLine): bool
     {
-        parent::tearDownAfterClass();
-
-        // Restore error handler
-        restore_error_handler();
-
-        // Clean up database
-        self::$db->query('DROP TABLE IF EXISTS `users`;');
+        throw new \Exception($errstr, $errNo);
     }
 
     public function testRegister(): void
@@ -78,5 +70,16 @@ class AuthTest extends TestCase
         }
         $this->assertTrue($session_regenerated, 'session not regenerated');
         $this->assertFalse(isset($_SESSION['user']), 'user not unset');
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        parent::tearDownAfterClass();
+
+        // Restore error handler
+        restore_error_handler();
+
+        // Clean up database
+        self::$db->query('DROP TABLE IF EXISTS `users`;');
     }
 }

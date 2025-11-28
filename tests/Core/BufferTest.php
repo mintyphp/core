@@ -2,8 +2,9 @@
 
 namespace MintyPHP\Tests\Core;
 
+use Exception;
+
 use MintyPHP\Core\Buffer;
-use MintyPHP\BufferError;
 use PHPUnit\Framework\TestCase;
 
 class BufferTest extends TestCase
@@ -78,7 +79,7 @@ class BufferTest extends TestCase
 
         try {
             $this->buffer->end('wrong');
-        } catch (BufferError $e) {
+        } catch (Exception $e) {
             $exceptionThrown = true;
             $this->assertStringContainsString("Buffer::end('wrong') called, but Buffer::end('correct') expected.", $e->getMessage());
             // Clean up the output buffer
