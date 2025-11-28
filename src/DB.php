@@ -5,176 +5,197 @@ namespace MintyPHP;
 use MintyPHP\Core\DB as CoreDB;
 
 /**
- * Static class for database operations using a singleton pattern.
+ * Static wrapper class for DB operations using a singleton pattern.
  */
 class DB
 {
-	/**
-	 * The database connection parameters
-	 */
-	public static ?string $host = null;
-	public static ?string $username = null;
-	public static ?string $password = null;
-	public static ?string $database = null;
-	public static ?int $port = null;
-	public static ?string $socket = null;
+    /**
+     * Configuration parameters
+     */
+    public static ?string $host = null;
+    public static ?string $username = null;
+    public static ?string $password = null;
+    public static ?string $database = null;
+    public static ?int $port = null;
+    public static ?string $socket = null;
 
-	/**
-	 * The database instance
-	 * @var ?CoreDB
-	 */
-	private static ?CoreDB $instance = null;
+    /**
+     * The DB instance
+     * @var ?CoreDB
+     */
+    private static ?CoreDB $instance = null;
 
-	/**
-	 * Get the database instance
-	 * @return CoreDB
-	 * @throws DBError if connection fails
-	 */
-	public static function getInstance(): CoreDB
-	{
-		return self::$instance ??= new CoreDB(
-			self::$host,
-			self::$username,
-			self::$password,
-			self::$database,
-			self::$port,
-			self::$socket
-		);
-	}
+    /**
+     * Get the DB instance
+     * @return CoreDB
+     */
+    public static function getInstance(): CoreDB
+    {
+        return self::$instance ??= new CoreDB(
+            self::$host,
+            self::$username,
+            self::$password,
+            self::$database,
+            self::$port,
+            self::$socket
+        );
+    }
 
-	/**
-	 * Set the database instance to use
-	 * @param CoreDB $db
-	 * @return void
-	 */
-	public static function setInstance(CoreDB $db): void
-	{
-		self::$instance = $db;
-	}
+    /**
+     * Set the DB instance to use
+     * @param CoreDB $instance
+     * @return void
+     */
+    public static function setInstance(CoreDB $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * Execute a database query
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return mixed
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function query(string $query, mixed ...$params): mixed
-	{
-		$db = self::getInstance();
-		return $db->query($query, ...$params);
-	}
+    /**
+    	 * Executes a query with optional debugging
+    	 * 
+    	 * @param string $query SQL query with ? placeholders
+    	 * @param mixed ...$params Query parameters
+    	 * @return mixed Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function query(string $query, mixed ...$params): mixed
+    {
+        $instance = self::getInstance();
+        return $instance->query($query, ...$params);
+    }
 
-	/**
-	 * Insert a new record and return the inserted ID
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return int
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function insert(string $query, mixed ...$params): int
-	{
-		$db = self::getInstance();
-		return $db->insert($query, ...$params);
-	}
+    /**
+    	 * Executes an INSERT query and returns the last insert ID
+    	 * 
+    	 * @param string $query SQL INSERT query
+    	 * @param mixed ...$params Query parameters
+    	 * @return int Last insert ID
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function insert(string $query, mixed ...$params): int
+    {
+        $instance = self::getInstance();
+        return $instance->insert($query, ...$params);
+    }
 
-	/**
-	 * Update existing records and return the number of affected rows
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return int
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function update(string $query, mixed ...$params): int
-	{
-		$db = self::getInstance();
-		return $db->update($query, ...$params);
-	}
+    /**
+    	 * Executes an UPDATE query and returns affected rows
+    	 * 
+    	 * @param string $query SQL UPDATE query
+    	 * @param mixed ...$params Query parameters
+    	 * @return int Number of affected rows
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function update(string $query, mixed ...$params): int
+    {
+        $instance = self::getInstance();
+        return $instance->update($query, ...$params);
+    }
 
-	/**
-	 * Delete records and return the number of affected rows
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return int
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function delete(string $query, mixed ...$params): int
-	{
-		$db = self::getInstance();
-		return $db->delete($query, ...$params);
-	}
+    /**
+    	 * Executes a DELETE query and returns affected rows
+    	 * 
+    	 * @param string $query SQL DELETE query
+    	 * @param mixed ...$params Query parameters
+    	 * @return int Number of affected rows
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function delete(string $query, mixed ...$params): int
+    {
+        $instance = self::getInstance();
+        return $instance->delete($query, ...$params);
+    }
 
-	/**
-	 * Select records from the database
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return array<int, array<string, array<string, mixed>>>
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function select(string $query, mixed ...$params): array
-	{
-		$db = self::getInstance();
-		return $db->select($query, ...$params);
-	}
+    /**
+    	 * Executes a SELECT query and returns all rows
+    	 * 
+    	 * @param string $query SQL SELECT query
+    	 * @param mixed ...$params Query parameters
+    	 * @return array<int, array<string, array<string, mixed>>> Array of result rows
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function select(string $query, mixed ...$params): array
+    {
+        $instance = self::getInstance();
+        return $instance->select($query, ...$params);
+    }
 
-	/**
-	 * Select a single record from the database
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return array<string, array<string, mixed>>|false
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function selectOne(string $query, mixed ...$params): array|false
-	{
-		$db = self::getInstance();
-		return $db->selectOne($query, ...$params);
-	}
+    /**
+    	 * Executes a SELECT query and returns the first row
+    	 * 
+    	 * @param string $query SQL SELECT query
+    	 * @param mixed ...$params Query parameters
+    	 * @return array<string, array<string, mixed>>|false First result row or false if no result
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function selectOne(string $query, mixed ...$params): array|false
+    {
+        $instance = self::getInstance();
+        return $instance->selectOne($query, ...$params);
+    }
 
-	/**
-	 * Select a single value from the database
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return mixed
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function selectValue(string $query, mixed ...$params): mixed
-	{
-		$db = self::getInstance();
-		return $db->selectValue($query, ...$params);
-	}
+    /**
+    	 * Executes a SELECT query and returns a single value
+    	 * 
+    	 * @param string $query SQL SELECT query
+    	 * @param mixed ...$params Query parameters
+    	 * @return mixed Single value from first column of first row, or false if no result
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function selectValue(string $query, mixed ...$params): mixed
+    {
+        $instance = self::getInstance();
+        return $instance->selectValue($query, ...$params);
+    }
 
-	/**
-	 * Select multiple values from the database
-	 * @param string $query
-	 * @param mixed ...$params
-	 * @return array<int, mixed>
-	 * @throws DBError if query execution fails or database is closed
-	 */
-	public static function selectValues(string $query, mixed ...$params): array
-	{
-		$db = self::getInstance();
-		return $db->selectValues($query, ...$params);
-	}
+    /**
+    	 * Executes a SELECT query and returns an array of values from first column
+    	 * 
+    	 * @param string $query SQL SELECT query
+    	 * @param mixed ...$params Query parameters
+    	 * @return array<int, mixed> Array of values from first column
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function selectValues(string $query, mixed ...$params): array
+    {
+        $instance = self::getInstance();
+        return $instance->selectValues($query, ...$params);
+    }
 
-	/**
-	 * Close the database connection
-	 * @return void
-	 * @throws DBError if connection fails
-	 */
-	public static function close(): void
-	{
-		$db = self::getInstance();
-		$db->close();
-	}
+    /**
+    	 * Executes a SELECT query and returns key-value pairs
+    	 * 
+    	 * @param string $query SQL SELECT query returning at least 2 columns
+    	 * @param mixed ...$params Query parameters
+    	 * @return array<int|string, mixed> Associative array using first column as keys, second as values
+    	 * @throws DBError if query execution fails or database is closed
+    	 */
+    public static function selectPairs(string $query, mixed ...$params): array
+    {
+        $instance = self::getInstance();
+        return $instance->selectPairs($query, ...$params);
+    }
 
-	/**
-	 * Handle any pending database operations
-	 * @return void
-	 * @throws DBError if connection fails
-	 */
-	public static function handle(): void
-	{
-		$db = self::getInstance();
-		$db->handle();
-	}
+    /**
+    	 * Closes the database connection
+    	 * 
+    	 * @return void
+    	 */
+    public static function close(): void
+    {
+        $instance = self::getInstance();
+        $instance->close();
+    }
+
+    /**
+    	 * Returns the mysqli handle for advanced operations (undocumented)
+    	 * 
+    	 * @return mysqli|null Database connection handle
+    	 */
+    public static function handle(): ?mysqli
+    {
+        $instance = self::getInstance();
+        return $instance->handle();
+    }
 }

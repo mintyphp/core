@@ -12,19 +12,33 @@ class RawValue
 
 class Template
 {
+    // Default static configuration
+    public static string $__escape = 'html';
+
+    // Configuration properties
+    private string $escape;
+
+    /**
+     * Constructor
+     * @param string $escape
+     */
+    public function __construct(string $escape)
+    {
+        $this->escape = $escape;
+    }
+
     /**
      * Escapes a string based on the specified escape type.
      *
-     * @param string $escape The escape type ('html' for HTML escaping, or 'none' for no escaping).
      * @param string|RawValue $string The string to escape.
      * @return string The escaped string.
      */
-    public function escape(string $escape, string|RawValue $string): string
+    private function escape(string|RawValue $string): string
     {
         if ($string instanceof RawValue) {
             return $string->value;
         }
-        switch ($escape) {
+        switch ($this->escape) {
             case 'html':
                 return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
         }
@@ -37,10 +51,9 @@ class Template
      * @param string $template The template string containing placeholders like {{variable}}.
      * @param array<string,mixed> $data Associative array of data to use in the template.
      * @param array<string,callable> $functions Associative array of custom functions available in the template.
-     * @param string $escape The escape type to use (default: 'html'). Use 'none' for no escaping.
      * @return string The rendered template string.
      */
-    public function render(string $template, array $data, array $functions = [], string $escape = 'html'): string
+    public function render(string $template, array $data, array $functions = []): string
     {
         $tokens = $this->tokenize($template);
         $tree = $this->createSyntaxTree($tokens);
@@ -48,7 +61,7 @@ class Template
         $functions['raw'] = function ($value) {
             return new RawValue((string)$value);
         };
-        return $this->renderChildren($tree, $data, $functions, $escape);
+        return $this->renderChildren($tree, $data, $functions);
     }
 
     /**
@@ -216,10 +229,9 @@ class Template
      * @param \stdClass $node The parent node whose children should be rendered.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
-     * @param string $escape The escape type to use.
      * @return string The concatenated rendered output of all child nodes.
      */
-    private function renderChildren(\stdClass $node, array $data, array $functions, string $escape): string
+    private function renderChildren(\stdClass $node, array $data, array $functions): string
     {
         $result = '';
         $ifNodes = [];
@@ -227,23 +239,23 @@ class Template
             /** @var \stdClass $child */
             switch ($child->type) {
                 case 'if':
-                    $result .= $this->renderIfNode($child, $data, $functions, $escape);
+                    $result .= $this->renderIfNode($child, $data, $functions);
                     $ifNodes = array($child);
                     break;
                 case 'elseif':
-                    $result .= $this->renderElseIfNode($child, $ifNodes, $data, $functions, $escape);
+                    $result .= $this->renderElseIfNode($child, $ifNodes, $data, $functions);
                     array_push($ifNodes, $child);
                     break;
                 case 'else':
-                    $result .= $this->renderElseNode($child, $ifNodes, $data, $functions, $escape);
+                    $result .= $this->renderElseNode($child, $ifNodes, $data, $functions);
                     $ifNodes = [];
                     break;
                 case 'for':
-                    $result .= $this->renderForNode($child, $data, $functions, $escape);
+                    $result .= $this->renderForNode($child, $data, $functions);
                     $ifNodes = [];
                     break;
                 case 'var':
-                    $result .= $this->renderVarNode($child, $data, $functions, $escape);
+                    $result .= $this->renderVarNode($child, $data, $functions);
                     $ifNodes = [];
                     break;
                 case 'lit':
@@ -264,25 +276,24 @@ class Template
      * @param \stdClass $node The if node to render.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
-     * @param string $escape The escape type to use.
      * @return string The rendered output if condition is true, empty string otherwise.
      */
-    private function renderIfNode(\stdClass $node, array $data, array $functions, string $escape): string
+    private function renderIfNode(\stdClass $node, array $data, array $functions): string
     {
         $parts = $this->explode('|', (string)$node->expression);
         $path = array_shift($parts);
         if ($path === null) {
-            return $this->escape($escape, '{{if:' . $node->expression . '!!' . "invalid expression" . '}}');
+            return $this->escape('{{if:' . $node->expression . '!!' . "invalid expression" . '}}');
         }
         try {
             $value = $this->resolvePath($path, $data);
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape($escape, '{{if:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{{if:' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         $result = '';
         if ($value) {
-            $result .= $this->renderChildren($node, $data, $functions, $escape);
+            $result .= $this->renderChildren($node, $data, $functions);
         }
         $node->value = $value;
         return $result;
@@ -298,13 +309,12 @@ class Template
      * @param array<int,\stdClass> $ifNodes Array of preceding if/elseif nodes in the chain.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
-     * @param string $escape The escape type to use.
      * @return string The rendered output if condition is true and no previous conditions were true, empty string otherwise.
      */
-    private function renderElseIfNode(\stdClass $node, array $ifNodes, array $data, array $functions, string $escape): string
+    private function renderElseIfNode(\stdClass $node, array $ifNodes, array $data, array $functions): string
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
-            return $this->escape($escape, "{{elseif!!could not find matching `if`}}");
+            return $this->escape("{{elseif!!could not find matching `if`}}");
         }
         $result = '';
         $value = false;
@@ -315,16 +325,16 @@ class Template
             $parts = $this->explode('|', (string)$node->expression);
             $path = array_shift($parts);
             if ($path === null) {
-                return $this->escape($escape, '{{elseif:' . $node->expression . '!!' . "invalid expression" . '}}');
+                return $this->escape('{{elseif:' . $node->expression . '!!' . "invalid expression" . '}}');
             }
             try {
                 $value = $this->resolvePath($path, $data);
                 $value = $this->applyFunctions($value, $parts, $functions, $data);
             } catch (\Throwable $e) {
-                return $this->escape($escape, '{{elseif:' . $node->expression . '!!' . $e->getMessage() . '}}');
+                return $this->escape('{{elseif:' . $node->expression . '!!' . $e->getMessage() . '}}');
             }
             if ($value) {
-                $result .= $this->renderChildren($node, $data, $functions, $escape);
+                $result .= $this->renderChildren($node, $data, $functions);
             }
         }
         $node->value = $value;
@@ -340,13 +350,12 @@ class Template
      * @param array<int,\stdClass> $ifNodes Array of preceding if/elseif nodes in the chain.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
-     * @param string $escape The escape type to use.
      * @return string The rendered output if no previous conditions were true, empty string otherwise.
      */
-    private function renderElseNode(\stdClass $node, array $ifNodes, array $data, array $functions, string $escape): string
+    private function renderElseNode(\stdClass $node, array $ifNodes, array $data, array $functions): string
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
-            return $this->escape($escape, "{{else!!could not find matching `if`}}");
+            return $this->escape("{{else!!could not find matching `if`}}");
         }
         $result = '';
         $value = false;
@@ -354,7 +363,7 @@ class Template
             $value = $value || $ifNodes[$i]->value;
         }
         if (!$value) {
-            $result .= $this->renderChildren($node, $data, $functions, $escape);
+            $result .= $this->renderChildren($node, $data, $functions);
         }
         return $result;
     }
@@ -370,15 +379,14 @@ class Template
      * @param \stdClass $node The for node to render.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
-     * @param string $escape The escape type to use.
      * @return string The concatenated rendered output for each iteration.
      */
-    private function renderForNode(\stdClass $node, array $data, array $functions, string $escape): string
+    private function renderForNode(\stdClass $node, array $data, array $functions): string
     {
         $parts = $this->explode('|', (string)$node->expression);
         $path = array_shift($parts);
         if ($path === null) {
-            return $this->escape($escape, '{{for:' . $node->expression . '!!' . "invalid expression" . '}}');
+            return $this->escape('{{for:' . $node->expression . '!!' . "invalid expression" . '}}');
         }
         $path = $this->explode(':', $path, 3);
         if (count($path) == 2) {
@@ -387,21 +395,21 @@ class Template
         } elseif (count($path) == 3) {
             list($var, $key, $path) = $path;
         } else {
-            return $this->escape($escape, '{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
+            return $this->escape('{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
         }
         try {
             $value = $this->resolvePath($path, $data);
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape($escape, '{{for:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{{for:' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         if (!is_array($value)) {
-            return $this->escape($escape, '{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}');
+            return $this->escape('{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}');
         }
         $result = '';
         foreach ($value as $k => $v) {
             $data = array_merge($data, $key ? [$var => $v, $key => $k] : [$var => $v]);
-            $result .= $this->renderChildren($node, $data, $functions, $escape);
+            $result .= $this->renderChildren($node, $data, $functions);
         }
         return $result;
     }
@@ -415,29 +423,28 @@ class Template
      * @param \stdClass $node The var node to render.
      * @param array<string,mixed> $data The data context for variable lookup.
      * @param array<string,callable> $functions Available custom functions for filters.
-     * @param string $escape The escape type to use.
      * @return string The rendered and escaped variable value.
      */
-    private function renderVarNode(\stdClass $node, array $data, array $functions, string $escape): string
+    private function renderVarNode(\stdClass $node, array $data, array $functions): string
     {
         $parts = $this->explode('|', (string)$node->expression);
         $path = array_shift($parts);
         if ($path === null) {
-            return $this->escape($escape, '{{' . $node->expression . '!!' . "invalid expression" . '}}');
+            return $this->escape('{{' . $node->expression . '!!' . "invalid expression" . '}}');
         }
         try {
             $value = $this->resolvePath($path, $data);
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape($escape, '{{' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{{' . $node->expression . '!!' . $e->getMessage() . '}}');
         }
         if ($value instanceof RawValue) {
-            return $this->escape($escape, $value);
+            return $this->escape($value);
         }
         if (!is_string($value) && !is_numeric($value)) {
             $value = '';
         }
-        return $this->escape($escape, (string)$value);
+        return $this->escape((string)$value);
     }
 
     /**

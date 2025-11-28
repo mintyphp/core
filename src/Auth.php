@@ -5,124 +5,142 @@ namespace MintyPHP;
 use MintyPHP\Core\Auth as CoreAuth;
 
 /**
- * Static class for authentication operations using a singleton pattern.
+ * Static wrapper class for Auth operations using a singleton pattern.
  */
 class Auth
 {
-	/**
-	 * The Auth instance
-	 * @var ?CoreAuth
-	 */
-	private static ?CoreAuth $instance = null;
+    /**
+     * Configuration parameters
+     */
+    public static string $usersTable = 'users';
+    public static string $usernameField = 'username';
+    public static string $passwordField = 'password';
+    public static string $createdField = 'created';
+    public static string $totpSecretField = 'totp_secret';
 
-	/**
-	 * Configuration for the Auth instance
-	 */
-	public static string $usersTable = 'users';
-	public static string $usernameField = 'username';
-	public static string $passwordField = 'password';
-	public static string $createdField = 'created';
-	public static string $totpSecretField = 'totp_secret';
+    /**
+     * The Auth instance
+     * @var ?CoreAuth
+     */
+    private static ?CoreAuth $instance = null;
 
-	/**
-	 * Get the Auth instance
-	 * @return CoreAuth
-	 */
-	public static function getInstance(): CoreAuth
-	{
-		return self::$instance ??= new CoreAuth(
-			DB::getInstance(),
-			self::$usersTable,
-			self::$usernameField,
-			self::$passwordField,
-			self::$createdField,
-			self::$totpSecretField
-		);
-	}
+    /**
+     * Get the Auth instance
+     * @return CoreAuth
+     */
+    public static function getInstance(): CoreAuth
+    {
+        return self::$instance ??= new CoreAuth(
+            DB::getInstance(),
+            self::$usersTable,
+            self::$usernameField,
+            self::$passwordField,
+            self::$createdField,
+            self::$totpSecretField
+        );
+    }
 
-	/**
-	 * Set the Auth instance to use
-	 * @param CoreAuth $auth
-	 * @return void
-	 */
-	public static function setInstance(CoreAuth $auth): void
-	{
-		self::$instance = $auth;
-	}
+    /**
+     * Set the Auth instance to use
+     * @param CoreAuth $instance
+     * @return void
+     */
+    public static function setInstance(CoreAuth $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * Authenticate a user with username, password, and optional TOTP code
-	 * 
-	 * @param string $username The username to authenticate
-	 * @param string $password The password to verify
-	 * @param string $totp Optional TOTP code for two-factor authentication
-	 * @return array<string,array<string|mixed>> User data on success, empty array on failure
-	 */
-	public static function login(string $username, string $password, string $totp = ''): array
-	{
-		$auth = self::getInstance();
-		return $auth->login($username, $password, $totp);
-	}
+    /**
+     * Authenticate a user with username, password, and optional TOTP code.
+     * 
+     * Verifies the username and password, checks TOTP if configured,
+     * regenerates the session, and stores user data in the session.
+     * 
+     * @param string $username The username to authenticate.
+     * @param string $password The password to verify.
+     * @param string $totp Optional TOTP code for two-factor authentication.
+     * @return array<string,array<string,mixed>> User data on success, empty array on failure.
+     * @throws TotpError If TOTP verification fails.
+     */
+    public static function login(string $username, string $password, string $totp = ''): array
+    {
+        $instance = self::getInstance();
+        return $instance->login($username, $password, $totp);
+    }
 
-	/**
-	 * Log out the current user
-	 * 
-	 * @return bool Always returns true
-	 */
-	public static function logout(): bool
-	{
-		$auth = self::getInstance();
-		return $auth->logout();
-	}
+    /**
+     * Log out the current user.
+     * 
+     * Removes user data from the session and regenerates the session ID
+     * for security.
+     * 
+     * @return bool Always returns true.
+     */
+    public static function logout(): bool
+    {
+        $instance = self::getInstance();
+        return $instance->logout();
+    }
 
-	/**
-	 * Register a new user with username and password
-	 * 
-	 * @param string $username The username for the new user
-	 * @param string $password The password for the new user
-	 * @return int The ID of the newly created user
-	 */
-	public static function register(string $username, string $password): int
-	{
-		$auth = self::getInstance();
-		return $auth->register($username, $password);
-	}
+    /**
+     * Register a new user with username and password.
+     * 
+     * Hashes the password using PASSWORD_DEFAULT algorithm and stores
+     * the user record with the current timestamp.
+     * 
+     * @param string $username The username for the new user.
+     * @param string $password The password for the new user (will be hashed).
+     * @return int The ID of the newly created user.
+     */
+    public static function register(string $username, string $password): int
+    {
+        $instance = self::getInstance();
+        return $instance->register($username, $password);
+    }
 
-	/**
-	 * Update a user's password
-	 * 
-	 * @param string $username The username to update
-	 * @param string $password The new password
-	 * @return int Number of rows affected
-	 */
-	public static function update(string $username, string $password): int
-	{
-		$auth = self::getInstance();
-		return $auth->update($username, $password);
-	}
+    /**
+     * Update a user's password.
+     * 
+     * Hashes the new password using PASSWORD_DEFAULT algorithm and
+     * updates the user's record.
+     * 
+     * @param string $username The username to update.
+     * @param string $password The new password (will be hashed).
+     * @return int Number of rows affected (typically 1 on success, 0 if user not found).
+     */
+    public static function update(string $username, string $password): int
+    {
+        $instance = self::getInstance();
+        return $instance->update($username, $password);
+    }
 
-	/**
-	 * Update a user's TOTP secret
-	 * 
-	 * @param string $username The username to update
-	 * @param string $secret The new TOTP secret
-	 * @return int Number of rows affected
-	 */
-	public static function updateTotpSecret(string $username, string $secret): int
-	{
-		$auth = self::getInstance();
-		return $auth->updateTotpSecret($username, $secret);
-	}
+    /**
+     * Update a user's TOTP secret.
+     * 
+     * Sets or updates the TOTP secret for two-factor authentication.
+     * 
+     * @param string $username The username to update.
+     * @param string $secret The new TOTP secret (base32-encoded).
+     * @return int Number of rows affected (typically 1 on success, 0 if user not found).
+     */
+    public static function updateTotpSecret(string $username, string $secret): int
+    {
+        $instance = self::getInstance();
+        return $instance->updateTotpSecret($username, $secret);
+    }
 
-	/**
-	 * Check if a user exists
-	 * 
-	 * @param string $username The username to check
-	 * @return bool True if user exists, false otherwise
-	 */
-	public static function exists(string $username): bool
-	{
-		$auth = self::getInstance();
-		return $auth->exists($username);
-	}
+    /**
+     * Check if a user exists.
+     * 
+     * Queries the database to determine if a user with the given
+     * username exists.
+     * 
+     * @param string $username The username to check.
+     * @return bool True if user exists, false otherwise.
+     */
+    public static function exists(string $username): bool
+    {
+        $instance = self::getInstance();
+        return $instance->exists($username);
+    }
 }

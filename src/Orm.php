@@ -5,33 +5,35 @@ namespace MintyPHP;
 use MintyPHP\Core\Orm as CoreOrm;
 
 /**
- * Static class for ORM operations using a singleton pattern.
+ * Static wrapper class for Orm operations using a singleton pattern.
  */
 class Orm
 {
     /**
-     * The ORM instance
+     * The Orm instance
      * @var ?CoreOrm
      */
     private static ?CoreOrm $instance = null;
 
     /**
-     * Get the ORM instance
+     * Get the Orm instance
      * @return CoreOrm
      */
     public static function getInstance(): CoreOrm
     {
-        return self::$instance ??= new CoreOrm(DB::getInstance());
+        return self::$instance ??= new CoreOrm(
+            DB::getInstance()
+        );
     }
 
     /**
-     * Set the ORM instance to use
-     * @param CoreOrm $orm
+     * Set the Orm instance to use
+     * @param CoreOrm $instance
      * @return void
      */
-    public static function setInstance(CoreOrm $orm): void
+    public static function setInstance(CoreOrm $instance): void
     {
-        self::$instance = $orm;
+        self::$instance = $instance;
     }
 
     /**
@@ -43,8 +45,8 @@ class Orm
      */
     public static function insert(string $tableName, array $object): int
     {
-        $orm = self::getInstance();
-        return $orm->insert($tableName, $object);
+        $instance = self::getInstance();
+        return $instance->insert($tableName, $object);
     }
 
     /**
@@ -58,8 +60,8 @@ class Orm
      */
     public static function update(string $tableName, array $object, string|int $id, string $idField = 'id'): bool
     {
-        $orm = self::getInstance();
-        return $orm->update($tableName, $object, $id, $idField);
+        $instance = self::getInstance();
+        return $instance->update($tableName, $object, $id, $idField);
     }
 
     /**
@@ -72,8 +74,8 @@ class Orm
      */
     public static function select(string $tableName, string|int $id, string $idField = 'id'): array
     {
-        $orm = self::getInstance();
-        return $orm->select($tableName, $id, $idField);
+        $instance = self::getInstance();
+        return $instance->select($tableName, $id, $idField);
     }
 
     /**
@@ -86,7 +88,7 @@ class Orm
      */
     public static function delete(string $tableName, string|int $id, string $idField = 'id'): bool
     {
-        $orm = self::getInstance();
-        return $orm->delete($tableName, $id, $idField);
+        $instance = self::getInstance();
+        return $instance->delete($tableName, $id, $idField);
     }
 }

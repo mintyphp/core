@@ -3,63 +3,55 @@
 namespace MintyPHP;
 
 use MintyPHP\Core\Template as CoreTemplate;
-use MintyPHP\Core\TemplateString;
 
 /**
  * Static wrapper class for Template operations using a singleton pattern.
  */
 class Template
 {
-	/**
-	 * The template instance
-	 * @var ?CoreTemplate
-	 */
-	private static ?CoreTemplate $instance = null;
+    /**
+     * Configuration parameters
+     */
+    public static string $escape = 'html';
 
-	/**
-	 * Get the template instance
-	 * @return CoreTemplate
-	 */
-	public static function getInstance(): CoreTemplate
-	{
-		return self::$instance ??= new CoreTemplate();
-	}
+    /**
+     * The Template instance
+     * @var ?CoreTemplate
+     */
+    private static ?CoreTemplate $instance = null;
 
-	/**
-	 * Set the template instance to use
-	 * @param CoreTemplate $template
-	 * @return void
-	 */
-	public static function setInstance(CoreTemplate $template): void
-	{
-		self::$instance = $template;
-	}
+    /**
+     * Get the Template instance
+     * @return CoreTemplate
+     */
+    public static function getInstance(): CoreTemplate
+    {
+        return self::$instance ??= new CoreTemplate(
+            self::$escape
+        );
+    }
 
-	/**
-	 * Escapes a string based on the specified escape type.
-	 * 
-	 * @param string $escape The escape type (e.g., 'html').
-	 * @param string $string The string to escape.
-	 * @return string The escaped string.
-	 */
-	public static function escape($escape, $string)
-	{
-		$template = self::getInstance();
-		return $template->escape($escape, $string);
-	}
+    /**
+     * Set the Template instance to use
+     * @param CoreTemplate $instance
+     * @return void
+     */
+    public static function setInstance(CoreTemplate $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * Renders a template with the provided data and functions.
-	 * 
-	 * @param string $template The template string to render.
-	 * @param array $data The data to use in the template.
-	 * @param array $functions Custom functions to use in the template.
-	 * @param string $escape The escape type to use (default: 'html').
-	 * @return string The rendered template as a string.
-	 */
-	public static function render($template, $data, $functions = [], $escape = 'html'): string
-	{
-		$instance = self::getInstance();
-		return $instance->render($template, $data, $functions, $escape);
-	}
+    /**
+     * Renders a template string with the provided data and custom functions.
+     *
+     * @param string $template The template string containing placeholders like {{variable}}.
+     * @param array<string,mixed> $data Associative array of data to use in the template.
+     * @param array<string,callable> $functions Associative array of custom functions available in the template.
+     * @return string The rendered template string.
+     */
+    public static function render(string $template, array $data, array $functions = []): string
+    {
+        $instance = self::getInstance();
+        return $instance->render($template, $data, $functions);
+    }
 }

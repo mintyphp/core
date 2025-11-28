@@ -5,81 +5,97 @@ namespace MintyPHP;
 use MintyPHP\Core\Buffer as CoreBuffer;
 
 /**
- * Static class for Buffer operations using a singleton pattern.
+ * Static wrapper class for Buffer operations using a singleton pattern.
  */
 class Buffer
 {
-	/**
-	 * The Buffer instance
-	 * @var ?CoreBuffer
-	 */
-	private static ?CoreBuffer $instance = null;
+    /**
+     * The Buffer instance
+     * @var ?CoreBuffer
+     */
+    private static ?CoreBuffer $instance = null;
 
-	/**
-	 * Get the Buffer instance
-	 * @return CoreBuffer
-	 */
-	public static function getInstance(): CoreBuffer
-	{
-		return self::$instance ??= new CoreBuffer();
-	}
+    /**
+     * Get the Buffer instance
+     * @return CoreBuffer
+     */
+    public static function getInstance(): CoreBuffer
+    {
+        return self::$instance ??= new CoreBuffer(
 
-	/**
-	 * Set the Buffer instance to use
-	 * @param CoreBuffer $buffer
-	 * @return void
-	 */
-	public static function setInstance(CoreBuffer $buffer): void
-	{
-		self::$instance = $buffer;
-	}
+        );
+    }
 
-	/**
-	 * Start capturing output into a named buffer.
-	 * 
-	 * @param string $name The name of the buffer.
-	 * @return void
-	 */
-	public static function start(string $name): void
-	{
-		$buffer = self::getInstance();
-		$buffer->start($name);
-	}
+    /**
+     * Set the Buffer instance to use
+     * @param CoreBuffer $instance
+     * @return void
+     */
+    public static function setInstance(CoreBuffer $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * End capturing output and store it in the named buffer.
-	 * 
-	 * @param string $name The name of the buffer.
-	 * @return void
-	 */
-	public static function end(string $name): void
-	{
-		$buffer = self::getInstance();
-		$buffer->end($name);
-	}
+    /**
+     * Start a named output buffer.
+     * 
+     * Pushes the buffer name onto the stack and begins capturing output.
+     * All output generated after this call will be captured until end()
+     * is called with the same name.
+     * 
+     * @param string $name The name of the buffer to start.
+     * @return void
+     */
+    public static function start(string $name): void
+    {
+        $instance = self::getInstance();
+        $instance->start($name);
+    }
 
-	/**
-	 * Set the content of a named buffer directly.
-	 * 
-	 * @param string $name The name of the buffer.
-	 * @param string $string The content to store in the buffer.
-	 * @return void
-	 */
-	public static function set(string $name, string $string): void
-	{
-		$buffer = self::getInstance();
-		$buffer->set($name, $string);
-	}
+    /**
+     * End a named output buffer.
+     * 
+     * Stops capturing output for the named buffer and stores the captured
+     * content. The buffer name must match the most recently started buffer
+     * to maintain proper nesting.
+     * 
+     * @param string $name The name of the buffer to end.
+     * @return void
+     * @throws BufferError If the buffer name doesn't match the top of the stack.
+     */
+    public static function end(string $name): void
+    {
+        $instance = self::getInstance();
+        $instance->end($name);
+    }
 
-	/**
-	 * Get and output the content of a named buffer.
-	 * 
-	 * @param string $name The name of the buffer.
-	 * @return bool Returns true if the buffer exists and was output, false otherwise.
-	 */
-	public static function get(string $name): bool
-	{
-		$buffer = self::getInstance();
-		return $buffer->get($name);
-	}
+    /**
+     * Set the contents of a named buffer.
+     * 
+     * Directly assigns content to a buffer without using output buffering.
+     * This overwrites any existing content for the buffer.
+     * 
+     * @param string $name The name of the buffer.
+     * @param string $string The content to store in the buffer.
+     * @return void
+     */
+    public static function set(string $name, string $string): void
+    {
+        $instance = self::getInstance();
+        $instance->set($name, $string);
+    }
+
+    /**
+     * Output the contents of a named buffer.
+     * 
+     * Echoes the stored content of the specified buffer if it exists.
+     * 
+     * @param string $name The name of the buffer to output.
+     * @return bool True if the buffer exists and was output, false otherwise.
+     */
+    public static function get(string $name): bool
+    {
+        $instance = self::getInstance();
+        return $instance->get($name);
+    }
 }

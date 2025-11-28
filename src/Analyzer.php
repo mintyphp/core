@@ -4,40 +4,49 @@ namespace MintyPHP;
 
 use MintyPHP\Core\Analyzer as CoreAnalyzer;
 
+/**
+ * Static wrapper class for Analyzer operations using a singleton pattern.
+ */
 class Analyzer
 {
-	/**
-	 * The analyzer instance
-	 * @var ?CoreAnalyzer
-	 */
-	private static ?CoreAnalyzer $instance = null;
+    /**
+     * The Analyzer instance
+     * @var ?CoreAnalyzer
+     */
+    private static ?CoreAnalyzer $instance = null;
 
-	/**
-	 * Get the analyzer instance
-	 * @return CoreAnalyzer
-	 */
-	public static function getInstance(): CoreAnalyzer
-	{
-		return self::$instance ??= new CoreAnalyzer(Router::getInstance());
-	}
+    /**
+     * Get the Analyzer instance
+     * @return CoreAnalyzer
+     */
+    public static function getInstance(): CoreAnalyzer
+    {
+        return self::$instance ??= new CoreAnalyzer(
+            Router::getInstance()
+        );
+    }
 
-	/**
-	 * Set the analyzer instance to use
-	 * @param CoreAnalyzer $analyzer
-	 * @return void
-	 */
-	public static function setInstance(CoreAnalyzer $analyzer): void
-	{
-		self::$instance = $analyzer;
-	}
+    /**
+     * Set the Analyzer instance to use
+     * @param CoreAnalyzer $instance
+     * @return void
+     */
+    public static function setInstance(CoreAnalyzer $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * Execute the analyzer
-	 * @return void
-	 */
-	public static function execute(): void
-	{
-		$analyzer = self::getInstance();
-		$analyzer->execute();
-	}
+    /**
+    	 * Execute the analyzer to check all action and view files.
+    	 * 
+    	 * Checks template actions, actions, views, and template views for
+    	 * disallowed output functions.
+    	 * 
+    	 * @return void
+    	 */
+    public static function execute(): void
+    {
+        $instance = self::getInstance();
+        $instance->execute();
+    }
 }

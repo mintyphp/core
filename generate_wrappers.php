@@ -22,8 +22,8 @@
  */
 
 // Configuration
-$coreDir = __DIR__ . '/Core';
-$wrapperDir = __DIR__;
+$coreDir = __DIR__ . '/src/Core';
+$wrapperDir = __DIR__ . '/src';
 
 // Find all Core classes by listing the Core directory
 $classes = [];
@@ -41,21 +41,21 @@ foreach ($files as $file) {
     }
 }
 
+$generatedCount = 0;
+
 foreach ($classes as $className) {
     $coreFile = "$coreDir/$className.php";
     $wrapperFile = "$wrapperDir/$className.php";
 
     if (!file_exists($coreFile)) {
-        echo "Skipping $className: Core file not found\n";
+        echo "Error: Skipping $className - Core file not found\n";
         continue;
     }
-
-    echo "Processing $className...\n";
 
     // Parse the Core class
     $coreContent = file_get_contents($coreFile);
     if ($coreContent === false) {
-        echo "Skipping $className: Could not read file\n";
+        echo "Error: Skipping $className - Could not read file\n";
         continue;
     }
 
@@ -91,8 +91,11 @@ foreach ($classes as $className) {
     }
 
     // Extract the constructor signature from Core class
-    preg_match('/public\s+function\s+__construct\s*\(([^)]*)\)/', $coreContent, $constructorMatch);
-    $constructorSignature = $constructorMatch[1] ?? '';
+    // Use a more specific pattern to find the constructor of the main class (not nested classes)
+    // Match: class ClassName { ... public function __construct(...) }
+    $classPattern = '/class\s+' . preg_quote($className, '/') . '\s*\{([^}]*(?:\{[^}]*\}[^}]*)*?)public\s+function\s+__construct\s*\(([^)]*)\)/s';
+    preg_match($classPattern, $coreContent, $constructorMatch);
+    $constructorSignature = $constructorMatch[2] ?? '';
 
     // Parse constructor parameters
     $coreConstructorParams = [];
@@ -154,7 +157,7 @@ foreach ($classes as $className) {
 
         // Warn if method has no docblock
         if (empty($docblock)) {
-            echo "  Warning: Method $methodName() has no docblock\n";
+            echo "Warning: $className::$methodName() has no docblock\n";
         }
 
         // Parse parameters
@@ -197,7 +200,13 @@ foreach ($classes as $className) {
             }
         }
         if (!$found) {
-            echo "  Warning: Constructor parameter \${$param['name']} has no matching static variable \$__{$param['name']}\n";
+            // Check if the parameter type is a Core class
+            $paramType = $param['type'];
+            $baseType = str_replace('?', '', $paramType);
+            // Don't warn if it's a Core class (will be autowired via getInstance())
+            if (!preg_match('/^[A-Z][a-zA-Z]*$/', $baseType)) {
+                echo "Warning: $className - Constructor parameter \${$param['name']} has no matching static variable \$__{$param['name']}\n";
+            }
         }
     }
 
@@ -214,10 +223,10 @@ foreach ($classes as $className) {
 
     // Write wrapper file
     file_put_contents($wrapperFile, $wrapperContent);
-    echo "Generated $wrapperFile\n";
+    $generatedCount++;
 }
 
-echo "Done!\n";
+echo "Done: $generatedCount wrappers written\n";
 
 /**
  * Generate the wrapper class content
@@ -247,24 +256,24 @@ function generateWrapperClass(
 
     // Generate static variables (without __ prefix)
     if (!empty($staticVars)) {
-        $code .= "\t/**\n";
-        $code .= "\t * Configuration parameters\n";
-        $code .= "\t */\n";
+        $code .= "    /**\n";
+        $code .= "     * Configuration parameters\n";
+        $code .= "     */\n";
         foreach ($staticVars as $var) {
-            $code .= "\t{$var['visibility']} static {$var['type']} \${$var['name']} = {$var['default']};\n";
+            $code .= "    {$var['visibility']} static {$var['type']} \${$var['name']} = {$var['default']};\n";
         }
         $code .= "\n";
     }
 
     // Copy static functions starting with __
     if (!empty($staticFunctions)) {
-        $code .= "\t/**\n";
-        $code .= "\t * Static functions copied from Core class\n";
-        $code .= "\t */\n";
+        $code .= "    /**\n";
+        $code .= "     * Static functions copied from Core class\n";
+        $code .= "     */\n";
         foreach ($staticFunctions as $func) {
-            $code .= "\t{$func['visibility']} static function {$func['name']}({$func['paramSignature']}): {$func['returnType']}\n";
-            $code .= "\t{\n";
-            $code .= "\t\treturn $coreClassName::{$func['name']}(";
+            $code .= "    {$func['visibility']} static function {$func['name']}({$func['paramSignature']}): {$func['returnType']}\n";
+            $code .= "    {\n";
+            $code .= "        return $coreClassName::{$func['name']}(";
             // Extract parameter names for the call
             if ($func['paramSignature']) {
                 preg_match_all('/\$([a-zA-Z_][a-zA-Z0-9_]*)/', $func['paramSignature'], $paramNames);
@@ -280,25 +289,25 @@ function generateWrapperClass(
                 $code .= implode(', ', array_unique($callParams));
             }
             $code .= ");\n";
-            $code .= "\t}\n\n";
+            $code .= "    }\n\n";
         }
     }
 
     // Generate instance variable
-    $code .= "\t/**\n";
-    $code .= "\t * The $className instance\n";
-    $code .= "\t * @var ?$coreClassName\n";
-    $code .= "\t */\n";
-    $code .= "\tprivate static ?$coreClassName \$instance = null;\n\n";
+    $code .= "    /**\n";
+    $code .= "     * The $className instance\n";
+    $code .= "     * @var ?$coreClassName\n";
+    $code .= "     */\n";
+    $code .= "    private static ?$coreClassName \$instance = null;\n\n";
 
     // Generate getInstance method
-    $code .= "\t/**\n";
-    $code .= "\t * Get the $className instance\n";
-    $code .= "\t * @return $coreClassName\n";
-    $code .= "\t */\n";
-    $code .= "\tpublic static function getInstance(): $coreClassName\n";
-    $code .= "\t{\n";
-    $code .= "\t\treturn self::\$instance ??= new $coreClassName(\n";
+    $code .= "    /**\n";
+    $code .= "     * Get the $className instance\n";
+    $code .= "     * @return $coreClassName\n";
+    $code .= "     */\n";
+    $code .= "    public static function getInstance(): $coreClassName\n";
+    $code .= "    {\n";
+    $code .= "        return self::\$instance ??= new $coreClassName(\n";
 
     // Match constructor parameters with static variables
     $constructorArgs = [];
@@ -307,7 +316,7 @@ function generateWrapperClass(
         $found = false;
         foreach ($staticVars as $var) {
             if ($var['name'] === $param['name']) {
-                $constructorArgs[] = "\t\t\tself::\${$var['name']}";
+                $constructorArgs[] = "            self::\${$var['name']}";
                 $found = true;
                 break;
             }
@@ -321,28 +330,28 @@ function generateWrapperClass(
             // Check if it's a known Core class (simple name without namespace)
             if (preg_match('/^[A-Z][a-zA-Z]*$/', $baseType)) {
                 // It's likely a Core class, call getInstance()
-                $constructorArgs[] = "\t\t\t$baseType::getInstance()";
+                $constructorArgs[] = "            $baseType::getInstance()";
             } else {
                 // Not a Core class, use null
-                $constructorArgs[] = "\t\t\tnull";
+                $constructorArgs[] = "            null";
             }
         }
     }
 
     $code .= implode(",\n", $constructorArgs);
-    $code .= "\n\t\t);\n";
-    $code .= "\t}\n\n";
+    $code .= "\n        );\n";
+    $code .= "    }\n\n";
 
     // Generate setInstance method
-    $code .= "\t/**\n";
-    $code .= "\t * Set the $className instance to use\n";
-    $code .= "\t * @param $coreClassName \$instance\n";
-    $code .= "\t * @return void\n";
-    $code .= "\t */\n";
-    $code .= "\tpublic static function setInstance($coreClassName \$instance): void\n";
-    $code .= "\t{\n";
-    $code .= "\t\tself::\$instance = \$instance;\n";
-    $code .= "\t}\n";
+    $code .= "    /**\n";
+    $code .= "     * Set the $className instance to use\n";
+    $code .= "     * @param $coreClassName \$instance\n";
+    $code .= "     * @return void\n";
+    $code .= "     */\n";
+    $code .= "    public static function setInstance($coreClassName \$instance): void\n";
+    $code .= "    {\n";
+    $code .= "        self::\$instance = \$instance;\n";
+    $code .= "    }\n";
 
     // Generate wrapper methods
     foreach ($methods as $method) {
@@ -350,28 +359,34 @@ function generateWrapperClass(
 
         // Use the original docblock from Core class if available
         if (!empty($method['docblock'])) {
-            // Indent the docblock properly - remove existing leading whitespace and add single tab
+            // Assume docblocks are indented with 4 spaces, remove that and add 4 spaces
             $docblockLines = explode("\n", $method['docblock']);
             foreach ($docblockLines as $line) {
-                $code .= "\t" . ltrim($line) . "\n";
+                if (trim($line) === '') {
+                    $code .= "\n";
+                } else {
+                    // Remove first 4 spaces if present, then add 4 spaces
+                    $contentPart = preg_replace('/^    /', '', $line);
+                    $code .= "    " . $contentPart . "\n";
+                }
             }
         }
 
         // Method signature
         $paramSig = $method['paramSignature'] ? $method['paramSignature'] : '';
-        $code .= "\tpublic static function {$method['name']}($paramSig): {$method['returnType']}\n";
-        $code .= "\t{\n";
-        $code .= "\t\t\$instance = self::getInstance();\n";
+        $code .= "    public static function {$method['name']}($paramSig): {$method['returnType']}\n";
+        $code .= "    {\n";
+        $code .= "        \$instance = self::getInstance();\n";
 
         // Method call - handle void return type differently
         $paramCall = implode(', ', $method['paramNames']);
         $returnType = trim($method['returnType']);
         if ($returnType === 'void') {
-            $code .= "\t\t\$instance->{$method['name']}($paramCall);\n";
+            $code .= "        \$instance->{$method['name']}($paramCall);\n";
         } else {
-            $code .= "\t\treturn \$instance->{$method['name']}($paramCall);\n";
+            $code .= "        return \$instance->{$method['name']}($paramCall);\n";
         }
-        $code .= "\t}\n";
+        $code .= "    }\n";
     }
 
     $code .= "}\n";

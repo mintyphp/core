@@ -4,217 +4,222 @@ namespace MintyPHP;
 
 use MintyPHP\Core\Router as CoreRouter;
 
+/**
+ * Static wrapper class for Router operations using a singleton pattern.
+ */
 class Router
 {
-	public static string $baseUrl = '/';
-	public static string $pageRoot = 'pages/';
-	public static string $templateRoot = 'templates/';
-	public static bool $executeRedirect = true;
-	public static bool $initialized = false;
+    /**
+     * Configuration parameters
+     */
+    public static string $baseUrl = '/';
+    public static string $pageRoot = 'pages/';
+    public static string $templateRoot = 'templates/';
+    public static bool $executeRedirect = true;
+    public static bool $initialized = false;
+    public static array $serverGlobal = [];
+    public static array $routes = [];
 
-	/**
-	 * The router instance
-	 * @var ?CoreRouter
-	 */
-	private static ?CoreRouter $instance = null;
+    /**
+     * The Router instance
+     * @var ?CoreRouter
+     */
+    private static ?CoreRouter $instance = null;
 
-	/**
-	 * Routes mapping
-	 * @var array<string, string>
-	 */
-	private static array $routes = [];
+    /**
+     * Get the Router instance
+     * @return CoreRouter
+     */
+    public static function getInstance(): CoreRouter
+    {
+        return self::$instance ??= new CoreRouter(
+            self::$baseUrl,
+            self::$pageRoot,
+            self::$templateRoot,
+            self::$executeRedirect,
+            self::$serverGlobal,
+            self::$routes
+        );
+    }
 
-	/**
-	 * Get the router instance
-	 * @return CoreRouter
-	 */
-	public static function getInstance(): CoreRouter
-	{
-		if (!self::$initialized || self::$instance === null) {
-			self::$instance = new CoreRouter(
-				self::$baseUrl,
-				self::$pageRoot,
-				self::$templateRoot,
-				self::$executeRedirect,
-				$_SERVER,
-				self::$routes,
-			);
-			self::$initialized = true;
-		}
-		return self::$instance;
-	}
+    /**
+     * Set the Router instance to use
+     * @param CoreRouter $instance
+     * @return void
+     */
+    public static function setInstance(CoreRouter $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * Set the router instance to use
-	 * @param CoreRouter $router
-	 * @return void
-	 */
-	public static function setInstance(CoreRouter $router): void
-	{
-		self::$instance = $router;
-	}
+    /**
+    	 * Redirect to a URL
+    	 * @param string $url
+    	 * @param bool $permanent
+    	 * @return void
+    	 */
+    public static function redirect(string $url, bool $permanent = false): void
+    {
+        $instance = self::getInstance();
+        $instance->redirect($url, $permanent);
+    }
 
-	/**
-	 * Add a route mapping
-	 * @param string $sourcePath
-	 * @param string $destinationPath
-	 * @return void
-	 */
-	public static function addRoute(string $sourcePath, string $destinationPath): void
-	{
-		if (self::$initialized && self::$instance !== null) {
-			// Router already initialized, add route directly
-			self::$instance->addRoute($sourcePath, $destinationPath);
-		} else {
-			// Store route for later when router is initialized
-			self::$routes[$destinationPath] = $sourcePath;
-		}
-	}
+    /**
+    	 * Output JSON response and terminate execution
+    	 * @param mixed $object The object to encode as JSON
+    	 * @return void
+    	 */
+    public static function json(mixed $object): void
+    {
+        $instance = self::getInstance();
+        $instance->json($object);
+    }
 
-	/**
-	 * Redirect to a URL
-	 * @param string $url
-	 * @param bool $permanent
-	 * @return void
-	 */
-	public static function redirect(string $url, bool $permanent = false): void
-	{
-		$router = self::getInstance();
-		$router->redirect($url, $permanent);
-	}
+    /**
+    	 * Initiate file download with provided data and terminate execution
+    	 * @param string $filename The name of the file to download
+    	 * @param string $data The file content data
+    	 * @return void
+    	 */
+    public static function download(string $filename, string $data): void
+    {
+        $instance = self::getInstance();
+        $instance->download($filename, $data);
+    }
 
-	/**
-	 * Output JSON and terminate
-	 * @param mixed $object
-	 * @return void
-	 */
-	public static function json(mixed $object): void
-	{
-		$router = self::getInstance();
-		$router->json($object);
-	}
+    /**
+    	 * Initiate file download from filesystem and terminate execution
+    	 * @param string $filename The name for the downloaded file
+    	 * @param string $filepath The path to the file on the filesystem
+    	 * @return void
+    	 */
+    public static function file(string $filename, string $filepath): void
+    {
+        $instance = self::getInstance();
+        $instance->file($filename, $filepath);
+    }
 
-	/**
-	 * Download data as a file
-	 * @param string $filename
-	 * @param string $data
-	 * @return void
-	 */
-	public static function download(string $filename, string $data): void
-	{
-		$router = self::getInstance();
-		$router->download($filename, $data);
-	}
+    /**
+    	 * Apply route mappings to the current request
+    	 * @return void
+    	 */
+    public static function applyRoutes(): void
+    {
+        $instance = self::getInstance();
+        $instance->applyRoutes();
+    }
 
-	/**
-	 * Download a file from the filesystem
-	 * @param string $filename
-	 * @param string $filepath
-	 * @return void
-	 */
-	public static function file(string $filename, string $filepath): void
-	{
-		$router = self::getInstance();
-		$router->file($filename, $filepath);
-	}
+    /**
+    	 * Add a route mapping and re-route
+    	 * @param string $sourcePath
+    	 * @param string $destinationPath
+    	 * @return void
+    	 */
+    public static function addRoute(string $sourcePath, string $destinationPath): void
+    {
+        $instance = self::getInstance();
+        $instance->addRoute($sourcePath, $destinationPath);
+    }
 
-	/**
-	 * Get the current URL
-	 * @return string
-	 */
-	public static function getUrl(): string
-	{
-		$router = self::getInstance();
-		return $router->getUrl();
-	}
+    /**
+    	 * Get the matched URL path (view or action name with directory)
+    	 * @return string The URL path
+    	 */
+    public static function getUrl(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getUrl();
+    }
 
-	/**
-	 * Get the canonical URL
-	 * @return string
-	 */
-	public static function getCanonical(): string
-	{
-		$router = self::getInstance();
-		return $router->getCanonical();
-	}
+    /**
+    	 * Get the canonical URL with parameters appended
+    	 * Removes trailing 'index' from the URL if present
+    	 * @return string The canonical URL path
+    	 */
+    public static function getCanonical(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getCanonical();
+    }
 
-	/**
-	 * Get the request URI
-	 * @return string
-	 */
-	public static function getRequest(): string
-	{
-		$router = self::getInstance();
-		return $router->getRequest();
-	}
+    /**
+    	 * Get the current request URI
+    	 * @return string The request URI
+    	 */
+    public static function getRequest(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getRequest();
+    }
 
-	/**
-	 * Get the action file path
-	 * @return string
-	 */
-	public static function getAction(): string
-	{
-		$router = self::getInstance();
-		return $router->getAction();
-	}
+    /**
+    	 * Get the matched action file path
+    	 * @return string The full path to the action PHP file, or empty string if none
+    	 */
+    public static function getAction(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getAction();
+    }
 
-	/**
-	 * Get the redirect URL if set
-	 * @return ?string
-	 */
-	public static function getRedirect(): ?string
-	{
-		$router = self::getInstance();
-		return $router->getRedirect();
-	}
+    /**
+    	 * Get the redirect URL if one was set during routing
+    	 * @return string|null The redirect URL, or null if no redirect
+    	 */
+    public static function getRedirect(): ?string
+    {
+        $instance = self::getInstance();
+        return $instance->getRedirect();
+    }
 
-	/**
-	 * Get the view file path
-	 * @return string
-	 */
-	public static function getView(): string
-	{
-		$router = self::getInstance();
-		return $router->getView();
-	}
+    /**
+    	 * Get the matched view file path
+    	 * @return string The full path to the view PHTML file, or empty string if none
+    	 */
+    public static function getView(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getView();
+    }
 
-	/**
-	 * Get the template view file path
-	 * @return string
-	 */
-	public static function getTemplateView(): string
-	{
-		$router = self::getInstance();
-		return $router->getTemplateView();
-	}
+    /**
+    	 * Get the template view file path if it exists
+    	 * @return string The full path to the template PHTML file, or empty string if none
+    	 */
+    public static function getTemplateView(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getTemplateView();
+    }
 
-	/**
-	 * Get the template action file path
-	 * @return string
-	 */
-	public static function getTemplateAction(): string
-	{
-		$router = self::getInstance();
-		return $router->getTemplateAction();
-	}
+    /**
+    	 * Get the template action file path if it exists
+    	 * @return string The full path to the template PHP file, or empty string if none
+    	 */
+    public static function getTemplateAction(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getTemplateAction();
+    }
 
-	/**
-	 * Get parameters extracted from the URL
-	 * @return array<string, string|null>
-	 */
-	public static function getParameters(): array
-	{
-		$router = self::getInstance();
-		return $router->getParameters();
-	}
+    /**
+    	 * Get parameters extracted from the URL
+    	 * @return array<string, string|null>
+    	 */
+    public static function getParameters(): array
+    {
+        $instance = self::getInstance();
+        return $instance->getParameters();
+    }
 
-	/**
-	 * Get the base URL
-	 * @return string
-	 */
-	public static function getBaseUrl(): string
-	{
-		$router = self::getInstance();
-		return $router->getBaseUrl();
-	}
+    /**
+    	 * Get the base URL with protocol and host
+    	 * Constructs full URL from base path, adding protocol and host if needed
+    	 * @return string The complete base URL with trailing slash
+    	 */
+    public static function getBaseUrl(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getBaseUrl();
+    }
 }
