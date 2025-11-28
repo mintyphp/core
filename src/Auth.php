@@ -14,7 +14,10 @@ namespace MintyPHP;
 use MintyPHP\Core\Auth as CoreAuth;
 
 /**
- * Static wrapper class for Auth operations using a singleton pattern.
+ * Authentication layer for MintyPHP
+ * 
+ * Provides user authentication, registration, and password management
+ * with support for password hashing and two-factor authentication (TOTP).
  */
 class Auth
 {

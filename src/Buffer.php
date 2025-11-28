@@ -14,7 +14,11 @@ namespace MintyPHP;
 use MintyPHP\Core\Buffer as CoreBuffer;
 
 /**
- * Static wrapper class for Buffer operations using a singleton pattern.
+ * Buffer management for MintyPHP.
+ * 
+ * Provides functionality for managing named output buffers using PHP's
+ * output buffering system. Buffers are tracked in a stack to ensure
+ * proper nesting and can be stored, retrieved, and set by name.
  */
 class Buffer
 {

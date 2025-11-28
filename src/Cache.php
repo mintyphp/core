@@ -14,7 +14,9 @@ namespace MintyPHP;
 use MintyPHP\Core\Cache as CoreCache;
 
 /**
- * Static wrapper class for Cache operations using a singleton pattern.
+ * Cache layer for MintyPHP using Memcached
+ * 
+ * Provides caching operations with support for debugging and monitoring.
  */
 class Cache
 {

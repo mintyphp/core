@@ -14,7 +14,9 @@ namespace MintyPHP;
 use MintyPHP\Core\Orm as CoreOrm;
 
 /**
- * Static wrapper class for Orm operations using a singleton pattern.
+ * ORM (Object-Relational Mapping) layer for MintyPHP
+ * 
+ * Provides a simple interface for CRUD operations on database tables.
  */
 class Orm
 {

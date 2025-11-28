@@ -10,7 +10,13 @@ class RawValue
     public function __construct(public string $value) {}
 }
 
-
+/**
+ * Template engine for MintyPHP
+ * 
+ * Provides functionality to render templates with variable interpolation,
+ * control structures (if/for), and custom filters. Supports HTML escaping
+ * and raw output.
+ */
 class Template
 {
     // Default static configuration

@@ -14,7 +14,11 @@ namespace MintyPHP;
 use MintyPHP\Core\Analyzer as CoreAnalyzer;
 
 /**
- * Static wrapper class for Analyzer operations using a singleton pattern.
+ * Analyzer class for checking PHP files for disallowed output functions.
+ * 
+ * This class analyzes action and view files to ensure they don't contain
+ * direct output functions like echo, print, var_dump, etc., which could
+ * break the MVC pattern by mixing logic with output.
  */
 class Analyzer
 {

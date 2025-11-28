@@ -14,7 +14,11 @@ namespace MintyPHP;
 use MintyPHP\Core\Template as CoreTemplate;
 
 /**
- * Static wrapper class for Template operations using a singleton pattern.
+ * Template engine for MintyPHP
+ * 
+ * Provides functionality to render templates with variable interpolation,
+ * control structures (if/for), and custom filters. Supports HTML escaping
+ * and raw output.
  */
 class Template
 {

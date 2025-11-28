@@ -14,7 +14,10 @@ namespace MintyPHP;
 use MintyPHP\Core\DB as CoreDB;
 
 /**
- * Static wrapper class for DB operations using a singleton pattern.
+ * Database abstraction layer for MintyPHP
+ * 
+ * Provides a secure interface for database operations using mysqli with prepared statements.
+ * Supports debugging, query logging, and automatic parameter binding.
  */
 class DB
 {
