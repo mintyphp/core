@@ -10,6 +10,7 @@ class RawValue
     public function __construct(public string $value) {}
 }
 
+
 class Template
 {
     // Default static configuration

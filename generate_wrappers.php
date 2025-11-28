@@ -13,10 +13,11 @@
  * 2. Creates public static variables in the wrapper (without __ prefix) for configuration
  * 3. Preserves PHPDoc comments from Core static variables in the generated wrappers
  * 4. Copies static utility functions starting with __ from Core to wrapper
- * 5. Generates getInstance() method that instantiates Core class with static variables
- * 6. Generates setInstance() method for dependency injection and testing
- * 7. Creates static wrapper methods for all public Core instance methods
- * 8. Preserves all PHPDoc comments from Core methods in the generated wrappers
+ * 5. Copies the class docblock from the Core class to the wrapper
+ * 6. Generates getInstance() method that instantiates Core class with static variables
+ * 7. Generates setInstance() method for dependency injection and testing
+ * 8. Creates static wrapper methods for all public Core instance methods
+ * 9. Preserves all PHPDoc comments from Core methods in the generated wrappers
  * 
  * This allows users to call Template::render() instead of Template::getInstance()->render()
  * while maintaining proper dependency injection and testability through setInstance().
@@ -64,6 +65,15 @@ foreach ($classes as $className) {
     preg_match('/namespace\s+([^;]+);/', $coreContent, $namespaceMatch);
     $coreNamespace = $namespaceMatch[1] ?? 'MintyPHP\\Core';
     $wrapperNamespace = 'MintyPHP';
+
+    // Extract class docblock
+    $classDocblock = '';
+    preg_match('/(\/\*\*(?:(?!\*\/).)*?\*\/)\s*class\s+' . preg_quote($className, '/') . '\s/s', $coreContent, $classDocMatch);
+    if (isset($classDocMatch[1])) {
+        $classDocblock = trim($classDocMatch[1]);
+    } else {
+        echo "Warning: $className class has no docblock\n";
+    }
 
     // Find all static variables starting with __ (public, private, or protected) with optional docblocks
     preg_match_all('/(\/\*\*(?:(?!\*\/).)*?\*\/\s+)?(public|private|protected)\s+static\s+(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$__([a-zA-Z_]+)\s*=\s*([^;]+);/s', $coreContent, $staticVarMatches, PREG_SET_ORDER);
@@ -221,7 +231,8 @@ foreach ($classes as $className) {
         $staticVars,
         $staticFunctions,
         $coreConstructorParams,
-        $methods
+        $methods,
+        $classDocblock
     );
 
     // Write wrapper file
@@ -245,7 +256,8 @@ function generateWrapperClass(
     array $staticVars,
     array $staticFunctions,
     array $coreConstructorParams,
-    array $methods
+    array $methods,
+    string $classDocblock
 ): string {
     $coreClassName = "Core$className";
     $code = "<?php\n\n";
@@ -259,9 +271,19 @@ function generateWrapperClass(
     $code .= " */\n\n";
     $code .= "namespace $wrapperNamespace;\n\n";
     $code .= "use $coreNamespace\\$className as $coreClassName;\n\n";
-    $code .= "/**\n";
-    $code .= " * Static wrapper class for $className operations using a singleton pattern.\n";
-    $code .= " */\n";
+
+    // Use copied class docblock from Core class if available, otherwise generate default
+    if (!empty($classDocblock)) {
+        $docblockLines = explode("\n", $classDocblock);
+        foreach ($docblockLines as $line) {
+            $code .= $line . "\n";
+        }
+    } else {
+        $code .= "/**\n";
+        $code .= " * Static wrapper class for $className operations using a singleton pattern.\n";
+        $code .= " */\n";
+    }
+
     $code .= "class $className\n";
     $code .= "{\n";
 
