@@ -60,11 +60,11 @@ class Router
     }
 
     /**
-     * Redirect to a URL
-     * @param string $url
-     * @param bool $permanent
-     * @return void
-     */
+    	 * Redirect to a URL
+    	 * @param string $url
+    	 * @param bool $permanent
+    	 * @return void
+    	 */
     public static function redirect(string $url, bool $permanent = false): void
     {
         $instance = self::getInstance();
@@ -72,10 +72,10 @@ class Router
     }
 
     /**
-     * Output JSON response and terminate execution
-     * @param mixed $object The object to encode as JSON
-     * @return void
-     */
+    	 * Output JSON response and terminate execution
+    	 * @param mixed $object The object to encode as JSON
+    	 * @return void
+    	 */
     public static function json(mixed $object): void
     {
         $instance = self::getInstance();
@@ -83,11 +83,11 @@ class Router
     }
 
     /**
-     * Initiate file download with provided data and terminate execution
-     * @param string $filename The name of the file to download
-     * @param string $data The file content data
-     * @return void
-     */
+    	 * Initiate file download with provided data and terminate execution
+    	 * @param string $filename The name of the file to download
+    	 * @param string $data The file content data
+    	 * @return void
+    	 */
     public static function download(string $filename, string $data): void
     {
         $instance = self::getInstance();
@@ -95,11 +95,11 @@ class Router
     }
 
     /**
-     * Initiate file download from filesystem and terminate execution
-     * @param string $filename The name for the downloaded file
-     * @param string $filepath The path to the file on the filesystem
-     * @return void
-     */
+    	 * Initiate file download from filesystem and terminate execution
+    	 * @param string $filename The name for the downloaded file
+    	 * @param string $filepath The path to the file on the filesystem
+    	 * @return void
+    	 */
     public static function file(string $filename, string $filepath): void
     {
         $instance = self::getInstance();
@@ -107,9 +107,9 @@ class Router
     }
 
     /**
-     * Apply route mappings to the current request
-     * @return void
-     */
+    	 * Apply route mappings to the current request
+    	 * @return void
+    	 */
     public static function applyRoutes(): void
     {
         $instance = self::getInstance();
@@ -117,11 +117,11 @@ class Router
     }
 
     /**
-     * Add a route mapping and re-route
-     * @param string $sourcePath
-     * @param string $destinationPath
-     * @return void
-     */
+    	 * Add a route mapping and re-route
+    	 * @param string $sourcePath
+    	 * @param string $destinationPath
+    	 * @return void
+    	 */
     public static function addRoute(string $sourcePath, string $destinationPath): void
     {
         $instance = self::getInstance();
@@ -129,9 +129,9 @@ class Router
     }
 
     /**
-     * Get the matched URL path (view or action name with directory)
-     * @return string The URL path
-     */
+    	 * Get the matched URL path (view or action name with directory)
+    	 * @return string The URL path
+    	 */
     public static function getUrl(): string
     {
         $instance = self::getInstance();
@@ -139,10 +139,10 @@ class Router
     }
 
     /**
-     * Get the canonical URL with parameters appended
-     * Removes trailing 'index' from the URL if present
-     * @return string The canonical URL path
-     */
+    	 * Get the canonical URL with parameters appended
+    	 * Removes trailing 'index' from the URL if present
+    	 * @return string The canonical URL path
+    	 */
     public static function getCanonical(): string
     {
         $instance = self::getInstance();
@@ -150,9 +150,9 @@ class Router
     }
 
     /**
-     * Get the current request URI
-     * @return string The request URI
-     */
+    	 * Get the current request URI
+    	 * @return string The request URI
+    	 */
     public static function getRequest(): string
     {
         $instance = self::getInstance();
@@ -160,9 +160,9 @@ class Router
     }
 
     /**
-     * Get the matched action file path
-     * @return string The full path to the action PHP file, or empty string if none
-     */
+    	 * Get the matched action file path
+    	 * @return string The full path to the action PHP file, or empty string if none
+    	 */
     public static function getAction(): string
     {
         $instance = self::getInstance();
@@ -170,9 +170,9 @@ class Router
     }
 
     /**
-     * Get the redirect URL if one was set during routing
-     * @return string|null The redirect URL, or null if no redirect
-     */
+    	 * Get the redirect URL if one was set during routing
+    	 * @return string|null The redirect URL, or null if no redirect
+    	 */
     public static function getRedirect(): ?string
     {
         $instance = self::getInstance();
@@ -180,9 +180,9 @@ class Router
     }
 
     /**
-     * Get the matched view file path
-     * @return string The full path to the view PHTML file, or empty string if none
-     */
+    	 * Get the matched view file path
+    	 * @return string The full path to the view PHTML file, or empty string if none
+    	 */
     public static function getView(): string
     {
         $instance = self::getInstance();
@@ -190,9 +190,9 @@ class Router
     }
 
     /**
-     * Get the template view file path if it exists
-     * @return string The full path to the template PHTML file, or empty string if none
-     */
+    	 * Get the template view file path if it exists
+    	 * @return string The full path to the template PHTML file, or empty string if none
+    	 */
     public static function getTemplateView(): string
     {
         $instance = self::getInstance();
@@ -200,9 +200,9 @@ class Router
     }
 
     /**
-     * Get the template action file path if it exists
-     * @return string The full path to the template PHP file, or empty string if none
-     */
+    	 * Get the template action file path if it exists
+    	 * @return string The full path to the template PHP file, or empty string if none
+    	 */
     public static function getTemplateAction(): string
     {
         $instance = self::getInstance();
@@ -210,9 +210,9 @@ class Router
     }
 
     /**
-     * Get parameters extracted from the URL
-     * @return array<string, string|null>
-     */
+    	 * Get parameters extracted from the URL
+    	 * @return array<string, string|null>
+    	 */
     public static function getParameters(): array
     {
         $instance = self::getInstance();
@@ -220,10 +220,10 @@ class Router
     }
 
     /**
-     * Get the base URL with protocol and host
-     * Constructs full URL from base path, adding protocol and host if needed
-     * @return string The complete base URL with trailing slash
-     */
+    	 * Get the base URL with protocol and host
+    	 * Constructs full URL from base path, adding protocol and host if needed
+    	 * @return string The complete base URL with trailing slash
+    	 */
     public static function getBaseUrl(): string
     {
         $instance = self::getInstance();

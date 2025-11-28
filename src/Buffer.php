@@ -70,7 +70,7 @@ class Buffer
      * 
      * @param string $name The name of the buffer to end.
      * @return void
-     * @throws Exception If the buffer name doesn't match the top of the stack.
+     * @throws \Exception If the buffer name doesn't match the top of the stack.
      */
     public static function end(string $name): void
     {
