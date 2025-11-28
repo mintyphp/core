@@ -7,6 +7,10 @@ use MintyPHP\Core\Cache;
 use MintyPHP\Debugger;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Note: These tests require a running Memcached server on localhost:11211.
+ * Make sure Memcached is installed and running before executing these tests.
+ */
 class CacheTest extends TestCase
 {
     private static Cache $cache;
