@@ -4,8 +4,13 @@ namespace MintyPHP\Core;
 
 use MintyPHP\Debugger;
 use MintyPHP\Session;
-use MintyPHP\RouterError;
 
+/**
+ * Router class for handling URL routing in MintyPHP
+ * 
+ * Maps incoming requests to views, actions, and templates based on defined routes
+ * and file structure. Supports redirection, JSON responses, and file downloads.
+ */
 class Router
 {
 
@@ -84,14 +89,14 @@ class Router
 	 * Throw a router error with 500 status
 	 * @param string $message
 	 * @return void
-	 * @throws RouterError
+	 * @throws \Exception
 	 */
 	private function error(string $message): void
 	{
 		if (Debugger::$enabled) {
 			Debugger::set('status', 500);
 		}
-		throw new RouterError($message);
+		throw new \Exception($message);
 	}
 
 	// ========================================
