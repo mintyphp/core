@@ -14,7 +14,6 @@ class Router
 	public static string $__pageRoot = 'pages/';
 	public static string $__templateRoot = 'templates/';
 	public static bool $__executeRedirect = true;
-	public static bool $__initialized = false;
 	/** @var array<string, string> */
 	public static array $__serverGlobal = [];
 	/** @var array<string, string> */
