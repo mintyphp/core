@@ -116,10 +116,11 @@ foreach ($classes as $className) {
         $params = explode(',', $constructorSignature);
         foreach ($params as $param) {
             $param = trim($param);
-            if (preg_match('/(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$([a-zA-Z_]+)/', $param, $paramMatch)) {
+            if (preg_match('/(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$([a-zA-Z_]+)(\s*=\s*[^,]+)?/', $param, $paramMatch)) {
                 $coreConstructorParams[] = [
                     'type' => $paramMatch[1],
-                    'name' => $paramMatch[2]
+                    'name' => $paramMatch[2],
+                    'hasDefault' => isset($paramMatch[3]) && !empty(trim($paramMatch[3]))
                 ];
             }
         }
@@ -212,7 +213,7 @@ foreach ($classes as $className) {
                 break;
             }
         }
-        if (!$found) {
+        if (!$found && !$param['hasDefault']) {
             // Check if the parameter type is a Core class
             $paramType = $param['type'];
             $baseType = str_replace('?', '', $paramType);

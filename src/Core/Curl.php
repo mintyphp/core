@@ -132,18 +132,18 @@ class Curl
         $options = array_merge($this->options, $options);
         $this->setOptions($ch, $method, $url, $data, $headers, $options);
 
-        $result = strval(curl_exec($ch));
-        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $location = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $result = strval($this->curlExec($ch));
+        $status = $this->curlGetInfo($ch, CURLINFO_HTTP_CODE);
+        $location = $this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL);
 
         if (Debugger::$enabled) {
             $timing = [];
-            $timing['name_lookup'] = curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME);
-            $timing['connect'] = curl_getinfo($ch, CURLINFO_CONNECT_TIME);
-            $timing['pre_transfer'] = curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME);
-            $timing['start_transfer'] = curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME);
-            $timing['redirect'] = curl_getinfo($ch, CURLINFO_REDIRECT_TIME);
-            $timing['total'] = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
+            $timing['name_lookup'] = $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME);
+            $timing['connect'] = $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME);
+            $timing['pre_transfer'] = $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME);
+            $timing['start_transfer'] = $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME);
+            $timing['redirect'] = $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME);
+            $timing['total'] = $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME);
         }
 
         if ($this->cookies && $cookieJar) {
@@ -250,5 +250,28 @@ class Curl
         }
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    }
+
+    /**
+     * Wrapper for curl_exec to allow mocking in tests
+     * 
+     * @param \CurlHandle $ch The cURL handle
+     * @return string|bool The response or false on failure
+     */
+    protected function curlExec(\CurlHandle $ch): string|bool
+    {
+        return curl_exec($ch);
+    }
+
+    /**
+     * Wrapper for curl_getinfo to allow mocking in tests
+     * 
+     * @param \CurlHandle $ch The cURL handle
+     * @param int $option The CURLINFO option
+     * @return mixed The information value
+     */
+    protected function curlGetInfo(\CurlHandle $ch, int $option): mixed
+    {
+        return curl_getinfo($ch, $option);
     }
 }
