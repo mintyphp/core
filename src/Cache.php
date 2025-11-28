@@ -34,7 +34,7 @@ class Cache
     public static function getInstance(): CoreCache
     {
         return self::$instance ??= new CoreCache(
-            Memcached::getInstance(),
+            null,
             self::$prefix,
             self::$servers
         );

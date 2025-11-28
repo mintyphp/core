@@ -348,12 +348,16 @@ function generateWrapperClass(
             $paramType = $param['type'];
             // Remove optional marker and extract base type
             $baseType = str_replace('?', '', $paramType);
-            // Check if it's a known Core class (simple name without namespace)
-            if (preg_match('/^[A-Z][a-zA-Z]*$/', $baseType)) {
-                // It's likely a Core class, call getInstance()
+
+            // List of known external classes that should use null instead of getInstance()
+            $externalClasses = ['Memcached', 'mysqli', 'PDO'];
+
+            // Check if it's a known Core class (simple name without namespace and not external)
+            if (preg_match('/^[A-Z][a-zA-Z]*$/', $baseType) && !in_array($baseType, $externalClasses)) {
+                // It's a Core class, call getInstance()
                 $constructorArgs[] = "            $baseType::getInstance()";
             } else {
-                // Not a Core class, use null
+                // Not a Core class or is an external class, use null
                 $constructorArgs[] = "            null";
             }
         }
