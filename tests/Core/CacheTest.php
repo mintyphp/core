@@ -5,109 +5,134 @@ namespace MintyPHP\Tests\Core;
 use Memcached;
 use MintyPHP\Core\Cache;
 use MintyPHP\Debugger;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class CacheTest extends TestCase
 {
-    private Cache $cache;
+    private static Cache $cache;
+    private static Memcached $memcached;
+    private static string $testPrefix = 'phpunit_test_';
 
-    /** @var Memcached&MockObject */
-    private Memcached $memcachedMock;
-
-    protected function setUp(): void
+    public static function setUpBeforeClass(): void
     {
         // Disable debugger for cleaner tests
         Debugger::$enabled = false;
 
-        // Create a mock Memcached instance
-        $this->memcachedMock = $this->createMock(Memcached::class);
+        // Create a real Memcached instance
+        self::$memcached = new Memcached();
+        self::$memcached->addServer('127.0.0.1', 11211);
 
-        // Create Cache instance with mocked Memcached
-        $this->cache = new Cache($this->memcachedMock, 'test_');
+        // Check if Memcached is available
+        $stats = self::$memcached->getStats();
+        if (empty($stats) || !isset($stats['127.0.0.1:11211'])) {
+            throw new \Exception('Memcached server is not available on 127.0.0.1:11211');
+        }
+
+        // Create Cache instance with real Memcached
+        self::$cache = new Cache(self::$memcached, self::$testPrefix);
+    }
+
+    protected function setUp(): void
+    {
+        // Clean up any existing test keys before each test
+        $this->cleanupTestKeys();
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean up test keys after each test
+        $this->cleanupTestKeys();
+    }
+
+    private function cleanupTestKeys(): void
+    {
+        // Delete common test keys used in tests
+        $testKeys = [
+            'mykey',
+            'existing',
+            'nonexistent',
+            'arraykey',
+            'counter',
+            'key1',
+            'key2',
+            'key3',
+            'testkey'
+        ];
+
+        foreach ($testKeys as $key) {
+            self::$memcached->delete(self::$testPrefix . $key);
+        }
     }
 
     public function testAdd(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('add')
-            ->with('test_mykey', 'myvalue', 0)
-            ->willReturn(true);
-
-        $result = $this->cache->add('mykey', 'myvalue');
+        $result = self::$cache->add('mykey', 'myvalue');
         $this->assertTrue($result);
+
+        // Verify the value was stored
+        $value = self::$cache->get('mykey');
+        $this->assertEquals('myvalue', $value);
     }
 
     public function testAddWithExpiration(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('add')
-            ->with('test_mykey', 'myvalue', 3600)
-            ->willReturn(true);
-
-        $result = $this->cache->add('mykey', 'myvalue', 3600);
+        $result = self::$cache->add('mykey', 'myvalue', 3600);
         $this->assertTrue($result);
+
+        // Verify the value was stored
+        $value = self::$cache->get('mykey');
+        $this->assertEquals('myvalue', $value);
     }
 
     public function testAddFailure(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('add')
-            ->with('test_existing', 'value', 0)
-            ->willReturn(false);
+        // First add should succeed
+        $result1 = self::$cache->add('existing', 'value');
+        $this->assertTrue($result1);
 
-        $result = $this->cache->add('existing', 'value');
-        $this->assertFalse($result);
+        // Second add should fail because key already exists
+        $result2 = self::$cache->add('existing', 'newvalue');
+        $this->assertFalse($result2);
+
+        // Original value should still be there
+        $value = self::$cache->get('existing');
+        $this->assertEquals('value', $value);
     }
 
     public function testSet(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('set')
-            ->with('test_mykey', 'myvalue', 0)
-            ->willReturn(true);
-
-        $result = $this->cache->set('mykey', 'myvalue');
+        $result = self::$cache->set('mykey', 'myvalue');
         $this->assertTrue($result);
+
+        // Verify the value was stored
+        $value = self::$cache->get('mykey');
+        $this->assertEquals('myvalue', $value);
     }
 
     public function testSetWithExpiration(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('set')
-            ->with('test_mykey', ['data' => 'complex'], 7200)
-            ->willReturn(true);
-
-        $result = $this->cache->set('mykey', ['data' => 'complex'], 7200);
+        $result = self::$cache->set('mykey', ['data' => 'complex'], 7200);
         $this->assertTrue($result);
+
+        // Verify the value was stored
+        $value = self::$cache->get('mykey');
+        $this->assertEquals(['data' => 'complex'], $value);
     }
 
     public function testGet(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('get')
-            ->with('test_mykey')
-            ->willReturn('myvalue');
+        // Set a value first
+        self::$cache->set('mykey', 'myvalue');
 
-        $result = $this->cache->get('mykey');
+        // Now get it
+        $result = self::$cache->get('mykey');
         $this->assertEquals('myvalue', $result);
     }
 
     public function testGetNotFound(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('get')
-            ->with('test_nonexistent')
-            ->willReturn(false);
-
-        $result = $this->cache->get('nonexistent');
+        // Try to get a key that doesn't exist
+        $result = self::$cache->get('nonexistent');
         $this->assertFalse($result);
     }
 
@@ -115,177 +140,175 @@ class CacheTest extends TestCase
     {
         $expectedData = ['foo' => 'bar', 'baz' => 123];
 
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('get')
-            ->with('test_arraykey')
-            ->willReturn($expectedData);
+        // Set array data
+        self::$cache->set('arraykey', $expectedData);
 
-        $result = $this->cache->get('arraykey');
+        // Get it back
+        $result = self::$cache->get('arraykey');
         $this->assertEquals($expectedData, $result);
     }
 
     public function testDelete(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('delete')
-            ->with('test_mykey', 0)
-            ->willReturn(true);
+        // Set a value first
+        self::$cache->set('mykey', 'myvalue');
 
-        $result = $this->cache->delete('mykey');
+        // Delete it
+        $result = self::$cache->delete('mykey');
         $this->assertTrue($result);
+
+        // Verify it's gone
+        $value = self::$cache->get('mykey');
+        $this->assertFalse($value);
     }
 
     public function testDeleteNotFound(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('delete')
-            ->with('test_nonexistent', 0)
-            ->willReturn(false);
-
-        $result = $this->cache->delete('nonexistent');
+        // Try to delete a key that doesn't exist
+        $result = self::$cache->delete('nonexistent');
         $this->assertFalse($result);
     }
 
     public function testIncrement(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('increment')
-            ->with('test_counter', 1)
-            ->willReturn(11);
+        // Set initial value
+        self::$cache->set('counter', 10);
 
-        $result = $this->cache->increment('counter');
+        // Increment it
+        $result = self::$cache->increment('counter');
         $this->assertEquals(11, $result);
+
+        // Verify the value
+        $value = self::$cache->get('counter');
+        $this->assertEquals(11, $value);
     }
 
     public function testIncrementWithValue(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('increment')
-            ->with('test_counter', 5)
-            ->willReturn(15);
+        // Set initial value
+        self::$cache->set('counter', 10);
 
-        $result = $this->cache->increment('counter', 5);
+        // Increment by 5
+        $result = self::$cache->increment('counter', 5);
         $this->assertEquals(15, $result);
+
+        // Verify the value
+        $value = self::$cache->get('counter');
+        $this->assertEquals(15, $value);
     }
 
     public function testIncrementFailure(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('increment')
-            ->with('test_nonexistent', 1)
-            ->willReturn(false);
-
-        $result = $this->cache->increment('nonexistent');
+        // Try to increment a key that doesn't exist
+        $result = self::$cache->increment('nonexistent');
         $this->assertFalse($result);
     }
 
     public function testDecrement(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('decrement')
-            ->with('test_counter', 1)
-            ->willReturn(9);
+        // Set initial value
+        self::$cache->set('counter', 10);
 
-        $result = $this->cache->decrement('counter');
+        // Decrement it
+        $result = self::$cache->decrement('counter');
         $this->assertEquals(9, $result);
+
+        // Verify the value
+        $value = self::$cache->get('counter');
+        $this->assertEquals(9, $value);
     }
 
     public function testDecrementWithValue(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('decrement')
-            ->with('test_counter', 3)
-            ->willReturn(7);
+        // Set initial value
+        self::$cache->set('counter', 10);
 
-        $result = $this->cache->decrement('counter', 3);
+        // Decrement by 3
+        $result = self::$cache->decrement('counter', 3);
         $this->assertEquals(7, $result);
+
+        // Verify the value
+        $value = self::$cache->get('counter');
+        $this->assertEquals(7, $value);
     }
 
     public function testDecrementFailure(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('decrement')
-            ->with('test_nonexistent', 1)
-            ->willReturn(false);
-
-        $result = $this->cache->decrement('nonexistent');
+        // Try to decrement a key that doesn't exist
+        $result = self::$cache->decrement('nonexistent');
         $this->assertFalse($result);
     }
 
     public function testReplace(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('replace')
-            ->with('test_mykey', 'newvalue', 0)
-            ->willReturn(true);
+        // Set initial value
+        self::$cache->set('mykey', 'oldvalue');
 
-        $result = $this->cache->replace('mykey', 'newvalue');
+        // Replace it
+        $result = self::$cache->replace('mykey', 'newvalue');
         $this->assertTrue($result);
+
+        // Verify the new value
+        $value = self::$cache->get('mykey');
+        $this->assertEquals('newvalue', $value);
     }
 
     public function testReplaceWithExpiration(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('replace')
-            ->with('test_mykey', 'newvalue', 1800)
-            ->willReturn(true);
+        // Set initial value
+        self::$cache->set('mykey', 'oldvalue');
 
-        $result = $this->cache->replace('mykey', 'newvalue', 1800);
+        // Replace with expiration
+        $result = self::$cache->replace('mykey', 'newvalue', 1800);
         $this->assertTrue($result);
+
+        // Verify the new value
+        $value = self::$cache->get('mykey');
+        $this->assertEquals('newvalue', $value);
     }
 
     public function testReplaceFailure(): void
     {
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('replace')
-            ->with('test_nonexistent', 'value', 0)
-            ->willReturn(false);
-
-        $result = $this->cache->replace('nonexistent', 'value');
+        // Try to replace a key that doesn't exist
+        $result = self::$cache->replace('nonexistent', 'value');
         $this->assertFalse($result);
     }
 
     public function testPrefixIsApplied(): void
     {
-        // Test that the prefix is correctly applied to all operations
-        $cache = new Cache($this->memcachedMock, 'myapp:cache:');
+        // Create a cache with a different prefix
+        $cache = new Cache(self::$memcached, 'myapp:cache:');
 
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('get')
-            ->with('myapp:cache:testkey')
-            ->willReturn('value');
+        // Set a value with this cache
+        $cache->set('testkey', 'value');
 
-        $cache->get('testkey');
+        // Verify we can get it back
+        $result = $cache->get('testkey');
+        $this->assertEquals('value', $result);
+
+        // Verify it's not accessible with the default test prefix
+        $resultFromOtherCache = self::$cache->get('testkey');
+        $this->assertFalse($resultFromOtherCache);
+
+        // Clean up
+        $cache->delete('testkey');
     }
 
     public function testMultipleOperations(): void
     {
         // Test a sequence of operations
-        $this->memcachedMock
-            ->expects($this->exactly(3))
-            ->method('set')
-            ->willReturnOnConsecutiveCalls(true, true, true);
-
-        $result1 = $this->cache->set('key1', 'value1');
-        $result2 = $this->cache->set('key2', 'value2');
-        $result3 = $this->cache->set('key3', 'value3');
+        $result1 = self::$cache->set('key1', 'value1');
+        $result2 = self::$cache->set('key2', 'value2');
+        $result3 = self::$cache->set('key3', 'value3');
 
         $this->assertTrue($result1);
         $this->assertTrue($result2);
         $this->assertTrue($result3);
+
+        // Verify all values
+        $this->assertEquals('value1', self::$cache->get('key1'));
+        $this->assertEquals('value2', self::$cache->get('key2'));
+        $this->assertEquals('value3', self::$cache->get('key3'));
     }
 
     public function testWithDebuggerEnabled(): void
@@ -293,13 +316,9 @@ class CacheTest extends TestCase
         // Enable debugger
         Debugger::$enabled = true;
 
-        $this->memcachedMock
-            ->expects($this->once())
-            ->method('get')
-            ->with('test_mykey')
-            ->willReturn('myvalue');
-
-        $result = $this->cache->get('mykey');
+        // Set and get a value
+        self::$cache->set('mykey', 'myvalue');
+        $result = self::$cache->get('mykey');
         $this->assertEquals('myvalue', $result);
 
         // Reset debugger state
@@ -308,24 +327,35 @@ class CacheTest extends TestCase
 
     public function testConstructorWithNullMemcached(): void
     {
-        // This test verifies the constructor creates a Memcached instance when null is passed
-        // We can't easily test the actual connection without a running Memcached server
-        // but we can verify the constructor doesn't throw an error
-        $cache = new Cache(null, 'test_', '127.0.0.1:11211');
+        // Verify the constructor creates a working Memcached instance when null is passed
+        $cache = new Cache(null, 'constructor_test_', '127.0.0.1:11211');
         $this->assertInstanceOf(Cache::class, $cache);
+
+        // Test that it actually works
+        $result = $cache->set('testkey', 'testvalue');
+        $this->assertTrue($result);
+
+        $value = $cache->get('testkey');
+        $this->assertEquals('testvalue', $value);
+
+        // Clean up
+        $cache->delete('testkey');
     }
 
-    public function testConstructorWithMultipleServers(): void
+    public function testExpiration(): void
     {
-        // Test that multiple servers can be configured
-        $cache = new Cache(null, 'test_', '127.0.0.1:11211,192.168.1.1:11211');
-        $this->assertInstanceOf(Cache::class, $cache);
-    }
+        // Test that expiration works (set a key with 1 second expiration)
+        self::$cache->set('expiring_key', 'value', 1);
 
-    public function testConstructorWithServerDefaultPort(): void
-    {
-        // Test that default port is used when not specified
-        $cache = new Cache(null, 'test_', '127.0.0.1');
-        $this->assertInstanceOf(Cache::class, $cache);
+        // Should exist immediately
+        $value = self::$cache->get('expiring_key');
+        $this->assertEquals('value', $value);
+
+        // Wait 2 seconds
+        sleep(2);
+
+        // Should be expired now
+        $value = self::$cache->get('expiring_key');
+        $this->assertFalse($value);
     }
 }
