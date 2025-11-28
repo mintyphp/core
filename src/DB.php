@@ -10,7 +10,7 @@ use MintyPHP\Core\DB as CoreDB;
 class DB
 {
     /**
-     * Configuration parameters
+     * The database connection parameters (static for singleton pattern)
      */
     public static ?string $host = null;
     public static ?string $username = null;

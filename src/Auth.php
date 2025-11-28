@@ -9,9 +9,6 @@ use MintyPHP\Core\Auth as CoreAuth;
  */
 class Auth
 {
-    /**
-     * Configuration parameters
-     */
     public static string $usersTable = 'users';
     public static string $usernameField = 'username';
     public static string $passwordField = 'password';

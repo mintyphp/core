@@ -9,15 +9,14 @@ use MintyPHP\Core\Router as CoreRouter;
  */
 class Router
 {
-    /**
-     * Configuration parameters
-     */
     public static string $baseUrl = '/';
     public static string $pageRoot = 'pages/';
     public static string $templateRoot = 'templates/';
     public static bool $executeRedirect = true;
     public static bool $initialized = false;
+    /** @var array<string, string> */
     public static array $serverGlobal = [];
+    /** @var array<string, string> */
     public static array $routes = [];
 
     /**

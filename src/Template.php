@@ -9,9 +9,6 @@ use MintyPHP\Core\Template as CoreTemplate;
  */
 class Template
 {
-    /**
-     * Configuration parameters
-     */
     public static string $escape = 'html';
 
     /**

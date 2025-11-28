@@ -15,7 +15,6 @@ use MintyPHP\TotpError;
  */
 class Auth
 {
-
     // Configuration parameters
     public static string $__usersTable = 'users';
     public static string $__usernameField = 'username';

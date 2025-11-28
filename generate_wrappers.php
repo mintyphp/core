@@ -11,11 +11,12 @@
  * The generator performs the following operations:
  * 1. Scans Core classes for static variables starting with __ (configuration parameters)
  * 2. Creates public static variables in the wrapper (without __ prefix) for configuration
- * 3. Copies static utility functions starting with __ from Core to wrapper
- * 4. Generates getInstance() method that instantiates Core class with static variables
- * 5. Generates setInstance() method for dependency injection and testing
- * 6. Creates static wrapper methods for all public Core instance methods
- * 7. Preserves all PHPDoc comments from Core methods in the generated wrappers
+ * 3. Preserves PHPDoc comments from Core static variables in the generated wrappers
+ * 4. Copies static utility functions starting with __ from Core to wrapper
+ * 5. Generates getInstance() method that instantiates Core class with static variables
+ * 6. Generates setInstance() method for dependency injection and testing
+ * 7. Creates static wrapper methods for all public Core instance methods
+ * 8. Preserves all PHPDoc comments from Core methods in the generated wrappers
  * 
  * This allows users to call Template::render() instead of Template::getInstance()->render()
  * while maintaining proper dependency injection and testability through setInstance().
@@ -64,23 +65,25 @@ foreach ($classes as $className) {
     $coreNamespace = $namespaceMatch[1] ?? 'MintyPHP\\Core';
     $wrapperNamespace = 'MintyPHP';
 
-    // Find all static variables starting with __ (public, private, or protected)
-    preg_match_all('/(public|private|protected)\s+static\s+(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$__([a-zA-Z_]+)\s*=\s*([^;]+);/', $coreContent, $staticVarMatches, PREG_SET_ORDER);
+    // Find all static variables starting with __ (public, private, or protected) with optional docblocks
+    preg_match_all('/(\/\*\*(?:(?!\*\/).)*?\*\/\s+)?(public|private|protected)\s+static\s+(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$__([a-zA-Z_]+)\s*=\s*([^;]+);/s', $coreContent, $staticVarMatches, PREG_SET_ORDER);
 
     $staticVars = [];
     $constructorParams = [];
 
     foreach ($staticVarMatches as $match) {
-        $visibility = $match[1];
-        $type = $match[2];
-        $name = $match[3];
-        $defaultValue = $match[4];
+        $docblock = isset($match[1]) && trim($match[1]) ? trim($match[1]) : '';
+        $visibility = $match[2];
+        $type = $match[3];
+        $name = $match[4];
+        $defaultValue = $match[5];
 
         $staticVars[] = [
             'visibility' => $visibility,
             'type' => $type,
             'name' => $name,
-            'default' => $defaultValue
+            'default' => $defaultValue,
+            'docblock' => $docblock
         ];
 
         $constructorParams[] = [
@@ -230,7 +233,7 @@ echo "Done: $generatedCount wrappers written\n";
 
 /**
  * Generate the wrapper class content
- * @param array<int, array{visibility: string, type: string, name: string, default: string}> $staticVars
+ * @param array<int, array{visibility: string, type: string, name: string, default: string, docblock: string}> $staticVars
  * @param array<int, array{visibility: string, name: string, paramSignature: string, returnType: string}> $staticFunctions
  * @param array<int, array{type: string, name: string}> $coreConstructorParams
  * @param array<int, array{name: string, params: array<int, string>, paramNames: array<int, string>, paramSignature: string, returnType: string, docblock: string}> $methods
@@ -256,10 +259,20 @@ function generateWrapperClass(
 
     // Generate static variables (without __ prefix)
     if (!empty($staticVars)) {
-        $code .= "    /**\n";
-        $code .= "     * Configuration parameters\n";
-        $code .= "     */\n";
         foreach ($staticVars as $var) {
+            // Add docblock if available
+            if (!empty($var['docblock'])) {
+                $docblockLines = explode("\n", $var['docblock']);
+                foreach ($docblockLines as $line) {
+                    if (trim($line) === '') {
+                        $code .= "\n";
+                    } else {
+                        // Remove first 4 spaces or a tab if present, then add 4 spaces
+                        $contentPart = preg_replace('/^(\t|    )/', '', $line);
+                        $code .= "    " . $contentPart . "\n";
+                    }
+                }
+            }
             $code .= "    {$var['visibility']} static {$var['type']} \${$var['name']} = {$var['default']};\n";
         }
         $code .= "\n";
