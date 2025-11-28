@@ -34,6 +34,8 @@ class DB
     private ?string $database;
     private ?int $port;
     private ?string $socket;
+    private \mysqli $mysqli;
+    private bool $closed;
 
     /**
      * Constructor to initialize database connection and establish connection
@@ -44,9 +46,10 @@ class DB
      * @param string|null $database Database name
      * @param int|null $port Database port
      * @param string|null $socket Database socket
+     * @param \mysqli|null $connection Existing mysqli connection
      * @throws DBError if connection fails
      */
-    public function __construct(?string $host, ?string $username, ?string $password, ?string $database, ?int $port, ?string $socket)
+    public function __construct(?string $host, ?string $username, ?string $password, ?string $database, ?int $port, ?string $socket, ?\mysqli $connection = null)
     {
         $this->host = $host;
         $this->username = $username;
@@ -57,14 +60,16 @@ class DB
 
         // Establish the database connection
         mysqli_report(MYSQLI_REPORT_STRICT);
-        $connection = mysqli_connect($this->host, $this->username, $this->password, $this->database, $this->port, $this->socket);
-        if (!$connection instanceof mysqli) {
-            throw new DBError(mysqli_connect_error() ?: 'Database connection failed');
+        if ($connection === null) {
+            $connection = mysqli_connect($this->host, $this->username, $this->password, $this->database, $this->port, $this->socket);
+            if (!$connection instanceof mysqli) {
+                throw new DBError(mysqli_connect_error() ?: 'Database connection failed');
+            }
+            if (mysqli_connect_errno()) {
+                throw new DBError(mysqli_connect_error() ?: 'Database connection error');
+            }
         }
         $this->mysqli = $connection;
-        if (mysqli_connect_errno()) {
-            throw new DBError(mysqli_connect_error() ?: 'Database connection error');
-        }
         if (!$this->mysqli->set_charset('utf8mb4')) {
             throw new DBError(mysqli_error($this->mysqli));
         }
@@ -72,9 +77,6 @@ class DB
         // Mark the connection as open
         $this->closed = false;
     }
-
-    private mysqli $mysqli;
-    private bool $closed;
 
     /**
      * Executes a query with optional debugging

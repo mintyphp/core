@@ -49,7 +49,8 @@ class DB
             self::$password,
             self::$database,
             self::$port,
-            self::$socket
+            self::$socket,
+            null
         );
     }
 
