@@ -2,6 +2,8 @@
 
 namespace MintyPHP\Core;
 
+use MintyPHP\TemplateError;
+
 /**
  * Internal class to mark values that should not be escaped
  */
@@ -59,6 +61,7 @@ class Template
      * @param array<string,mixed> $data Associative array of data to use in the template.
      * @param array<string,callable> $functions Associative array of custom functions available in the template.
      * @return string The rendered template string.
+     * @throws \RuntimeException If there is an error during rendering.
      */
     public function render(string $template, array $data, array $functions = []): string
     {
@@ -462,14 +465,14 @@ class Template
      * @param string $path The dot-notation path to resolve (e.g., 'user.name').
      * @param array<string,mixed> $data The data array to search.
      * @return mixed The value at the specified path.
-     * @throws \Exception If any part of the path is not found.
+     * @throws \RuntimeException If any part of the path is not found.
      */
     private function resolvePath(string $path, array $data): mixed
     {
         $current = $data;
         foreach ($this->explode('.', $path) as $p) {
             if (!is_array($current) || !array_key_exists($p, $current)) {
-                throw new \Exception("path `$p` not found");
+                throw new TemplateError("path `$p` not found");
             }
             $current = &$current[$p];
         }
@@ -488,7 +491,7 @@ class Template
      * @param array<string,callable> $functions Available custom functions.
      * @param array<string,mixed> $data The data context for resolving argument paths.
      * @return mixed The final transformed value after applying all functions.
-     * @throws \Exception If a referenced function is not found.
+     * @throws \RuntimeException If a referenced function is not found.
      */
     private function applyFunctions(mixed $value, array $parts, array $functions, array $data): mixed
     {
@@ -510,7 +513,7 @@ class Template
             if (isset($functions[$f])) {
                 $value = call_user_func_array($functions[$f], $arguments);
             } else {
-                throw new \Exception("function `$f` not found");
+                throw new TemplateError("function `$f` not found");
             }
         }
         return $value;

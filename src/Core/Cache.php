@@ -11,18 +11,26 @@ use Memcached;
  */
 class Cache
 {
-    // Configuration parameters
+    /**
+     * Static configuration parameters
+     */
     public static string $__prefix = 'mintyphp';
     public static string $__servers = '127.0.0.1';
 
-    // Memcached instance
-    private Memcached $memcache;
-
-    // Configuration values
+    /**
+     * Actual configuration parameters
+     */
     private string $prefix;
+    private string $servers;
+
 
     /**
-     * Constructor.
+     * The Memcached instance used for caching
+     */
+    private Memcached $memcache;
+
+    /**
+     * Create a new Cache instance
      * 
      * @param Memcached|null $memcache Optional Memcached instance. If null, a new instance will be created.
      * @param string $prefix Prefix for cache keys.
@@ -33,9 +41,12 @@ class Cache
         string $prefix = 'mintyphp',
         string $servers = '127.0.0.1'
     ) {
+        $this->prefix = $prefix;
+        $this->servers = $servers;
+        // Initialize Memcached instance
         if ($memcache === null) {
             $memcache = new Memcached();
-            $serverList = explode(',', $servers);
+            $serverList = explode(',', $this->servers);
             $serverList = array_map(function ($server) {
                 $server = explode(':', trim($server));
                 if (count($server) == 1) $server[1] = '11211';
@@ -54,7 +65,7 @@ class Cache
      * @param mixed $var The variable to convert
      * @return string String representation of the variable
      */
-    protected function variable(mixed $var): string
+    private function variable(mixed $var): string
     {
         $type = gettype($var);
         switch ($type) {

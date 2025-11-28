@@ -2,6 +2,8 @@
 
 namespace MintyPHP\Core;
 
+use MintyPHP\BufferError;
+
 /**
  * Buffer management for MintyPHP.
  * 
@@ -31,20 +33,6 @@ class Buffer
     private array $data = [];
 
     /**
-     * Throw an exception.
-     * 
-     * Helper method for consistent error handling.
-     * 
-     * @param string $message The error message.
-     * @return never This method never returns as it always throws.
-     * @throws \Exception Always thrown with the provided message.
-     */
-    private function error(string $message): never
-    {
-        throw new \Exception($message);
-    }
-
-    /**
      * Start a named output buffer.
      * 
      * Pushes the buffer name onto the stack and begins capturing output.
@@ -69,13 +57,13 @@ class Buffer
      * 
      * @param string $name The name of the buffer to end.
      * @return void
-     * @throws \Exception If the buffer name doesn't match the top of the stack.
+     * @throws \RuntimeException If the buffer name doesn't match the top of the stack.
      */
     public function end(string $name): void
     {
         $top = array_pop($this->stack);
         if ($top != $name) {
-            $this->error("Buffer::end('$name') called, but Buffer::end('$top') expected.");
+            throw new BufferError("Buffer::end('$name') called, but Buffer::end('$top') expected.");
         }
         $this->data[$name] = ob_get_contents() ?: '';
         ob_end_clean();
@@ -97,7 +85,7 @@ class Buffer
     }
 
     /**
-     * Output the contents of a named buffer.
+     * Get the contents of a named buffer.
      * 
      * Echoes the stored content of the specified buffer if it exists.
      * 

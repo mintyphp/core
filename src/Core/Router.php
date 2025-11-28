@@ -3,6 +3,7 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Debugger;
+use MintyPHP\RouterError;
 use MintyPHP\Session;
 
 /**
@@ -89,14 +90,14 @@ class Router
 	 * Throw a router error with 500 status
 	 * @param string $message
 	 * @return void
-	 * @throws \Exception
+	 * @throws \RuntimeException
 	 */
 	private function error(string $message): void
 	{
 		if (Debugger::$enabled) {
 			Debugger::set('status', 500);
 		}
-		throw new \Exception($message);
+		throw new RouterError($message);
 	}
 
 	// ========================================

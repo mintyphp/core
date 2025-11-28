@@ -21,11 +21,14 @@ use MintyPHP\Core\Curl as CoreCurl;
  */
 class Curl
 {
+    /**
+     * Static configuration parameters
+     */
+    public static bool $cookies = false;
     /** @var array<string,mixed> */
     public static array $options = [];
     /** @var array<string,string> */
     public static array $headers = [];
-    public static bool $cookies = false;
 
     /**
      * The Curl instance

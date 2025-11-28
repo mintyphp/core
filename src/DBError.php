@@ -2,4 +2,4 @@
 
 namespace MintyPHP;
 
-class DBError extends \Exception {};
+class DBError extends \RuntimeException {};

@@ -20,6 +20,9 @@ use MintyPHP\Core\Cache as CoreCache;
  */
 class Cache
 {
+    /**
+     * Static configuration parameters
+     */
     public static string $prefix = 'mintyphp';
     public static string $servers = '127.0.0.1';
 

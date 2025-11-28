@@ -15,22 +15,28 @@ use MintyPHP\TotpError;
  */
 class Auth
 {
-    // Configuration parameters
+    /**
+     * Static configuration parameters
+     */
     public static string $__usersTable = 'users';
     public static string $__usernameField = 'username';
     public static string $__passwordField = 'password';
     public static string $__createdField = 'created';
     public static string $__totpSecretField = 'totp_secret';
 
-    // Database instance for executing queries.s
-    private DB $db;
-
-    // User table and field names
+    /**
+     * Actual configuration parameters
+     */
     private string $usersTable;
     private string $usernameField;
     private string $passwordField;
     private string $createdField;
     private string $totpSecretField;
+
+    /**
+     * Database instance for executing queries.
+     */
+    private DB $db;
 
     /**
      * Constructor.

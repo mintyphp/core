@@ -2,6 +2,4 @@
 
 namespace MintyPHP;
 
-class TotpError extends \Exception
-{
-};
+class TotpError extends \RuntimeException {}

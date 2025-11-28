@@ -2,6 +2,7 @@
 
 namespace MintyPHP\Tests\Core;
 
+use Exception;
 use MintyPHP\Core\Auth;
 use MintyPHP\Core\DB;
 use PHPUnit\Framework\TestCase;
@@ -41,14 +42,6 @@ class AuthTest extends TestCase
 			PRIMARY KEY (`id`),
 			UNIQUE KEY `username` (`username`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;');
-
-        // Set error handler to catch session warnings
-        set_error_handler([self::class, 'throwErrorException'], E_ALL);
-    }
-
-    public static function throwErrorException(int $errNo, string $errstr, string $errFile, int $errLine): bool
-    {
-        throw new \Exception($errstr, $errNo);
     }
 
     public function testRegister(): void
@@ -61,22 +54,24 @@ class AuthTest extends TestCase
     public function testLogin(): void
     {
         $this->assertNotNull(self::$auth);
+        // assert that session has had a call to regenerate_id
+        $session_regenerated = false;
         try {
             self::$auth->login('test', 'test');
-            $session_regenerated = false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $session_regenerated = explode(':', $e->getMessage())[0] == "session_regenerate_id()";
         }
-        $this->assertTrue($session_regenerated, 'session not regenerated');
+        $this->assertTrue($session_regenerated, 'session not regenerated on login');
     }
 
     public function testLogout(): void
     {
         $this->assertNotNull(self::$auth);
         $_SESSION['user'] = array('id' => 1, 'username' => 'test');
+        // assert that session has had a call to regenerate_id
+        $session_regenerated = false;
         try {
             self::$auth->logout();
-            $session_regenerated = false;
         } catch (\Exception $e) {
             $session_regenerated = explode(':', $e->getMessage())[0] == "session_regenerate_id()";
         }
@@ -86,11 +81,6 @@ class AuthTest extends TestCase
 
     public static function tearDownAfterClass(): void
     {
-        parent::tearDownAfterClass();
-
-        // Restore error handler
-        restore_error_handler();
-
         // Clean up database
         self::$db->query('DROP TABLE IF EXISTS `users`;');
     }

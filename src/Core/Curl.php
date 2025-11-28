@@ -13,19 +13,27 @@ use MintyPHP\Debugger;
  */
 class Curl
 {
-    // static configuration defaults
+    /**
+     * Static configuration parameters
+     */
+    public static bool $__cookies = false;
     /** @var array<string,mixed> */
     public static array $__options = [];
     /** @var array<string,string> */
     public static array $__headers = [];
-    public static bool $__cookies = false;
 
-    // instance configuration
+    /**
+     * Actual configuration parameters
+     */
+    private bool $cookies;
     /** @var array<string,mixed> */
     private array $options;
     /** @var array<string,string> */
     private array $headers;
-    private bool $cookies;
+
+    /**
+     * The cURL handle used for requests
+     */
     private \CurlHandle $ch;
 
     /**
@@ -201,7 +209,7 @@ class Curl
      * @param array<string,string> $headers Headers to send
      * @param array<string,mixed> $options cURL options
      */
-    protected function setOptions(\CurlHandle $ch, string $method, string &$url, mixed &$data, array $headers, array $options): void
+    private function setOptions(\CurlHandle $ch, string $method, string &$url, mixed &$data, array $headers, array $options): void
     {
         // Set default options
         foreach ($options as $option => $value) {
@@ -258,7 +266,7 @@ class Curl
      * @param \CurlHandle $ch The cURL handle
      * @return string|bool The response or false on failure
      */
-    protected function curlExec(\CurlHandle $ch): string|bool
+    private function curlExec(\CurlHandle $ch): string|bool
     {
         return curl_exec($ch);
     }
@@ -270,7 +278,7 @@ class Curl
      * @param int $option The CURLINFO option
      * @return mixed The information value
      */
-    protected function curlGetInfo(\CurlHandle $ch, int $option): mixed
+    private function curlGetInfo(\CurlHandle $ch, int $option): mixed
     {
         return curl_getinfo($ch, $option);
     }

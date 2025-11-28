@@ -4,8 +4,8 @@ namespace MintyPHP\Core;
 
 use mysqli;
 use mysqli_stmt;
-use MintyPHP\DBError;
 use MintyPHP\Debugger;
+use MintyPHP\DBError;
 
 /**
  * Database abstraction layer for MintyPHP
@@ -16,7 +16,7 @@ use MintyPHP\Debugger;
 class DB
 {
     /**
-     * The database connection parameters (static for singleton pattern)
+     * Static configuration parameters
      */
     public static ?string $__host = null;
     public static ?string $__username = null;
@@ -26,7 +26,7 @@ class DB
     public static ?string $__socket = null;
 
     /**
-     * The database connection parameters
+     * Actual configuration parameters
      */
     private ?string $host;
     private ?string $username;
@@ -34,7 +34,15 @@ class DB
     private ?string $database;
     private ?int $port;
     private ?string $socket;
+
+    /**
+     * Database instance for executing queries.
+     */
     private \mysqli $mysqli;
+
+    /**
+     * Indicates whether the database connection is closed.
+     */
     private bool $closed;
 
     /**
@@ -47,7 +55,7 @@ class DB
      * @param int|null $port Database port
      * @param string|null $socket Database socket
      * @param \mysqli|null $mysqli Existing mysqli connection
-     * @throws DBError if connection fails
+     * @throws \RuntimeException if connection fails
      */
     public function __construct(?string $host, ?string $username, ?string $password, ?string $database, ?int $port, ?string $socket, ?\mysqli $mysqli = null)
     {
@@ -84,7 +92,7 @@ class DB
      * @param string $query SQL query with ? placeholders
      * @param mixed ...$params Query parameters
      * @return mixed Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function query(string $query, mixed ...$params): mixed
     {
@@ -112,7 +120,7 @@ class DB
      * @param string $query SQL query with ? placeholders
      * @param mixed ...$params Query parameters
      * @return mixed Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     private function queryTyped(string $query, mixed ...$params): mixed
     {
@@ -202,7 +210,7 @@ class DB
      * @param string $query SQL INSERT query
      * @param mixed ...$params Query parameters
      * @return int Last insert ID
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function insert(string $query, mixed ...$params): int
     {
@@ -219,7 +227,7 @@ class DB
      * @param string $query SQL UPDATE query
      * @param mixed ...$params Query parameters
      * @return int Number of affected rows
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function update(string $query, mixed ...$params): int
     {
@@ -234,7 +242,7 @@ class DB
      * @param string $query SQL DELETE query
      * @param mixed ...$params Query parameters
      * @return int Number of affected rows
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function delete(string $query, mixed ...$params): int
     {
@@ -249,7 +257,7 @@ class DB
      * @param string $query SQL SELECT query
      * @param mixed ...$params Query parameters
      * @return array<int, array<string, array<string, mixed>>> Array of result rows
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function select(string $query, mixed ...$params): array
     {
@@ -264,7 +272,7 @@ class DB
      * @param string $query SQL SELECT query
      * @param mixed ...$params Query parameters
      * @return array<string, array<string, mixed>>|false First result row or false if no result
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function selectOne(string $query, mixed ...$params): array|false
     {
@@ -280,7 +288,7 @@ class DB
      * @param string $query SQL SELECT query
      * @param mixed ...$params Query parameters
      * @return mixed Single value from first column of first row, or false if no result
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function selectValue(string $query, mixed ...$params): mixed
     {
@@ -301,7 +309,7 @@ class DB
      * @param string $query SQL SELECT query
      * @param mixed ...$params Query parameters
      * @return array<int, mixed> Array of values from first column
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function selectValues(string $query, mixed ...$params): array
     {
@@ -323,7 +331,7 @@ class DB
      * @param string $query SQL SELECT query returning at least 2 columns
      * @param mixed ...$params Query parameters
      * @return array<int|string, mixed> Associative array using first column as keys, second as values
-     * @throws DBError if query execution fails or database is closed
+     * @throws \RuntimeException if query execution fails or database is closed
      */
     public function selectPairs(string $query, mixed ...$params): array
     {

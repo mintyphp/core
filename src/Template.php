@@ -58,6 +58,7 @@ class Template
      * @param array<string,mixed> $data Associative array of data to use in the template.
      * @param array<string,callable> $functions Associative array of custom functions available in the template.
      * @return string The rendered template string.
+     * @throws \RuntimeException If there is an error during rendering.
      */
     public static function render(string $template, array $data, array $functions = []): string
     {
