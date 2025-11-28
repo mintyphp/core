@@ -6,6 +6,10 @@ use MintyPHP\Core\Curl;
 use MintyPHP\Debugger;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Note: This test suite starts a PHP built-in server to handle HTTP requests.
+ * Ensure that the specified port (8765) is available before running the tests.
+ */
 class CurlTest extends TestCase
 {
     private static ?int $serverPid = null;
