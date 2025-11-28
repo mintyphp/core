@@ -18,127 +18,127 @@ use MintyPHP\Core\Cache as CoreCache;
  */
 class Cache
 {
-	public static string $prefix = 'mintyphp';
-	public static string $servers = '127.0.0.1';
+    public static string $prefix = 'mintyphp';
+    public static string $servers = '127.0.0.1';
 
-	/**
-	 * The Cache instance
-	 * @var ?CoreCache
-	 */
-	private static ?CoreCache $instance = null;
+    /**
+     * The Cache instance
+     * @var ?CoreCache
+     */
+    private static ?CoreCache $instance = null;
 
-	/**
-	 * Get the Cache instance
-	 * @return CoreCache
-	 */
-	public static function getInstance(): CoreCache
-	{
-		return self::$instance ??= new CoreCache(
-			null,
-			self::$prefix,
-			self::$servers
-		);
-	}
+    /**
+     * Get the Cache instance
+     * @return CoreCache
+     */
+    public static function getInstance(): CoreCache
+    {
+        return self::$instance ??= new CoreCache(
+            Memcached::getInstance(),
+            self::$prefix,
+            self::$servers
+        );
+    }
 
-	/**
-	 * Set the Cache instance to use
-	 * @param CoreCache $instance
-	 * @return void
-	 */
-	public static function setInstance(CoreCache $instance): void
-	{
-		self::$instance = $instance;
-	}
+    /**
+     * Set the Cache instance to use
+     * @param CoreCache $instance
+     * @return void
+     */
+    public static function setInstance(CoreCache $instance): void
+    {
+        self::$instance = $instance;
+    }
 
-	/**
-	 * Add a value to the cache only if it doesn't already exist
-	 *
-	 * @param string $key The cache key
-	 * @param mixed $var The value to store
-	 * @param int $expire Expiration time in seconds (0 = never expire)
-	 * @return bool True on success, false on failure
-	 */
-	public static function add(string $key, mixed $var, int $expire = 0): bool
-	{
-		$instance = self::getInstance();
-		return $instance->add($key, $var, $expire);
-	}
+    /**
+     * Add a value to the cache only if it doesn't already exist
+     *
+     * @param string $key The cache key
+     * @param mixed $var The value to store
+     * @param int $expire Expiration time in seconds (0 = never expire)
+     * @return bool True on success, false on failure
+     */
+    public static function add(string $key, mixed $var, int $expire = 0): bool
+    {
+        $instance = self::getInstance();
+        return $instance->add($key, $var, $expire);
+    }
 
-	/**
-	 * Decrement a numeric value in the cache
-	 *
-	 * @param string $key The cache key
-	 * @param int $value The amount to decrement by (default: 1)
-	 * @return int|false The new value on success, false on failure
-	 */
-	public static function decrement(string $key, int $value = 1): int|false
-	{
-		$instance = self::getInstance();
-		return $instance->decrement($key, $value);
-	}
+    /**
+     * Decrement a numeric value in the cache
+     *
+     * @param string $key The cache key
+     * @param int $value The amount to decrement by (default: 1)
+     * @return int|false The new value on success, false on failure
+     */
+    public static function decrement(string $key, int $value = 1): int|false
+    {
+        $instance = self::getInstance();
+        return $instance->decrement($key, $value);
+    }
 
-	/**
-	 * Delete a value from the cache
-	 *
-	 * @param string $key The cache key
-	 * @return bool True on success, false on failure
-	 */
-	public static function delete(string $key): bool
-	{
-		$instance = self::getInstance();
-		return $instance->delete($key);
-	}
+    /**
+     * Delete a value from the cache
+     *
+     * @param string $key The cache key
+     * @return bool True on success, false on failure
+     */
+    public static function delete(string $key): bool
+    {
+        $instance = self::getInstance();
+        return $instance->delete($key);
+    }
 
-	/**
-	 * Retrieve a value from the cache
-	 *
-	 * @param string $key The cache key
-	 * @return mixed The cached value, or false if not found
-	 */
-	public static function get(string $key): mixed
-	{
-		$instance = self::getInstance();
-		return $instance->get($key);
-	}
+    /**
+     * Retrieve a value from the cache
+     *
+     * @param string $key The cache key
+     * @return mixed The cached value, or false if not found
+     */
+    public static function get(string $key): mixed
+    {
+        $instance = self::getInstance();
+        return $instance->get($key);
+    }
 
-	/**
-	 * Increment a numeric value in the cache
-	 *
-	 * @param string $key The cache key
-	 * @param int $value The amount to increment by (default: 1)
-	 * @return int|false The new value on success, false on failure
-	 */
-	public static function increment(string $key, int $value = 1): int|false
-	{
-		$instance = self::getInstance();
-		return $instance->increment($key, $value);
-	}
+    /**
+     * Increment a numeric value in the cache
+     *
+     * @param string $key The cache key
+     * @param int $value The amount to increment by (default: 1)
+     * @return int|false The new value on success, false on failure
+     */
+    public static function increment(string $key, int $value = 1): int|false
+    {
+        $instance = self::getInstance();
+        return $instance->increment($key, $value);
+    }
 
-	/**
-	 * Replace a value in the cache only if it already exists
-	 *
-	 * @param string $key The cache key
-	 * @param mixed $var The value to store
-	 * @param int $expire Expiration time in seconds (0 = never expire)
-	 * @return bool True on success, false on failure
-	 */
-	public static function replace(string $key, mixed $var, int $expire = 0): bool
-	{
-		$instance = self::getInstance();
-		return $instance->replace($key, $var, $expire);
-	}
+    /**
+     * Replace a value in the cache only if it already exists
+     *
+     * @param string $key The cache key
+     * @param mixed $var The value to store
+     * @param int $expire Expiration time in seconds (0 = never expire)
+     * @return bool True on success, false on failure
+     */
+    public static function replace(string $key, mixed $var, int $expire = 0): bool
+    {
+        $instance = self::getInstance();
+        return $instance->replace($key, $var, $expire);
+    }
 
-	/**
-	 * Store a value in the cache (creates or updates)
-	 *
-	 * @param string $key The cache key
-	 * @param mixed $var The value to store
-	 * @param int $expire Expiration time in seconds (0 = never expire)
-	 * @return bool True on success, false on failure
-	 */
-	public static function set(string $key, mixed $var, int $expire = 0): bool
-	{
-		$instance = self::getInstance();
-		return $instance->set($key, $var, $expire);
-	}
+    /**
+     * Store a value in the cache (creates or updates)
+     *
+     * @param string $key The cache key
+     * @param mixed $var The value to store
+     * @param int $expire Expiration time in seconds (0 = never expire)
+     * @return bool True on success, false on failure
+     */
+    public static function set(string $key, mixed $var, int $expire = 0): bool
+    {
+        $instance = self::getInstance();
+        return $instance->set($key, $var, $expire);
+    }
 }
