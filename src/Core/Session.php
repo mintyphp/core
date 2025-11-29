@@ -23,16 +23,26 @@ class Session
     /**
      * Actual configuration parameters
      */
-    private string $sessionId;
-    private string $sessionName;
-    private string $csrfSessionKey;
-    private bool $enabled;
-    private int $csrfLength;
-    private string $sameSite;
+    private readonly string $sessionId;
+    private readonly string $sessionName;
+    private readonly string $csrfSessionKey;
+    private readonly bool $enabled;
+    private readonly int $csrfLength;
+    private readonly string $sameSite;
+
+    /**
+     * Debugger instance for logging session operations
+     */
     private ?Debugger $debugger;
 
-    private bool $initialized = false;
+    /**
+     * Indicates whether the session has been initialized.
+     */
     private bool $started = false;
+
+    /**
+     * Indicates whether the session has been ended.
+     */
     private bool $ended = false;
 
     public function __construct(
@@ -41,7 +51,8 @@ class Session
         string $csrfSessionKey = 'csrf_token',
         bool $enabled = true,
         int $csrfLength = 16,
-        string $sameSite = 'Lax'
+        string $sameSite = 'Lax',
+        ?Debugger $debugger = null
     ) {
         $this->sessionId = $sessionId;
         $this->sessionName = $sessionName;
@@ -49,26 +60,15 @@ class Session
         $this->enabled = $enabled;
         $this->csrfLength = $csrfLength;
         $this->sameSite = $sameSite;
-        $this->debugger = Debugger::isEnabled() ? Debugger::getInstance() : null;
-    }
+        $this->debugger = $debugger;
 
-    private function initialize(): void
-    {
-        if ($this->initialized) {
-            return;
-        }
-
-        $this->initialized = true;
+        // Initialize session
         $this->start();
         $this->setCsrfToken();
     }
 
     private function setCsrfToken(): void
     {
-        if (!$this->enabled) {
-            return;
-        }
-
         if (isset($_SESSION[$this->csrfSessionKey])) {
             return;
         }
@@ -95,16 +95,11 @@ class Session
 
     public function start(): void
     {
-        if (!$this->initialized) {
-            $this->initialize();
-        }
-
         if ($this->started) {
             return;
         }
 
-        $debuggerEnabled = $this->debugger && $this->debugger->isEnabled();
-        if ($this->enabled || $debuggerEnabled) {
+        if ($this->enabled || $this->debugger !== null) {
             if (!ini_get('session.cookie_samesite')) {
                 ini_set('session.cookie_samesite', $this->sameSite);
             }
@@ -119,20 +114,19 @@ class Session
                 session_id($this->sessionId);
             }
             session_start();
-            if (!$this->enabled && $this->debugger) {
-                $debuggerSessionKey = Debugger::$__sessionKey;
+            if (!$this->enabled && $this->debugger !== null) {
                 foreach ($_SESSION as $k => $v) {
-                    if ($k != $debuggerSessionKey) {
+                    if ($k != $this->debugger->getSessionKey()) {
                         unset($_SESSION[$k]);
                     }
                 }
             }
         }
         $this->started = true;
-        if ($debuggerEnabled && $this->debugger) {
-            $debuggerSessionKey = Debugger::$__sessionKey;
-            if (!isset($_SESSION[$debuggerSessionKey])) {
-                $_SESSION[$debuggerSessionKey] = [];
+
+        if ($this->debugger !== null) {
+            if (!isset($_SESSION[$this->debugger->getSessionKey()])) {
+                $_SESSION[$this->debugger->getSessionKey()] = [];
             }
             $this->debugger->logSessionBefore();
         }
@@ -140,25 +134,20 @@ class Session
 
     public function end(): void
     {
-        if (!$this->initialized) {
-            $this->initialize();
-        }
-
         if ($this->ended) {
             return;
         }
 
         $this->ended = true;
-        $debuggerEnabled = $this->debugger && $this->debugger->isEnabled();
-        if ($this->enabled && !$debuggerEnabled) {
+        if ($this->enabled && $this->debugger === null) {
             session_write_close();
         }
 
-        if ($debuggerEnabled && $this->debugger) {
+        if ($this->debugger !== null) {
             $this->debugger->logSessionAfter();
         }
 
-        if ($debuggerEnabled) {
+        if ($this->debugger !== null) {
             $session = $_SESSION;
             unset($_SESSION);
             $_SESSION = $session;
@@ -167,10 +156,6 @@ class Session
 
     public function checkCsrfToken(): bool
     {
-        if (!$this->initialized) {
-            $this->initialize();
-        }
-
         if (!$this->enabled) {
             return true;
         }
@@ -184,10 +169,6 @@ class Session
 
     public function getCsrfInput(): void
     {
-        if (!$this->initialized) {
-            $this->initialize();
-        }
-
         if (!$this->enabled) {
             return;
         }

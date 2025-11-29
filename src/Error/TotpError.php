@@ -1,5 +1,5 @@
 <?php
 
-namespace MintyPHP;
+namespace MintyPHP\Error;
 
 class TotpError extends \RuntimeException {}

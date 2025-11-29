@@ -44,6 +44,8 @@ class Auth
     {
         return self::$instance ??= new CoreAuth(
             DB::getInstance(),
+            Totp::getInstance(),
+            Session::getInstance(),
             self::$usersTable,
             self::$usernameField,
             self::$passwordField,
@@ -72,7 +74,6 @@ class Auth
      * @param string $password The password to verify.
      * @param string $totp Optional TOTP code for two-factor authentication.
      * @return array<string,array<string,mixed>> User data on success, empty array on failure.
-     * @throws TotpError If TOTP verification fails.
      */
     public static function login(string $username, string $password, string $totp = ''): array
     {

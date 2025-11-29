@@ -33,10 +33,9 @@ class Firewall
     private bool $reverseProxy;
 
     private Cache $cache;
-    private ?Debugger $debugger;
     private string $key;
 
-    public function __construct(Cache $cache, int $concurrency, float $spinLockSeconds, int $intervalSeconds, string $cachePrefix, bool $reverseProxy, ?Debugger $debugger = null)
+    public function __construct(Cache $cache, int $concurrency, float $spinLockSeconds, int $intervalSeconds, string $cachePrefix, bool $reverseProxy)
     {
         $this->cache = $cache;
         $this->concurrency = $concurrency;
@@ -44,7 +43,6 @@ class Firewall
         $this->intervalSeconds = $intervalSeconds;
         $this->cachePrefix = $cachePrefix;
         $this->reverseProxy = $reverseProxy;
-        $this->debugger = $debugger;
     }
 
     private function getClientIp(): string
@@ -68,7 +66,6 @@ class Firewall
 
     public function start(): void
     {
-        if ($this->debugger->isEnabled()) return;
         header_remove('X-Powered-By');
         $key = $this->getKey();
         $start = microtime(true);

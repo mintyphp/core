@@ -2,9 +2,7 @@
 
 namespace MintyPHP\Core;
 
-use MintyPHP\Debugger;
-use MintyPHP\RouterError;
-use MintyPHP\Session;
+use MintyPHP\Error\RouterError;
 
 /**
  * Router class for handling URL routing in MintyPHP

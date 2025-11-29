@@ -49,8 +49,7 @@ class Firewall
             self::$spinLockSeconds,
             self::$intervalSeconds,
             self::$cachePrefix,
-            self::$reverseProxy,
-            Debugger::getInstance()
+            self::$reverseProxy
         );
     }
 

@@ -233,7 +233,8 @@ foreach ($classes as $className) {
         $staticFunctions,
         $coreConstructorParams,
         $methods,
-        $classDocblock
+        $classDocblock,
+        $classes
     );
 
     // Write wrapper file
@@ -249,6 +250,7 @@ echo "Done: $generatedCount wrappers written\n";
  * @param array<int, array{visibility: string, name: string, paramSignature: string, returnType: string}> $staticFunctions
  * @param array<int, array{type: string, name: string}> $coreConstructorParams
  * @param array<int, array{name: string, params: array<int, string>, paramNames: array<int, string>, paramSignature: string, returnType: string, docblock: string}> $methods
+ * @param array<int, string> $classes
  */
 function generateWrapperClass(
     string $className,
@@ -258,7 +260,8 @@ function generateWrapperClass(
     array $staticFunctions,
     array $coreConstructorParams,
     array $methods,
-    string $classDocblock
+    string $classDocblock,
+    array $classes
 ): string {
     $coreClassName = "Core$className";
     $code = "<?php\n\n";
@@ -371,16 +374,20 @@ function generateWrapperClass(
             $paramType = $param['type'];
             // Remove optional marker and extract base type
             $baseType = str_replace('?', '', $paramType);
+            $isOptional = str_starts_with($paramType, '?');
 
-            // List of known external classes that should use null instead of getInstance()
-            $externalClasses = ['Memcached', 'mysqli', 'PDO'];
-
-            // Check if it's a known Core class (simple name without namespace and not external)
-            if (preg_match('/^[A-Z][a-zA-Z]*$/', $baseType) && !in_array($baseType, $externalClasses)) {
-                // It's a Core class, call getInstance()
-                $constructorArgs[] = "            $baseType::getInstance()";
+            // Check if it's a known Core class by checking if the file exists in Core directory
+            if (in_array($baseType, $classes)) {
+                // It's a Core class
+                if ($isOptional) {
+                    // For optional Core class parameters, check the $enabled property
+                    $constructorArgs[] = "            $baseType::\$enabled ? $baseType::getInstance() : null";
+                } else {
+                    // For required Core class parameters, call getInstance()
+                    $constructorArgs[] = "            $baseType::getInstance()";
+                }
             } else {
-                // Not a Core class or is an external class, use null
+                // Not a Core class, use null
                 $constructorArgs[] = "            null";
             }
         }

@@ -49,7 +49,8 @@ class Session
             self::$csrfSessionKey,
             self::$enabled,
             self::$csrfLength,
-            self::$sameSite
+            self::$sameSite,
+            Debugger::$enabled ? Debugger::getInstance() : null
         );
     }
 

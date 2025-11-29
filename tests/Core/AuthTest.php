@@ -5,6 +5,8 @@ namespace MintyPHP\Tests\Core;
 use Exception;
 use MintyPHP\Core\Auth;
 use MintyPHP\Core\DB;
+use MintyPHP\Session;
+use MintyPHP\Totp;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -30,7 +32,16 @@ class AuthTest extends TestCase
         self::$db = new DB(null, 'mintyphp_test', 'mintyphp_test', 'mintyphp_test', null, null);
 
         // Create Core Auth instance
-        self::$auth = new Auth(self::$db);
+        self::$auth = new Auth(
+            self::$db,
+            Totp::getInstance(),
+            Session::getInstance(),
+            'users',
+            'username',
+            'password',
+            'created',
+            'totp_secret'
+        );
 
         // Drop and recreate users table
         self::$db->query('DROP TABLE IF EXISTS `users`;');

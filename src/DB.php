@@ -50,7 +50,8 @@ class DB
             self::$database,
             self::$port,
             self::$socket,
-            null
+            null,
+            Debugger::$enabled ? Debugger::getInstance() : null
         );
     }
 

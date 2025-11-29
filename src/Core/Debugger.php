@@ -188,15 +188,14 @@ class Debugger
             ),
             redirect: ''
         );
+        // don't do anything if not enabled
+        if (!$this->enabled) {
+            return;
+        }
         // only run on first instantiation
         static $run = 0;
         if ($run++ == 1) {
             // configure error reporting
-            if (!$this->enabled) {
-                ini_set('display_errors', 0);
-                error_reporting(0);
-                return;
-            }
             ini_set('display_errors', 1);
             error_reporting(-1);
             register_shutdown_function([$this, 'end'], 'abort');
@@ -347,12 +346,25 @@ class Debugger
     }
 
     /**
+     * Get the session key used for storing debugger data
+     * @return string The session key
+     */
+    public function getSessionKey(): string
+    {
+        return $this->sessionKey;
+    }
+
+    /**
      * Finalize and store the debugger data at the end of the request
      * @param string $type The type of request completion (e.g., 'ok', 'abort')
      * @return void
      */
     public function end(string $type): void
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         if ($this->request->type) {
             return;
         }
@@ -376,6 +388,10 @@ class Debugger
      */
     public function toolbar(): void
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $this->end('ok');
         $html = '<div id="debugger-bar" style="position: fixed; width:100%; left: 0; bottom: 0; border-top: 1px solid silver; background: white;">';
         $html .= '<div style="margin:6px;">';

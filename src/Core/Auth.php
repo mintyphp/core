@@ -3,9 +3,6 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Core\DB;
-use MintyPHP\Session;
-use MintyPHP\Totp;
-use MintyPHP\TotpError;
 
 /**
  * Authentication layer for MintyPHP
@@ -27,11 +24,11 @@ class Auth
     /**
      * Actual configuration parameters
      */
-    private string $usersTable;
-    private string $usernameField;
-    private string $passwordField;
-    private string $createdField;
-    private string $totpSecretField;
+    private readonly string $usersTable;
+    private readonly string $usernameField;
+    private readonly string $passwordField;
+    private readonly string $createdField;
+    private readonly string $totpSecretField;
 
     /**
      * Database instance for executing queries.
@@ -39,9 +36,20 @@ class Auth
     private DB $db;
 
     /**
-     * Constructor.
-     * 
+     * Totp instance for handling TOTP verification.
+     */
+    private Totp $totp;
+
+    /**
+     * Session instance for managing user sessions.
+     */
+    private Session $session;
+
+    /**
+     * Constructor for the Auth class.
      * @param DB $db Database instance for executing queries.
+     * @param Totp $totp Totp instance for handling TOTP verification.
+     * @param Session $session Session instance for managing user sessions.
      * @param string $usersTable Name of the users table.
      * @param string $usernameField Name of the username field.
      * @param string $passwordField Name of the password field.
@@ -50,6 +58,8 @@ class Auth
      */
     public function __construct(
         DB $db,
+        Totp $totp,
+        Session $session,
         string $usersTable = 'users',
         string $usernameField = 'username',
         string $passwordField = 'password',
@@ -57,6 +67,8 @@ class Auth
         string $totpSecretField = 'totp_secret'
     ) {
         $this->db = $db;
+        $this->totp = $totp;
+        $this->session = $session;
         $this->usersTable = $usersTable;
         $this->usernameField = $usernameField;
         $this->passwordField = $passwordField;
@@ -74,7 +86,6 @@ class Auth
      * @param string $password The password to verify.
      * @param string $totp Optional TOTP code for two-factor authentication.
      * @return array<string,array<string,mixed>> User data on success, empty array on failure.
-     * @throws TotpError If TOTP verification fails.
      */
     public function login(string $username, string $password, string $totp = ''): array
     {
@@ -91,14 +102,14 @@ class Auth
                 if (!is_string($totpSecret)) {
                     $totpSecret = '';
                 }
-                if (!Totp::verify($totpSecret, $totp ?: '')) {
+                if (!$this->totp->verify($totpSecret, $totp)) {
                     $username = $user[$this->usersTable][$this->usernameField] ?? '';
                     if (!is_string($username)) {
                         $username = '';
                     }
-                    throw new TotpError($username);
+                    return [];
                 }
-                Session::regenerate();
+                $this->session->regenerate();
                 $_SESSION['user'] = $user[$this->usersTable];
                 return $user;
             }
@@ -117,7 +128,7 @@ class Auth
     public function logout(): bool
     {
         unset($_SESSION['user']);
-        Session::regenerate();
+        $this->session->regenerate();
         return true;
     }
 

@@ -42,7 +42,7 @@ class Cache
             self::$prefix,
             self::$servers,
             null,
-            Debugger::getInstance()
+            Debugger::$enabled ? Debugger::getInstance() : null
         );
     }
 

@@ -170,6 +170,16 @@ class Debugger
     }
 
     /**
+     * Get the session key used for storing debugger data
+     * @return string The session key
+     */
+    public static function getSessionKey(): string
+    {
+        $instance = self::getInstance();
+        return $instance->getSessionKey();
+    }
+
+    /**
      * Finalize and store the debugger data at the end of the request
      * @param string $type The type of request completion (e.g., 'ok', 'abort')
      * @return void

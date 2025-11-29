@@ -28,6 +28,10 @@ class Cache
      * The Memcached instance used for caching
      */
     private Memcached $memcache;
+
+    /**
+     * Debugger instance for logging cache operations
+     */
     private ?Debugger $debugger;
 
     /**

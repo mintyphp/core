@@ -2,7 +2,7 @@
 
 namespace MintyPHP\Core;
 
-use MintyPHP\BufferError;
+use MintyPHP\Error\BufferError;
 
 /**
  * Buffer management for MintyPHP.

@@ -4,8 +4,8 @@ namespace MintyPHP\Core;
 
 use mysqli;
 use mysqli_stmt;
-use MintyPHP\Debugger;
-use MintyPHP\DBError;
+
+use MintyPHP\Error\DBError;
 
 /**
  * Database abstraction layer for MintyPHP
@@ -41,6 +41,11 @@ class DB
     private \mysqli $mysqli;
 
     /**
+     * Debugger instance for logging database operations
+     */
+    private ?Debugger $debugger;
+
+    /**
      * Indicates whether the database connection is closed.
      */
     private bool $closed;
@@ -57,7 +62,7 @@ class DB
      * @param \mysqli|null $mysqli Existing mysqli connection
      * @throws \RuntimeException if connection fails
      */
-    public function __construct(?string $host, ?string $username, ?string $password, ?string $database, ?int $port, ?string $socket, ?\mysqli $mysqli = null)
+    public function __construct(?string $host, ?string $username, ?string $password, ?string $database, ?int $port, ?string $socket, ?\mysqli $mysqli = null, ?Debugger $debugger = null)
     {
         $this->host = $host;
         $this->username = $username;
@@ -65,16 +70,14 @@ class DB
         $this->database = $database;
         $this->port = $port;
         $this->socket = $socket;
+        $this->debugger = $debugger;
 
         // Establish the database connection
         mysqli_report(MYSQLI_REPORT_STRICT);
         if ($mysqli === null) {
             $mysqli = mysqli_connect($this->host, $this->username, $this->password, $this->database, $this->port, $this->socket);
-            if (!$mysqli instanceof mysqli) {
+            if (!($mysqli instanceof mysqli) || mysqli_connect_errno()) {
                 throw new DBError(mysqli_connect_error() ?: 'Database connection failed');
-            }
-            if (mysqli_connect_errno()) {
-                throw new DBError(mysqli_connect_error() ?: 'Database connection error');
             }
         }
         $this->mysqli = $mysqli;
@@ -96,11 +99,11 @@ class DB
      */
     public function query(string $query, mixed ...$params): mixed
     {
-        if (Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $time = microtime(true);
         }
         $result = $this->queryTyped($query, ...$params);
-        if (Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $arguments = [$query, ...$params];
             if (strtoupper(substr(trim($query), 0, 6)) == 'SELECT') {
@@ -109,7 +112,7 @@ class DB
                 $explain = false;
             }
             $equery = $this->mysqli->real_escape_string($query);
-            Debugger::addQuery($duration, $query, $equery, $arguments, $result, $explain);
+            $this->debugger->addQuery($duration, $query, $equery, $arguments, $result, $explain);
         }
         return $result;
     }
