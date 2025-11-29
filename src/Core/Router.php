@@ -12,7 +12,6 @@ use MintyPHP\Error\RouterError;
  */
 class Router
 {
-
 	/**
 	 * Static configuration parameters
 	 */
