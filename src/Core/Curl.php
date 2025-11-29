@@ -145,13 +145,14 @@ class Curl
         $location = $this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL);
 
         if (Debugger::$enabled) {
-            $timing = [];
-            $timing['name_lookup'] = $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME);
-            $timing['connect'] = $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME);
-            $timing['pre_transfer'] = $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME);
-            $timing['start_transfer'] = $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME);
-            $timing['redirect'] = $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME);
-            $timing['total'] = $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME);
+            $timing = Debugger::createTiming(
+                $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME),
+                $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME),
+                $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME),
+                $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME),
+                $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME),
+                $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME),
+            );
         }
 
         if ($this->cookies && $cookieJar) {

@@ -111,7 +111,7 @@ class Cache
             $arguments = array($key, $this->variable($var));
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -133,7 +133,7 @@ class Cache
             $arguments = array($key);
             if ($value > 1) $arguments[] = $value;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -153,7 +153,7 @@ class Cache
             $command = 'delete';
             $arguments = array($key);
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -173,7 +173,7 @@ class Cache
             $command = 'get';
             $arguments = array($key);
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -195,7 +195,7 @@ class Cache
             $arguments = array($key);
             if ($value > 1) $arguments[] = $value;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -218,7 +218,7 @@ class Cache
             $arguments = array($key, $this->variable($var));
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -241,7 +241,7 @@ class Cache
             $arguments = array($key, $this->variable($var));
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::add('cache', compact('duration', 'command', 'arguments', 'result'));
+            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
