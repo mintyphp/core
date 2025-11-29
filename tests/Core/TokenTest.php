@@ -141,7 +141,7 @@ class TokenTest extends TestCase
         $algorithms = ['HS256', 'HS384', 'HS512'];
 
         foreach ($algorithms as $algorithm) {
-            $token = new Token($algorithm, $this->secret, 5, 3600, false, false, $algorithm, '', '');
+            $token = new Token($algorithm, $this->secret, 5, 3600, '', '', $algorithm, '', '');
             $claims = ['sub' => 'user123'];
             $jwt = $token->getToken($claims);
 
