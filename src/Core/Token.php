@@ -61,26 +61,26 @@ class Token
         );
         $tokenParts = explode('.', $token);
         if (count($tokenParts) < 3) {
-			return false;
-		}
-		$headerJson = base64_decode(strtr($tokenParts[0], '-_', '+/'));
-		if ($headerJson === false) {
-			return false;
-		}
-		$header = json_decode($headerJson, true);
-		if (!is_array($header)) {
-			return false;
-		}
-		if (!$secret) {
-			return false;
-		}
-		if (!isset($header['typ']) || !is_string($header['typ']) || $header['typ'] != 'JWT') {
-			return false;
-		}
-		if (!isset($header['alg']) || !is_string($header['alg'])) {
-			return false;
-		}
-		$algorithm = $header['alg'];
+            return false;
+        }
+        $headerJson = base64_decode(strtr($tokenParts[0], '-_', '+/'));
+        if ($headerJson === false) {
+            return false;
+        }
+        $header = json_decode($headerJson, true);
+        if (!is_array($header)) {
+            return false;
+        }
+        if (!$secret) {
+            return false;
+        }
+        if (!isset($header['typ']) || !is_string($header['typ']) || $header['typ'] != 'JWT') {
+            return false;
+        }
+        if (!isset($header['alg']) || !is_string($header['alg'])) {
+            return false;
+        }
+        $algorithm = $header['alg'];
         if (!isset($algorithms[$algorithm])) {
             return false;
         }
@@ -109,28 +109,29 @@ class Token
         if (!$claims) {
             return false;
         }
-        return false;
-		}
-		foreach ($requirements as $field => $values) {
-			if (!empty($values)) {
-				if ($field != 'alg') {
-					if (!isset($claims[$field]) || !is_string($claims[$field]) || !in_array($claims[$field], $values)) {
-						return false;
-					}
-				}
-			}
-		}
-		if (isset($claims['nbf']) && is_int($claims['nbf']) && $time + $leeway < $claims['nbf']) {
-			return false;
-		}
-		if (isset($claims['iat']) && is_int($claims['iat']) && $time + $leeway < $claims['iat']) {
-			return false;
-		}
-		if (isset($claims['exp']) && is_int($claims['exp']) && $time - $leeway > $claims['exp']) {
-			return false;
-		}
-		if (isset($claims['iat']) && is_int($claims['iat']) && !isset($claims['exp'])) {
-			if ($time - $leeway > $claims['iat'] + $ttl) {
+        foreach ($requirements as $field => $values) {
+            if (!empty($values)) {
+                if ($field != 'alg') {
+                    if (!isset($claims[$field]) || !is_string($claims[$field]) || !in_array($claims[$field], $values)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        if (isset($claims['nbf']) && is_int($claims['nbf']) && $time + $leeway < $claims['nbf']) {
+            return false;
+        }
+        if (isset($claims['iat']) && is_int($claims['iat']) && $time + $leeway < $claims['iat']) {
+            return false;
+        }
+        if (isset($claims['exp']) && is_int($claims['exp']) && $time - $leeway > $claims['exp']) {
+            return false;
+        }
+        if (isset($claims['iat']) && is_int($claims['iat']) && !isset($claims['exp'])) {
+            if ($time - $leeway > $claims['iat'] + $ttl) {
+                return false;
+            }
+        }
         return $claims;
     }
 
@@ -173,10 +174,10 @@ class Token
         $header['typ'] = 'JWT';
         $header['alg'] = $algorithm;
         $token = [];
-        $token[0] = rtrim(strtr(base64_encode(json_encode((object) $header)), '+/', '-_'), '=');
+        $token[0] = rtrim(strtr(base64_encode(json_encode((object) $header) ?: ''), '+/', '-_'), '=');
         $claims['iat'] = $time;
         $claims['exp'] = $time + $ttl;
-        $token[1] = rtrim(strtr(base64_encode(json_encode((object) $claims)), '+/', '-_'), '=');
+        $token[1] = rtrim(strtr(base64_encode(json_encode((object) $claims) ?: ''), '+/', '-_'), '=');
         if (!isset($algorithms[$algorithm])) {
             return false;
         }

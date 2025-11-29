@@ -28,12 +28,12 @@ class DB
     /**
      * Actual configuration parameters
      */
-    private ?string $host;
-    private ?string $username;
-    private ?string $password;
-    private ?string $database;
-    private ?int $port;
-    private ?string $socket;
+    private readonly ?string $host;
+    private readonly ?string $username;
+    private readonly ?string $password;
+    private readonly ?string $database;
+    private readonly ?int $port;
+    private readonly ?string $socket;
 
     /**
      * Database instance for executing queries.

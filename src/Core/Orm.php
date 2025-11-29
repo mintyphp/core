@@ -11,8 +11,15 @@ use MintyPHP\Core\DB;
  */
 class Orm
 {
+    /**
+     * Database instance for executing queries.
+     */
     private DB $db;
 
+    /**
+     * Constructor for the Orm class.
+     * @param DB $db Database instance for executing queries.
+     */
     public function __construct(DB $db)
     {
         $this->db = $db;

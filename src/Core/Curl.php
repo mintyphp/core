@@ -25,11 +25,11 @@ class Curl
     /**
      * Actual configuration parameters
      */
-    private bool $cookies;
+    private readonly bool $cookies;
     /** @var array<string,mixed> */
-    private array $options;
+    private readonly array $options;
     /** @var array<string,string> */
-    private array $headers;
+    private readonly array $headers;
 
     /**
      * The cURL handle used for requests

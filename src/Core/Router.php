@@ -28,14 +28,19 @@ class Router
 	/**
 	 * Actual configuration parameters
 	 */
-	private string $baseUrl;
-	private string $pageRoot;
-	private string $templateRoot;
-	private bool $executeRedirect;
+	private readonly string $baseUrl;
+	private readonly string $pageRoot;
+	private readonly string $templateRoot;
+	private readonly bool $executeRedirect;
 	/** @var array<string, string> */
-	private array $serverGlobal;
+	private readonly array $serverGlobal;
 	/** @var array<string, string> */
-	private array $routes;
+	private readonly array $routes;
+
+	/**
+	 * Debugger instance for logging routing operations
+	 */
+	private ?Debugger $debugger;
 
 	// Request state properties
 	private string $method;
@@ -68,6 +73,7 @@ class Router
 		bool $executeRedirect,
 		array $serverGlobal,
 		array $routes = [],
+		?Debugger $debugger = null
 	) {
 		$this->baseUrl = $baseUrl;
 		$this->pageRoot = $pageRoot;
@@ -75,6 +81,7 @@ class Router
 		$this->executeRedirect = $executeRedirect;
 		$this->serverGlobal = $serverGlobal;
 		$this->routes = $routes;
+		$this->debugger = $debugger;
 		$this->method = $this->serverGlobal['REQUEST_METHOD'] ?? 'GET';
 		$this->request = $this->serverGlobal['REQUEST_URI'] ?? '/';
 		$this->script = $this->serverGlobal['SCRIPT_NAME'] ?? 'index.php';
@@ -96,8 +103,8 @@ class Router
 	 */
 	private function error(string $message): void
 	{
-		if (Debugger::$enabled) {
-			Debugger::setStatus(500);
+		if ($this->debugger !== null) {
+			$this->debugger->setStatus(500);
 		}
 		throw new RouterError($message);
 	}
@@ -116,10 +123,10 @@ class Router
 	{
 		$url = parse_url($url, PHP_URL_HOST) ? $url : $this->getBaseUrl() . $url;
 		$status = $permanent ? 301 : 302;
-		if (Debugger::$enabled) {
-			Debugger::setRedirect($url);
-			Debugger::setStatus($status);
-			Debugger::end('redirect');
+		if ($this->debugger !== null) {
+			$this->debugger->setRedirect($url);
+			$this->debugger->setStatus($status);
+			$this->debugger->end('redirect');
 		}
 		if ($this->executeRedirect) {
 			header("Location: $url", true, $status);
@@ -136,8 +143,8 @@ class Router
 	 */
 	public function json(mixed $object): void
 	{
-		if (Debugger::$enabled) {
-			Debugger::end('json');
+		if ($this->debugger !== null) {
+			$this->debugger->end('json');
 		}
 		header('Content-Type: application/json');
 		die(json_encode($object));
@@ -151,8 +158,8 @@ class Router
 	 */
 	public function download(string $filename, string $data): void
 	{
-		if (Debugger::$enabled) {
-			Debugger::end('download');
+		if ($this->debugger !== null) {
+			$this->debugger->end('download');
 		}
 		header('Content-Type: application/octet-stream');
 		header("Content-Transfer-Encoding: Binary");
@@ -169,8 +176,8 @@ class Router
 	 */
 	public function file(string $filename, string $filepath): void
 	{
-		if (Debugger::$enabled) {
-			Debugger::end('download');
+		if ($this->debugger !== null) {
+			$this->debugger->end('download');
 		}
 		header('Content-Type: application/octet-stream');
 		header("Content-Transfer-Encoding: Binary");
@@ -196,22 +203,6 @@ class Router
 				break;
 			}
 		}
-	}
-
-	/**
-	 * Add a route mapping and re-route
-	 * @param string $sourcePath
-	 * @param string $destinationPath
-	 * @return void
-	 */
-	public function addRoute(string $sourcePath, string $destinationPath): void
-	{
-		$this->routes[$destinationPath] = $sourcePath;
-		// Reset to original request before applying routes
-		$this->request = $this->serverGlobal['REQUEST_URI'] ?? '/';
-		$this->original = '';
-		$this->applyRoutes();
-		$this->route();
 	}
 
 	// ========================================
@@ -437,15 +428,15 @@ class Router
 				break;
 			}
 		}
-		if (Debugger::$enabled) {
+		if ($this->debugger !== null) {
 			$method = $this->method;
 			$request = '/' . $this->original;
 			$url = '/' . $this->url;
 			$viewFile = $this->view;
 			$actionFile = $this->action;
 			$templateFile = $this->template;
-			Debugger::setRoute($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $this->parameters, $_GET,  $_POST);
-			Debugger::setStatus($status);
+			$this->debugger->setRoute($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $this->parameters, $_GET,  $_POST);
+			$this->debugger->setStatus($status);
 		}
 		if ($redirect) $this->redirect($redirect);
 	}
@@ -470,8 +461,9 @@ class Router
 	 */
 	private function checkCsrfProtection(): bool
 	{
+		$isSafeMethod = in_array($this->method, ['GET', 'OPTIONS']);
 		$isAjax = strtolower($this->serverGlobal['HTTP_X_REQUESTED_WITH'] ?? '') == 'xmlhttprequest';
-		return in_array($this->method, ['GET', 'OPTIONS']) ?: ($isAjax || Session::checkCsrfToken());
+		return $isSafeMethod ?: ($isAjax || $this->session->checkCsrfToken());
 	}
 
 	/**

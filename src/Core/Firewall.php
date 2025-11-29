@@ -26,11 +26,11 @@ class Firewall
     /**
      * Actual configuration parameters
      */
-    private int $concurrency;
-    private float $spinLockSeconds;
-    private int $intervalSeconds;
-    private string $cachePrefix;
-    private bool $reverseProxy;
+    private readonly int $concurrency;
+    private readonly float $spinLockSeconds;
+    private readonly int $intervalSeconds;
+    private readonly string $cachePrefix;
+    private readonly bool $reverseProxy;
 
     private Cache $cache;
     private string $key;

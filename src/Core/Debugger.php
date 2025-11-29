@@ -142,9 +142,9 @@ class Debugger
     /**
      * Actual configuration parameters
      */
-    private int $history;
-    private bool $enabled;
-    private string $sessionKey;
+    private readonly int $history;
+    private readonly bool $enabled;
+    private readonly string $sessionKey;
 
     /**
      * The request data for the current session

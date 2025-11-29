@@ -20,8 +20,8 @@ class Cache
     /**
      * Actual configuration parameters
      */
-    private string $prefix;
-    private string $servers;
+    private readonly string $prefix;
+    private readonly string $servers;
 
 
     /**

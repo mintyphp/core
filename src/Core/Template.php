@@ -2,7 +2,7 @@
 
 namespace MintyPHP\Core;
 
-use MintyPHP\TemplateError;
+use MintyPHP\Error\TemplateError;
 
 /**
  * Internal class to mark values that should not be escaped
