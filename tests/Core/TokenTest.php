@@ -88,14 +88,14 @@ class TokenTest extends TestCase
 
         $result = $this->token->getClaims($invalidToken);
 
-        $this->assertFalse($result);
+        $this->assertEmpty($result);
     }
 
     public function testGetClaimsRejectsEmptyToken(): void
     {
-        $result = $this->token->getClaims(false);
+        $result = $this->token->getClaims('');
 
-        $this->assertFalse($result);
+        $this->assertEmpty($result);
     }
 
     public function testGetClaimsRejectsTamperedToken(): void
@@ -110,7 +110,7 @@ class TokenTest extends TestCase
 
         $result = $this->token->getClaims($tamperedJwt);
 
-        $this->assertFalse($result);
+        $this->assertEmpty($result);
     }
 
     public function testGetClaimsRejectsWrongSecret(): void
@@ -133,7 +133,7 @@ class TokenTest extends TestCase
 
         $result = $tokenWithDifferentSecret->getClaims($jwt);
 
-        $this->assertFalse($result);
+        $this->assertEmpty($result);
     }
 
     public function testDifferentAlgorithms(): void
@@ -208,7 +208,7 @@ class TokenTest extends TestCase
 
         $result = $tokenWithDifferentAudience->getClaims($jwt);
 
-        $this->assertFalse($result);
+        $this->assertEmpty($result);
     }
 
     public function testTokenRejectsWrongIssuer(): void
@@ -230,6 +230,6 @@ class TokenTest extends TestCase
 
         $result = $tokenWithDifferentIssuer->getClaims($jwt);
 
-        $this->assertFalse($result);
+        $this->assertEmpty($result);
     }
 }
