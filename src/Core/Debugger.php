@@ -151,12 +151,8 @@ class Debugger
      */
     public DebuggerRequest $request;
 
-    public function __construct(
-        int $history = 10,
-        bool $enabled = false,
-        string $sessionKey = 'debugger'
-    ) {
-        static $run = 0;
+    public function __construct(int $history, bool $enabled, string $sessionKey)
+    {
         $this->history = $history;
         $this->enabled = $enabled;
         $this->sessionKey = $sessionKey;
@@ -193,6 +189,7 @@ class Debugger
             redirect: ''
         );
         // only run on first instantiation
+        static $run = 0;
         if ($run++ == 1) {
             // configure error reporting
             if (!$this->enabled) {
@@ -243,15 +240,6 @@ class Debugger
             }
         }
         return $result;
-    }
-
-    /**
-     * Check if the Debugger is enabled
-     * @return bool True if enabled, false otherwise
-     */
-    public function isEnabled(): bool
-    {
-        return $this->enabled;
     }
 
     /**

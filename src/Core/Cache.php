@@ -28,6 +28,7 @@ class Cache
      * The Memcached instance used for caching
      */
     private Memcached $memcache;
+    private ?Debugger $debugger;
 
     /**
      * Create a new Cache instance
@@ -36,11 +37,8 @@ class Cache
      * @param string $prefix Prefix for cache keys.
      * @param string $servers Comma-separated list of Memcached servers (host:port).
      */
-    public function __construct(
-        ?Memcached $memcache = null,
-        string $prefix = 'mintyphp',
-        string $servers = '127.0.0.1'
-    ) {
+    public function __construct(string $prefix, string $servers, ?Memcached $memcache = null, ?Debugger $debugger = null)
+    {
         $this->prefix = $prefix;
         $this->servers = $servers;
         // Initialize Memcached instance
@@ -57,7 +55,7 @@ class Cache
             }
         }
         $this->memcache = $memcache;
-        $this->prefix = $prefix;
+        $this->debugger = $debugger;
     }
     /**
      * Convert a variable to a string representation for debugging
@@ -103,15 +101,15 @@ class Cache
      */
     public function add(string $key, mixed $var, int $expire = 0): bool
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->add($this->prefix . $key, $var, $expire);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'add';
             $arguments = array($key, $this->variable($var));
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -125,15 +123,15 @@ class Cache
      */
     public function decrement(string $key, int $value = 1): int|false
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->decrement($this->prefix . $key, $value);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'decrement';
             $arguments = array($key);
             if ($value > 1) $arguments[] = $value;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -146,14 +144,14 @@ class Cache
      */
     public function delete(string $key): bool
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->delete($this->prefix . $key, 0);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'delete';
             $arguments = array($key);
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -166,14 +164,14 @@ class Cache
      */
     public function get(string $key): mixed
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->get($this->prefix . $key);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'get';
             $arguments = array($key);
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -187,15 +185,15 @@ class Cache
      */
     public function increment(string $key, int $value = 1): int|false
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->increment($this->prefix . $key, $value);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'increment';
             $arguments = array($key);
             if ($value > 1) $arguments[] = $value;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -210,15 +208,15 @@ class Cache
      */
     public function replace(string $key, mixed $var, int $expire = 0): bool
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->replace($this->prefix . $key, $var, $expire);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'replace';
             $arguments = array($key, $this->variable($var));
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }
@@ -233,15 +231,15 @@ class Cache
      */
     public function set(string $key, mixed $var, int $expire = 0): bool
     {
-        if (\MintyPHP\Debugger::$enabled) $time = microtime(true);
+        if ($this->debugger !== null) $time = microtime(true);
         $res = $this->memcache->set($this->prefix . $key, $var, $expire);
-        if (\MintyPHP\Debugger::$enabled) {
+        if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'set';
             $arguments = array($key, $this->variable($var));
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
-            \MintyPHP\Debugger::addCacheCall($duration, $command, $arguments, $result);
+            $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
         return $res;
     }

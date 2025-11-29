@@ -39,9 +39,10 @@ class Cache
     public static function getInstance(): CoreCache
     {
         return self::$instance ??= new CoreCache(
-            null,
             self::$prefix,
-            self::$servers
+            self::$servers,
+            null,
+            Debugger::getInstance()
         );
     }
 

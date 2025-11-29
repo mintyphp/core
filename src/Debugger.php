@@ -58,16 +58,6 @@ class Debugger
     }
 
     /**
-     * Check if the Debugger is enabled
-     * @return bool True if enabled, false otherwise
-     */
-    public static function isEnabled(): bool
-    {
-        $instance = self::getInstance();
-        return $instance->isEnabled();
-    }
-
-    /**
      * Add a cache call entry to the debugger log
      * @param float $duration The duration of the cache call
      * @param string $command The cache command executed

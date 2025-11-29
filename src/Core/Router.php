@@ -27,7 +27,9 @@ class Router
 	/** @var array<string, string> */
 	public static array $__routes = [];
 
-	// Configuration properties
+	/**
+	 * Actual configuration parameters
+	 */
 	private string $baseUrl;
 	private string $pageRoot;
 	private string $templateRoot;

@@ -45,12 +45,12 @@ class Firewall
     {
         return self::$instance ??= new CoreFirewall(
             Cache::getInstance(),
-            Debugger::getInstance(),
             self::$concurrency,
             self::$spinLockSeconds,
             self::$intervalSeconds,
             self::$cachePrefix,
-            self::$reverseProxy
+            self::$reverseProxy,
+            Debugger::getInstance()
         );
     }
 

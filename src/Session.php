@@ -24,7 +24,7 @@ class Session
     /**
      * Static configuration parameters
      */
-    public static string|false $sessionId = false;
+    public static string $sessionId = '';
     public static string $sessionName = 'mintyphp';
     public static string $csrfSessionKey = 'csrf_token';
     public static bool $enabled = true;

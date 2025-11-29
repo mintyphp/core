@@ -32,22 +32,19 @@ class Firewall
     private string $cachePrefix;
     private bool $reverseProxy;
 
-    private string|false $key = false;
+    private Cache $cache;
+    private ?Debugger $debugger;
+    private string $key;
 
-    public function __construct(
-        private Cache $cache,
-        private Debugger $debugger,
-        int $concurrency = 10,
-        float $spinLockSeconds = 0.15,
-        int $intervalSeconds = 300,
-        string $cachePrefix = 'fw_concurrency_',
-        bool $reverseProxy = false
-    ) {
+    public function __construct(Cache $cache, int $concurrency, float $spinLockSeconds, int $intervalSeconds, string $cachePrefix, bool $reverseProxy, ?Debugger $debugger = null)
+    {
+        $this->cache = $cache;
         $this->concurrency = $concurrency;
         $this->spinLockSeconds = $spinLockSeconds;
         $this->intervalSeconds = $intervalSeconds;
         $this->cachePrefix = $cachePrefix;
         $this->reverseProxy = $reverseProxy;
+        $this->debugger = $debugger;
     }
 
     private function getClientIp(): string

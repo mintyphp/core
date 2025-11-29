@@ -13,31 +13,43 @@ class Session
     /**
      * Static configuration parameters
      */
-    public static string|false $__sessionId = false;
+    public static string $__sessionId = '';
     public static string $__sessionName = 'mintyphp';
     public static string $__csrfSessionKey = 'csrf_token';
     public static bool $__enabled = true;
     public static int $__csrfLength = 16;
     public static string $__sameSite = 'Lax';
 
+    /**
+     * Actual configuration parameters
+     */
+    private string $sessionId;
+    private string $sessionName;
+    private string $csrfSessionKey;
+    private bool $enabled;
+    private int $csrfLength;
+    private string $sameSite;
+    private ?Debugger $debugger;
+
     private bool $initialized = false;
     private bool $started = false;
     private bool $ended = false;
 
     public function __construct(
-        string|false $sessionId = false,
+        string $sessionId = '',
         string $sessionName = 'mintyphp',
         string $csrfSessionKey = 'csrf_token',
         bool $enabled = true,
         int $csrfLength = 16,
         string $sameSite = 'Lax'
     ) {
-        $this->__sessionId = $sessionId;
-        $this->__sessionName = $sessionName;
-        $this->__csrfSessionKey = $csrfSessionKey;
-        $this->__enabled = $enabled;
-        $this->__csrfLength = $csrfLength;
-        $this->__sameSite = $sameSite;
+        $this->sessionId = $sessionId;
+        $this->sessionName = $sessionName;
+        $this->csrfSessionKey = $csrfSessionKey;
+        $this->enabled = $enabled;
+        $this->csrfLength = $csrfLength;
+        $this->sameSite = $sameSite;
+        $this->debugger = Debugger::isEnabled() ? Debugger::getInstance() : null;
     }
 
     private function initialize(): void
@@ -53,31 +65,31 @@ class Session
 
     private function setCsrfToken(): void
     {
-        if (!$this->__enabled) {
+        if (!$this->enabled) {
             return;
         }
 
-        if (isset($_SESSION[$this->__csrfSessionKey])) {
+        if (isset($_SESSION[$this->csrfSessionKey])) {
             return;
         }
 
-        $length = $this->__csrfLength;
+        $length = $this->csrfLength;
         if ($length < 1) {
             $length = 16;
         }
         $buffer = random_bytes($length);
 
-        $_SESSION[$this->__csrfSessionKey] = bin2hex($buffer);
+        $_SESSION[$this->csrfSessionKey] = bin2hex($buffer);
     }
 
     public function regenerate(): void
     {
-        if (!$this->__enabled) {
+        if (!$this->enabled) {
             return;
         }
 
         session_regenerate_id(true);
-        unset($_SESSION[$this->__csrfSessionKey]);
+        unset($_SESSION[$this->csrfSessionKey]);
         $this->setCsrfToken();
     }
 
@@ -92,9 +104,9 @@ class Session
         }
 
         $debuggerEnabled = $this->debugger && $this->debugger->isEnabled();
-        if ($this->__enabled || $debuggerEnabled) {
+        if ($this->enabled || $debuggerEnabled) {
             if (!ini_get('session.cookie_samesite')) {
-                ini_set('session.cookie_samesite', $this->__sameSite);
+                ini_set('session.cookie_samesite', $this->sameSite);
             }
             if (!ini_get('session.cookie_httponly')) {
                 ini_set('session.cookie_httponly', '1');
@@ -102,12 +114,12 @@ class Session
             if (!ini_get('session.cookie_secure') && isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
                 ini_set('session.cookie_secure', '1');
             }
-            session_name($this->__sessionName);
-            if ($this->__sessionId) {
-                session_id($this->__sessionId);
+            session_name($this->sessionName);
+            if ($this->sessionId) {
+                session_id($this->sessionId);
             }
             session_start();
-            if (!$this->__enabled && $this->debugger) {
+            if (!$this->enabled && $this->debugger) {
                 $debuggerSessionKey = Debugger::$__sessionKey;
                 foreach ($_SESSION as $k => $v) {
                     if ($k != $debuggerSessionKey) {
@@ -138,7 +150,7 @@ class Session
 
         $this->ended = true;
         $debuggerEnabled = $this->debugger && $this->debugger->isEnabled();
-        if ($this->__enabled && !$debuggerEnabled) {
+        if ($this->enabled && !$debuggerEnabled) {
             session_write_close();
         }
 
@@ -159,13 +171,13 @@ class Session
             $this->initialize();
         }
 
-        if (!$this->__enabled) {
+        if (!$this->enabled) {
             return true;
         }
 
         $success = false;
-        if (isset($_POST[$this->__csrfSessionKey])) {
-            $success = $_POST[$this->__csrfSessionKey] == $_SESSION[$this->__csrfSessionKey];
+        if (isset($_POST[$this->csrfSessionKey])) {
+            $success = $_POST[$this->csrfSessionKey] == $_SESSION[$this->csrfSessionKey];
         }
         return $success;
     }
@@ -176,11 +188,11 @@ class Session
             $this->initialize();
         }
 
-        if (!$this->__enabled) {
+        if (!$this->enabled) {
             return;
         }
 
         $this->setCsrfToken();
-        echo '<input type="hidden" name="' . $this->__csrfSessionKey . '" value="' . $_SESSION[$this->__csrfSessionKey] . '"/>';
+        echo '<input type="hidden" name="' . $this->csrfSessionKey . '" value="' . $_SESSION[$this->csrfSessionKey] . '"/>';
     }
 }
