@@ -202,6 +202,15 @@ class Debugger
         }
     }
 
+    /**
+     * Check if the debugger is enabled
+     * @return bool True if enabled, false otherwise
+     */
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
     private function getSessionData(): string
     {
         $session = [];
@@ -368,6 +377,8 @@ class Debugger
         if ($this->request->type) {
             return;
         }
+
+        var_dump($type);
 
         // finalize request data
         $this->request->type = $type;

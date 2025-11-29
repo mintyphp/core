@@ -59,10 +59,10 @@ class Router
 
     /**
      * Set the Router instance to use
-     * @param CoreRouter $instance
+     * @param ?CoreRouter $instance
      * @return void
      */
-    public static function setInstance(CoreRouter $instance): void
+    public static function setInstance(?CoreRouter $instance): void
     {
         self::$instance = $instance;
     }

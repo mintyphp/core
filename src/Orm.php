@@ -39,10 +39,10 @@ class Orm
 
     /**
      * Set the Orm instance to use
-     * @param CoreOrm $instance
+     * @param ?CoreOrm $instance
      * @return void
      */
-    public static function setInstance(CoreOrm $instance): void
+    public static function setInstance(?CoreOrm $instance): void
     {
         self::$instance = $instance;
     }

@@ -61,10 +61,10 @@ class Token
 
     /**
      * Set the Token instance to use
-     * @param CoreToken $instance
+     * @param ?CoreToken $instance
      * @return void
      */
-    public static function setInstance(CoreToken $instance): void
+    public static function setInstance(?CoreToken $instance): void
     {
         self::$instance = $instance;
     }

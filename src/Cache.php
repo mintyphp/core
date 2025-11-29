@@ -48,10 +48,10 @@ class Cache
 
     /**
      * Set the Cache instance to use
-     * @param CoreCache $instance
+     * @param ?CoreCache $instance
      * @return void
      */
-    public static function setInstance(CoreCache $instance): void
+    public static function setInstance(?CoreCache $instance): void
     {
         self::$instance = $instance;
     }

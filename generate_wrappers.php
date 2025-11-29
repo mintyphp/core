@@ -400,10 +400,10 @@ function generateWrapperClass(
     // Generate setInstance method
     $code .= "    /**\n";
     $code .= "     * Set the $className instance to use\n";
-    $code .= "     * @param $coreClassName \$instance\n";
+    $code .= "     * @param ?$coreClassName \$instance\n";
     $code .= "     * @return void\n";
     $code .= "     */\n";
-    $code .= "    public static function setInstance($coreClassName \$instance): void\n";
+    $code .= "    public static function setInstance(?$coreClassName \$instance): void\n";
     $code .= "    {\n";
     $code .= "        self::\$instance = \$instance;\n";
     $code .= "    }\n";

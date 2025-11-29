@@ -56,10 +56,10 @@ class Auth
 
     /**
      * Set the Auth instance to use
-     * @param CoreAuth $instance
+     * @param ?CoreAuth $instance
      * @return void
      */
-    public static function setInstance(CoreAuth $instance): void
+    public static function setInstance(?CoreAuth $instance): void
     {
         self::$instance = $instance;
     }

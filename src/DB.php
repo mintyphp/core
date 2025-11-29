@@ -57,10 +57,10 @@ class DB
 
     /**
      * Set the DB instance to use
-     * @param CoreDB $instance
+     * @param ?CoreDB $instance
      * @return void
      */
-    public static function setInstance(CoreDB $instance): void
+    public static function setInstance(?CoreDB $instance): void
     {
         self::$instance = $instance;
     }

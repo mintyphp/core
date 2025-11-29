@@ -3,26 +3,16 @@
 namespace MintyPHP\Tests\Core;
 
 use MintyPHP\Core\Debugger;
-use MintyPHP\Core\Session;
 use PHPUnit\Framework\TestCase;
 
 class DebuggerTest extends TestCase
 {
     private Debugger $debugger;
-    private Session $session;
 
     protected function setUp(): void
     {
-        // Create a session instance
-        $this->session = new Session(null);
-
-        // Create debugger instance with enabled = false for most tests
-        $this->debugger = new Debugger(
-            $this->session,
-            10,
-            false,
-            'test_debugger_key'
-        );
+        // Create debugger instance
+        $this->debugger = new Debugger(10, true, 'test_debugger_key');
     }
 
     public function testDebuggerConstruction(): void
@@ -32,77 +22,64 @@ class DebuggerTest extends TestCase
 
     public function testIsEnabledReturnsFalse(): void
     {
+        $this->debugger = new Debugger(10, false, 'test_debugger_key');
         $this->assertFalse($this->debugger->isEnabled());
     }
 
     public function testIsEnabledReturnsTrue(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger');
-        $this->assertTrue($debugger->isEnabled());
+        $this->assertTrue($this->debugger->isEnabled());
     }
 
     public function testSetAndGet(): void
     {
-        $this->debugger->set('test_key', 'test_value');
-        $this->assertEquals('test_value', $this->debugger->get('test_key'));
+        $this->debugger->setStatus(200);
+        $this->assertEquals(200, $this->debugger->request->status);
     }
 
-    public function testGetNonExistentKey(): void
+    public function testAddApiCall(): void
     {
-        $result = $this->debugger->get('nonexistent_key');
-        $this->assertFalse($result);
-    }
-
-    public function testAdd(): void
-    {
-        $this->debugger->add('items', 'item1');
-        $this->debugger->add('items', 'item2');
-        $this->debugger->add('items', 'item3');
-
-        $items = $this->debugger->get('items');
+        $timing = ['nameLookup' => 0.01, 'connect' => 0.02, 'preTransfer' => 0.03, 'startTransfer' => 0.04, 'redirect' => 0.0, 'total' => 0.05];
+        $this->debugger->addApiCall(0.123, 'GET', '/api/items', ['id' => 1], [], ['Authorization' => 'Bearer token'], 200, $timing, 'Fetched successfully');
+        $this->debugger->addApiCall(0.125, 'POST', '/api/items', ['name' => 'item2'], [], ['Authorization' => 'Bearer token'], 200, $timing, 'Created successfully');
+        $this->debugger->addApiCall(0.111, 'DELETE', '/api/items/1', [], [], ['Authorization' => 'Bearer token'], 200, $timing, 'Deleted successfully');
+        $items = $this->debugger->request->apiCalls;
         $this->assertIsArray($items);
         $this->assertCount(3, $items);
-        $this->assertEquals(['item1', 'item2', 'item3'], $items);
+        $this->assertEquals('Deleted successfully', $items[2]->result);
     }
-    public function testDebugReturnsNullWhenDisabled(): void
+    public function testDebugReturnsEmptyStringWhenDisabled(): void
     {
+        $this->debugger = new Debugger(10, false, 'test_debugger_disabled');
         $result = $this->debugger->debug(['test' => 'data']);
-        $this->assertNull($result);
+        $this->assertEquals('', $result);
     }
 
     public function testDebugReturnsStringWhenEnabled(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_enabled');
-
-        $result = $debugger->debug('test string');
+        $result = $this->debugger->debug('test string');
         $this->assertIsString($result);
         $this->assertStringContainsString('"test string"', $result);
     }
 
     public function testDebugBoolean(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_bool');
-
-        $resultTrue = $debugger->debug(true);
+        $resultTrue = $this->debugger->debug(true);
         $this->assertStringContainsString('true', $resultTrue);
 
-        $resultFalse = $debugger->debug(false);
+        $resultFalse = $this->debugger->debug(false);
         $this->assertStringContainsString('false', $resultFalse);
     }
 
     public function testDebugInteger(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_int');
-
-        $result = $debugger->debug(42);
+        $result = $this->debugger->debug(42);
         $this->assertStringContainsString('42', $result);
     }
 
     public function testDebugArray(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_array');
-
-        $result = $debugger->debug(['key' => 'value', 'number' => 123]);
+        $result = $this->debugger->debug(['key' => 'value', 'number' => 123]);
         $this->assertStringContainsString('array(2)', $result);
         $this->assertStringContainsString('[key]', $result);
         $this->assertStringContainsString('"value"', $result);
@@ -110,29 +87,23 @@ class DebuggerTest extends TestCase
 
     public function testDebugNull(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_null');
-
-        $result = $debugger->debug(null);
+        $result = $this->debugger->debug(null);
         $this->assertStringContainsString('null', $result);
     }
 
     public function testDebugObject(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_object');
-
         $obj = new \stdClass();
         $obj->prop = 'value';
 
-        $result = $debugger->debug($obj);
+        $result = $this->debugger->debug($obj);
         $this->assertStringContainsString('stdClass', $result);
     }
 
     public function testDebugWithDepthLimit(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_depth');
-
         $nested = ['level1' => ['level2' => ['level3' => 'value']]];
-        $result = $debugger->debug($nested, 100, 25, 2); // depth = 2
+        $result = $this->debugger->debug($nested, 100, 25, 2); // depth = 2
 
         $this->assertStringContainsString('array', $result);
         $this->assertStringContainsString('{...}', $result); // Should hit depth limit
@@ -140,43 +111,42 @@ class DebuggerTest extends TestCase
 
     public function testDebugCircularReference(): void
     {
-        $debugger = new Debugger($this->session, 10, true, 'test_debugger_circular');
-
         $obj1 = new \stdClass();
         $obj2 = new \stdClass();
         $obj1->ref = $obj2;
         $obj2->ref = $obj1;
 
-        $result = $debugger->debug([$obj1, $obj2]);
+        $result = $this->debugger->debug([$obj1, $obj2]);
         $this->assertStringContainsString('stdClass', $result);
         // Should handle circular references without infinite loop
         $this->assertIsString($result);
     }
 
-    public function testConfiguration(): void
+    public function testStaticConfiguration(): void
     {
         // Verify static configuration was set
-        $this->assertEquals(10, Debugger::$__history);
-        $this->assertFalse(Debugger::$__enabled);
-        $this->assertEquals('test_debugger_key', Debugger::$__sessionKey);
+        \MintyPHP\Debugger::$sessionKey = 'test_configuration_key';
+        // Reset instance to apply new config
+        \MintyPHP\Debugger::setInstance(null);
+        // Get new instance
+        $this->debugger = \MintyPHP\Debugger::getInstance();
+        // Verify the configuration
+        $this->assertEquals('test_configuration_key', $this->debugger->getSessionKey());
     }
 
     public function testEnd(): void
     {
-        $this->debugger->set('start', microtime(true));
-        $this->debugger->end('test');
-
-        $type = $this->debugger->get('type');
-        $this->assertEquals('test', $type);
+        $this->debugger->end('test_end_type');
+        $type = $this->debugger->request->type;
+        $this->assertEquals('test_end_type', $type);
     }
 
     public function testEndOnlyRunsOnce(): void
     {
-        $this->debugger->set('start', microtime(true));
         $this->debugger->end('first');
         $this->debugger->end('second');
 
-        $type = $this->debugger->get('type');
+        $type = $this->debugger->request->type;
         $this->assertEquals('first', $type); // Should still be 'first'
     }
 }

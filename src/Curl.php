@@ -52,10 +52,10 @@ class Curl
 
     /**
      * Set the Curl instance to use
-     * @param CoreCurl $instance
+     * @param ?CoreCurl $instance
      * @return void
      */
-    public static function setInstance(CoreCurl $instance): void
+    public static function setInstance(?CoreCurl $instance): void
     {
         self::$instance = $instance;
     }

@@ -41,10 +41,10 @@ class Analyzer
 
     /**
      * Set the Analyzer instance to use
-     * @param CoreAnalyzer $instance
+     * @param ?CoreAnalyzer $instance
      * @return void
      */
-    public static function setInstance(CoreAnalyzer $instance): void
+    public static function setInstance(?CoreAnalyzer $instance): void
     {
         self::$instance = $instance;
     }

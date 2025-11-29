@@ -43,10 +43,10 @@ class Template
 
     /**
      * Set the Template instance to use
-     * @param CoreTemplate $instance
+     * @param ?CoreTemplate $instance
      * @return void
      */
-    public static function setInstance(CoreTemplate $instance): void
+    public static function setInstance(?CoreTemplate $instance): void
     {
         self::$instance = $instance;
     }

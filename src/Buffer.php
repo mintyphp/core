@@ -41,10 +41,10 @@ class Buffer
 
     /**
      * Set the Buffer instance to use
-     * @param CoreBuffer $instance
+     * @param ?CoreBuffer $instance
      * @return void
      */
-    public static function setInstance(CoreBuffer $instance): void
+    public static function setInstance(?CoreBuffer $instance): void
     {
         self::$instance = $instance;
     }

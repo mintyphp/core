@@ -49,12 +49,22 @@ class Debugger
 
     /**
      * Set the Debugger instance to use
-     * @param CoreDebugger $instance
+     * @param ?CoreDebugger $instance
      * @return void
      */
-    public static function setInstance(CoreDebugger $instance): void
+    public static function setInstance(?CoreDebugger $instance): void
     {
         self::$instance = $instance;
+    }
+
+    /**
+     * Check if the debugger is enabled
+     * @return bool True if enabled, false otherwise
+     */
+    public static function isEnabled(): bool
+    {
+        $instance = self::getInstance();
+        return $instance->isEnabled();
     }
 
     /**

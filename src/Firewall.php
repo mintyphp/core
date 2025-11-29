@@ -55,10 +55,10 @@ class Firewall
 
     /**
      * Set the Firewall instance to use
-     * @param CoreFirewall $instance
+     * @param ?CoreFirewall $instance
      * @return void
      */
-    public static function setInstance(CoreFirewall $instance): void
+    public static function setInstance(?CoreFirewall $instance): void
     {
         self::$instance = $instance;
     }

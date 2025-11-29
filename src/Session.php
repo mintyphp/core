@@ -56,10 +56,10 @@ class Session
 
     /**
      * Set the Session instance to use
-     * @param CoreSession $instance
+     * @param ?CoreSession $instance
      * @return void
      */
-    public static function setInstance(CoreSession $instance): void
+    public static function setInstance(?CoreSession $instance): void
     {
         self::$instance = $instance;
     }

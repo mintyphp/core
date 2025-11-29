@@ -51,10 +51,10 @@ class Totp
 
     /**
      * Set the Totp instance to use
-     * @param CoreTotp $instance
+     * @param ?CoreTotp $instance
      * @return void
      */
-    public static function setInstance(CoreTotp $instance): void
+    public static function setInstance(?CoreTotp $instance): void
     {
         self::$instance = $instance;
     }
