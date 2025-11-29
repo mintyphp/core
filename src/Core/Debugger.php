@@ -271,7 +271,7 @@ class Debugger
      * @param float $total
      * @return DebuggerApiCallTiming The timing object
      */
-    public static function createTiming(float $nameLookup, float $connect, float $preTransfer, float $startTransfer, float $redirect, float $total): DebuggerApiCallTiming
+    public function createTiming(float $nameLookup, float $connect, float $preTransfer, float $startTransfer, float $redirect, float $total): DebuggerApiCallTiming
     {
         return new DebuggerApiCallTiming($nameLookup, $connect, $preTransfer, $startTransfer, $redirect, $total);
     }

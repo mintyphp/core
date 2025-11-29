@@ -82,6 +82,22 @@ class Debugger
     }
 
     /**
+     * Create a timing object from the given info
+     * @param float $nameLookup
+     * @param float $connect
+     * @param float $preTransfer
+     * @param float $startTransfer
+     * @param float $redirect
+     * @param float $total
+     * @return DebuggerApiCallTiming The timing object
+     */
+    public static function createTiming(float $nameLookup, float $connect, float $preTransfer, float $startTransfer, float $redirect, float $total): DebuggerApiCallTiming
+    {
+        $instance = self::getInstance();
+        return $instance->createTiming($nameLookup, $connect, $preTransfer, $startTransfer, $redirect, $total);
+    }
+
+    /**
      * Log the session state before processing the request
      * @return void
      */
