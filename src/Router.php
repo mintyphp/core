@@ -21,6 +21,9 @@ use MintyPHP\Core\Router as CoreRouter;
  */
 class Router
 {
+    /**
+     * Static configuration parameters
+     */
     public static string $baseUrl = '/';
     public static string $pageRoot = 'pages/';
     public static string $templateRoot = 'templates/';

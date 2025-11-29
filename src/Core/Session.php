@@ -10,6 +10,9 @@ namespace MintyPHP\Core;
  */
 class Session
 {
+    /**
+     * Static configuration parameters
+     */
     public static string|false $__sessionId = false;
     public static string $__sessionName = 'mintyphp';
     public static string $__csrfSessionKey = 'csrf_token';

@@ -15,7 +15,9 @@ use MintyPHP\Session;
 class Router
 {
 
-	// Default static configuration
+	/**
+	 * Static configuration parameters
+	 */
 	public static string $__baseUrl = '/';
 	public static string $__pageRoot = 'pages/';
 	public static string $__templateRoot = 'templates/';

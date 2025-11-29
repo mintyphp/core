@@ -14,11 +14,23 @@ use MintyPHP\Core\Debugger;
  */
 class Firewall
 {
+    /**
+     * Static configuration parameters
+     */
     public static int $__concurrency = 10;
     public static float $__spinLockSeconds = 0.15;
     public static int $__intervalSeconds = 300;
     public static string $__cachePrefix = 'fw_concurrency_';
     public static bool $__reverseProxy = false;
+
+    /**
+     * Actual configuration parameters
+     */
+    private int $concurrency;
+    private float $spinLockSeconds;
+    private int $intervalSeconds;
+    private string $cachePrefix;
+    private bool $reverseProxy;
 
     private string|false $key = false;
 
@@ -31,16 +43,16 @@ class Firewall
         string $cachePrefix = 'fw_concurrency_',
         bool $reverseProxy = false
     ) {
-        self::$__concurrency = $concurrency;
-        self::$__spinLockSeconds = $spinLockSeconds;
-        self::$__intervalSeconds = $intervalSeconds;
-        self::$__cachePrefix = $cachePrefix;
-        self::$__reverseProxy = $reverseProxy;
+        $this->concurrency = $concurrency;
+        $this->spinLockSeconds = $spinLockSeconds;
+        $this->intervalSeconds = $intervalSeconds;
+        $this->cachePrefix = $cachePrefix;
+        $this->reverseProxy = $reverseProxy;
     }
 
     private function getClientIp(): string
     {
-        if (self::$__reverseProxy && isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        if ($this->reverseProxy && isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
             $ip = array_pop($ips);
         } else {
@@ -52,7 +64,7 @@ class Firewall
     private function getKey(): string
     {
         if (!$this->key) {
-            $this->key = self::$__cachePrefix . '_' . $this->getClientIp();
+            $this->key = $this->cachePrefix . '_' . $this->getClientIp();
         }
         return $this->key;
     }
@@ -63,15 +75,15 @@ class Firewall
         header_remove('X-Powered-By');
         $key = $this->getKey();
         $start = microtime(true);
-        $this->cache->add($key, 0, self::$__intervalSeconds);
+        $this->cache->add($key, 0, $this->intervalSeconds);
         register_shutdown_function([$this, 'end']);
-        while ($this->cache->increment($key) > self::$__concurrency) {
+        while ($this->cache->increment($key) > $this->concurrency) {
             $this->cache->decrement($key);
-            if (!self::$__spinLockSeconds || microtime(true) - $start > self::$__intervalSeconds) {
+            if (!$this->spinLockSeconds || microtime(true) - $start > $this->intervalSeconds) {
                 http_response_code(429);
                 die('429: Too Many Requests');
             }
-            usleep(intval(self::$__spinLockSeconds * 1000000));
+            usleep(intval($this->spinLockSeconds * 1000000));
         }
     }
 

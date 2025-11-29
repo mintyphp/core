@@ -22,6 +22,9 @@ use MintyPHP\Core\Firewall as CoreFirewall;
  */
 class Firewall
 {
+    /**
+     * Static configuration parameters
+     */
     public static int $concurrency = 10;
     public static float $spinLockSeconds = 0.15;
     public static int $intervalSeconds = 300;
