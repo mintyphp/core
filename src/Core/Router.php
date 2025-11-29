@@ -38,6 +38,11 @@ class Router
 	private readonly array $routes;
 
 	/**
+	 * Session instance for managing user sessions
+	 */
+	private readonly Session $session;
+
+	/**
 	 * Debugger instance for logging routing operations
 	 */
 	private ?Debugger $debugger;
@@ -58,7 +63,8 @@ class Router
 	private string $redirect;
 
 	/**
-	 * Constructor
+	 * Constructor for the Router class
+	 * @param Session $session
 	 * @param string $baseUrl
 	 * @param string $pageRoot
 	 * @param string $templateRoot
@@ -67,6 +73,7 @@ class Router
 	 * @param array<string, string> $routes
 	 */
 	public function __construct(
+		Session $session,
 		string $baseUrl,
 		string $pageRoot,
 		string $templateRoot,
@@ -75,6 +82,7 @@ class Router
 		array $routes = [],
 		?Debugger $debugger = null
 	) {
+		$this->session = $session;
 		$this->baseUrl = $baseUrl;
 		$this->pageRoot = $pageRoot;
 		$this->templateRoot = $templateRoot;
