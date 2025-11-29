@@ -138,6 +138,9 @@ class Totp
      */
     public function generateSecret(): string
     {
+        if ($this->secretLength < 1) {
+            return '';
+        }
         return $this->encodeBase32(random_bytes($this->secretLength));
     }
 

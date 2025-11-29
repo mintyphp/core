@@ -51,7 +51,8 @@ class Router
             self::$templateRoot,
             self::$executeRedirect,
             self::$serverGlobal,
-            self::$routes
+            self::$routes,
+            Debugger::$enabled ? Debugger::getInstance() : null
         );
     }
 
@@ -120,18 +121,6 @@ class Router
     {
         $instance = self::getInstance();
         $instance->applyRoutes();
-    }
-
-    /**
-    	 * Add a route mapping and re-route
-    	 * @param string $sourcePath
-    	 * @param string $destinationPath
-    	 * @return void
-    	 */
-    public static function addRoute(string $sourcePath, string $destinationPath): void
-    {
-        $instance = self::getInstance();
-        $instance->addRoute($sourcePath, $destinationPath);
     }
 
     /**
