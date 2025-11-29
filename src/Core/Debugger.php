@@ -249,6 +249,19 @@ class Debugger
     }
 
     /**
+     * Add a cache call entry to the debugger log
+     * @param float $duration The duration of the cache call
+     * @param string $command The cache command executed
+     * @param array<mixed> $arguments The arguments passed to the cache command
+     * @param mixed $result The result returned from the cache command
+     * @return void
+     */
+    public function addCacheCall(float $duration, string $command, array $arguments, mixed $result): void
+    {
+        $this->request->cache[] = new DebuggerCacheCall($duration, $command, $arguments, $result);
+    }
+
+    /**
      * Log the session state before processing the request
      * @return void
      */
