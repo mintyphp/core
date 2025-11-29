@@ -27,6 +27,9 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertNotFalse($result, 'drop posts failed');
     }
 
+    /**
+     * @depends testDropPostsBefore
+     */
     public function testDropUsersBefore(): void
     {
         assert(self::$db !== null);
@@ -34,6 +37,10 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertNotFalse($result, 'drop users failed');
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     */
     public function testCreateUsers(): void
     {
         assert(self::$db !== null);
@@ -48,6 +55,11 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertNotFalse($result, 'create users failed');
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     */
     public function testCreatePosts(): void
     {
         assert(self::$db !== null);
@@ -68,6 +80,12 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertNotFalse($result, 'create posts failed');
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     */
     public function testInsertUsers(): void
     {
         assert(self::$db !== null);
@@ -79,6 +97,13 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(2, $result);
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     */
     public function testInsertPosts(): void
     {
         assert(self::$db !== null);
@@ -90,6 +115,14 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(2, $result);
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     */
     public function testUpdatePosts(): void
     {
         assert(self::$db !== null);
@@ -98,6 +131,15 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(2, $result);
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     */
     public function testSelectPosts(): void
     {
         assert(self::$db !== null);
@@ -110,10 +152,19 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('posts', 'users'), array_keys($result[0]));
         $this->assertEquals('id', array_keys($result[0]['posts'])[0]);
         $this->assertEquals('test1', $result[0]['users']['username']);
-        $this->expectException('MintyPHP\DBError');
+        $this->expectException('MintyPHP\Error\DBError');
         $result = self::$db->select("some bogus query;");
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     */
     public function testSelectOne(): void
     {
         assert(self::$db !== null);
@@ -124,10 +175,19 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('id', array_keys($result['posts'])[0]);
         $result = self::$db->selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");
         $this->assertEquals([], $result);
-        $this->expectException('MintyPHP\DBError');
+        $this->expectException('MintyPHP\Error\DBError');
         $result = self::$db->selectOne("some bogus query;");
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     */
     public function testSelectValues(): void
     {
         assert(self::$db !== null);
@@ -135,10 +195,19 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(array('test1', 'test2'), $result);
         $result = self::$db->selectValues("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
         $this->assertEquals([], $result);
-        $this->expectException('MintyPHP\DBError');
+        $this->expectException('MintyPHP\Error\DBError');
         $result = self::$db->selectValues("some bogus query;");
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     */
     public function testSelectValue(): void
     {
         assert(self::$db !== null);
@@ -146,19 +215,37 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('test1', $result);
         $result = self::$db->selectValue("SELECT username FROM `users` WHERE username like 'm%' limit 1;");
         $this->assertEquals(false, $result);
-        $this->expectException('MintyPHP\DBError');
+        $this->expectException('MintyPHP\Error\DBError');
         $result = self::$db->selectValue("some bogus query;");
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     */
     public function testQuery(): void
     {
         assert(self::$db !== null);
         $result = self::$db->query("SELECT * FROM `posts` limit 1;");
         $this->assertNotEquals(false, $result);
-        $this->expectException('MintyPHP\DBError');
+        $this->expectException('MintyPHP\Error\DBError');
         $result = self::$db->query("some bogus query;");
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     */
     public function testDeletePosts(): void
     {
         assert(self::$db !== null);
@@ -167,6 +254,16 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(2, $result);
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     * @depends testDeletePosts
+     */
     public function testDeleteUsers(): void
     {
         assert(self::$db !== null);
@@ -175,6 +272,17 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(2, $result);
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     * @depends testDeletePosts
+     * @depends testDeleteUsers
+     */
     public function testDropPosts(): void
     {
         assert(self::$db !== null);
@@ -182,6 +290,18 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertNotFalse($result, 'drop posts failed');
     }
 
+    /**
+     * @depends testDropPostsBefore
+     * @depends testDropUsersBefore
+     * @depends testCreateUsers
+     * @depends testCreatePosts
+     * @depends testInsertUsers
+     * @depends testInsertPosts
+     * @depends testUpdatePosts
+     * @depends testDeletePosts
+     * @depends testDeleteUsers
+     * @depends testDropPosts
+     */
     public function testDropUsers(): void
     {
         assert(self::$db !== null);

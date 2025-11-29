@@ -2,11 +2,11 @@
 
 namespace MintyPHP\Tests\Core;
 
-use Exception;
 use MintyPHP\Core\Auth;
 use MintyPHP\Core\DB;
-use MintyPHP\Session;
-use MintyPHP\Totp;
+use MintyPHP\Core\Totp;
+use MintyPHP\Core\Session;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -25,23 +25,13 @@ class AuthTest extends TestCase
 {
     private static DB $db;
     private static Auth $auth;
+    private Totp&MockObject $totp;
+    private Session&MockObject $session;
 
     public static function setUpBeforeClass(): void
     {
         // Create database connection
         self::$db = new DB(null, 'mintyphp_test', 'mintyphp_test', 'mintyphp_test', null, null);
-
-        // Create Core Auth instance
-        self::$auth = new Auth(
-            self::$db,
-            Totp::getInstance(),
-            Session::getInstance(),
-            'users',
-            'username',
-            'password',
-            'created',
-            'totp_secret'
-        );
 
         // Drop and recreate users table
         self::$db->query('DROP TABLE IF EXISTS `users`;');
@@ -49,10 +39,30 @@ class AuthTest extends TestCase
 			`id` int(11) NOT NULL AUTO_INCREMENT,
 			`username` varchar(255) COLLATE utf8_bin NOT NULL,
 			`password` varchar(255) COLLATE utf8_bin NOT NULL,
+            `totp_secret` varchar(255) COLLATE utf8_bin DEFAULT NULL,
 			`created` datetime NOT NULL,
 			PRIMARY KEY (`id`),
 			UNIQUE KEY `username` (`username`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;');
+    }
+
+    public function setUp(): void
+    {
+        // Create mock instances per test
+        $this->totp = $this->createMock(Totp::class);
+        $this->session = $this->createMock(Session::class);
+
+        // Create Core Auth instance with mocks
+        self::$auth = new Auth(
+            self::$db,
+            $this->totp,
+            $this->session,
+            'users',
+            'username',
+            'password',
+            'created',
+            'totp_secret'
+        );
     }
 
     public function testRegister(): void
@@ -65,28 +75,32 @@ class AuthTest extends TestCase
     public function testLogin(): void
     {
         $this->assertNotNull(self::$auth);
-        // assert that session has had a call to regenerate_id
-        $session_regenerated = false;
-        try {
-            self::$auth->login('test', 'test');
-        } catch (Exception $e) {
-            $session_regenerated = explode(':', $e->getMessage())[0] == "session_regenerate_id()";
-        }
-        $this->assertTrue($session_regenerated, 'session not regenerated on login');
+
+        // Mock TOTP to return true for verification
+        $this->totp->expects($this->once())
+            ->method('verify')
+            ->with('', '')
+            ->willReturn(true);
+
+        // Mock Session to expect regenerate() to be called
+        $this->session->expects($this->once())
+            ->method('regenerate');
+
+        $result = self::$auth->login('test', 'test');
+        $this->assertNotEmpty($result, 'login failed');
+        $this->assertArrayHasKey('users', $result);
     }
 
     public function testLogout(): void
     {
         $this->assertNotNull(self::$auth);
         $_SESSION['user'] = array('id' => 1, 'username' => 'test');
-        // assert that session has had a call to regenerate_id
-        $session_regenerated = false;
-        try {
-            self::$auth->logout();
-        } catch (\Exception $e) {
-            $session_regenerated = explode(':', $e->getMessage())[0] == "session_regenerate_id()";
-        }
-        $this->assertTrue($session_regenerated, 'session not regenerated');
+
+        // Mock Session to expect regenerate() to be called
+        $this->session->expects($this->once())
+            ->method('regenerate');
+
+        self::$auth->logout();
         $this->assertFalse(isset($_SESSION['user']), 'user not unset');
     }
 

@@ -34,6 +34,9 @@ class OrmTest extends TestCase
 		$this->assertNotFalse($result, 'drop posts failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 */
 	public function testDropUsersBefore(): void
 	{
 		$this->assertNotNull(self::$db);
@@ -41,6 +44,10 @@ class OrmTest extends TestCase
 		$this->assertNotFalse($result, 'drop users failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 */
 	public function testCreateUsers(): void
 	{
 		$this->assertNotNull(self::$db);
@@ -55,6 +62,11 @@ class OrmTest extends TestCase
 		$this->assertNotFalse($result, 'create users failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 */
 	public function testCreatePosts(): void
 	{
 		$this->assertNotNull(self::$db);
@@ -75,6 +87,12 @@ class OrmTest extends TestCase
 		$this->assertNotFalse($result, 'create posts failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 */
 	public function testInsertUsers(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -94,6 +112,13 @@ class OrmTest extends TestCase
 		$this->assertEquals(2, $result);
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 */
 	public function testInsertPosts(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -121,6 +146,14 @@ class OrmTest extends TestCase
 		$this->assertEquals(2, $result);
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 */
 	public function testUpdatePosts(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -130,6 +163,15 @@ class OrmTest extends TestCase
 		$this->assertTrue($result, 'update post 2 failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
 	public function testSelectPosts(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -144,6 +186,15 @@ class OrmTest extends TestCase
 		$this->assertEquals('2014-08-test2', $result['slug']);
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
 	public function testSelectPostNotFound(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -151,6 +202,15 @@ class OrmTest extends TestCase
 		$this->assertEquals([], $result);
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
 	public function testDeletePosts(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -160,6 +220,16 @@ class OrmTest extends TestCase
 		$this->assertTrue($result, 'delete post 2 failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 * @depends testDeletePosts
+	 */
 	public function testDeleteUsers(): void
 	{
 		$this->assertNotNull(self::$orm);
@@ -169,6 +239,17 @@ class OrmTest extends TestCase
 		$this->assertTrue($result, 'delete user 2 failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 * @depends testDeletePosts
+	 * @depends testDeleteUsers
+	 */
 	public function testDropPosts(): void
 	{
 		$this->assertNotNull(self::$db);
@@ -176,6 +257,18 @@ class OrmTest extends TestCase
 		$this->assertNotFalse($result, 'drop posts failed');
 	}
 
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 * @depends testDeletePosts
+	 * @depends testDeleteUsers
+	 * @depends testDropPosts
+	 */
 	public function testDropUsers(): void
 	{
 		$this->assertNotNull(self::$db);
