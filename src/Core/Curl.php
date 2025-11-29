@@ -146,12 +146,12 @@ class Curl
 
         if (Debugger::$enabled) {
             $timing = Debugger::createTiming(
-                $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME),
-                $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME),
-                $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME),
-                $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME),
-                $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME),
-                $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME),
+                0 + $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME),
+                0 + $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME),
+                0 + $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME),
+                0 + $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME),
+                0 + $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME),
+                0 + $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME),
             );
         }
 
@@ -194,7 +194,7 @@ class Curl
 
         if (Debugger::$enabled) {
             $duration = microtime(true) - $time;
-            Debugger::add('apiCalls', compact('duration', 'method', 'url', 'data', 'options', 'headers', 'status', 'timing', 'result'));
+            Debugger::addApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
         }
 
         return $result;

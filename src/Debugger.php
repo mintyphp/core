@@ -98,6 +98,25 @@ class Debugger
     }
 
     /**
+     * Add an API call entry to the debugger log
+     * @param float $duration The duration of the API call
+     * @param string $method The HTTP method used
+     * @param string $url The URL called
+     * @param array<string,mixed> $data The data sent with the request
+     * @param array<string,mixed> $options The options used for the request
+     * @param array<string,string> $headers The headers sent with the request
+     * @param int $status The HTTP status code returned
+     * @param DebuggerApiCallTiming $timing The timing information for the call
+     * @param mixed $result The result returned from the API call
+     * @return void
+     */
+    public static function addApiCall(float $duration, string $method, string $url, mixed $data, array $options, array $headers, int $status, DebuggerApiCallTiming $timing, mixed $result): void
+    {
+        $instance = self::getInstance();
+        $instance->addApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
+    }
+
+    /**
      * Log the session state before processing the request
      * @return void
      */
