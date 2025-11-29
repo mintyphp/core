@@ -23,6 +23,19 @@ class Token
     public static string $__audiences = '';
     public static string $__issuers = '';
 
+    /**
+     * Actual configuration parameters
+     */
+    private readonly string $algorithm;
+    private readonly string|false $secret;
+    private readonly int $leeway;
+    private readonly int $ttl;
+    private readonly string|false $audience;
+    private readonly string|false $issuer;
+    private readonly string $algorithms;
+    private readonly string $audiences;
+    private readonly string $issuers;
+
     public function __construct(
         string $algorithm = 'HS256',
         string|false $secret = false,
@@ -34,15 +47,15 @@ class Token
         string $audiences = '',
         string $issuers = ''
     ) {
-        self::$__algorithm = $algorithm;
-        self::$__secret = $secret;
-        self::$__leeway = $leeway;
-        self::$__ttl = $ttl;
-        self::$__audience = $audience;
-        self::$__issuer = $issuer;
-        self::$__algorithms = $algorithms;
-        self::$__audiences = $audiences;
-        self::$__issuers = $issuers;
+        $this->algorithm = $algorithm;
+        $this->secret = $secret;
+        $this->leeway = $leeway;
+        $this->ttl = $ttl;
+        $this->audience = $audience;
+        $this->issuer = $issuer;
+        $this->algorithms = $algorithms;
+        $this->audiences = $audiences;
+        $this->issuers = $issuers;
     }
 
     /**
@@ -63,7 +76,7 @@ class Token
         if (count($tokenParts) < 3) {
             return false;
         }
-        $headerJson = base64_decode(strtr($tokenParts[0], '-_', '+/'));
+        $headerJson = base64_decode(strtr($tokenParts[0], '-_', '+/'), true);
         if ($headerJson === false) {
             return false;
         }
@@ -144,16 +157,16 @@ class Token
             return false;
         }
         $time = time();
-        $leeway = self::$__leeway;
-        $ttl = self::$__ttl;
-        $secret = self::$__secret;
+        $leeway = $this->leeway;
+        $ttl = $this->ttl;
+        $secret = $this->secret;
         if (!$secret) {
             return false;
         }
         $requirements = [];
-        $requirements['alg'] = array_filter(array_map('trim', explode(',', self::$__algorithms)));
-        $requirements['aud'] = array_filter(array_map('trim', explode(',', self::$__audiences)));
-        $requirements['iss'] = array_filter(array_map('trim', explode(',', self::$__issuers)));
+        $requirements['alg'] = array_filter(array_map('trim', explode(',', $this->algorithms)));
+        $requirements['aud'] = array_filter(array_map('trim', explode(',', $this->audiences)));
+        $requirements['iss'] = array_filter(array_map('trim', explode(',', $this->issuers)));
         return $this->getVerifiedClaims($token, $time, $leeway, $ttl, $secret, $requirements);
     }
 
@@ -204,17 +217,17 @@ class Token
     public function getToken(array $claims): string|false
     {
         $time = time();
-        $ttl = self::$__ttl;
-        $algorithm = self::$__algorithm;
-        $secret = self::$__secret;
+        $ttl = $this->ttl;
+        $algorithm = $this->algorithm;
+        $secret = $this->secret;
         if (!$secret) {
             return false;
         }
-        if (!isset($claims['aud']) && self::$__audience) {
-            $claims['aud'] = self::$__audience;
+        if (!isset($claims['aud']) && $this->audience) {
+            $claims['aud'] = $this->audience;
         }
-        if (!isset($claims['iss']) && self::$__issuer) {
-            $claims['iss'] = self::$__issuer;
+        if (!isset($claims['iss']) && $this->issuer) {
+            $claims['iss'] = $this->issuer;
         }
         return $this->generateToken($claims, $time, $ttl, $algorithm, $secret);
     }
