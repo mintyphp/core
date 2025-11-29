@@ -18,14 +18,14 @@ class Analyzer
 	 * 
 	 * @var array<string>
 	 */
-	const TOKENS = ['T_ECHO', 'T_PRINT', 'T_EXIT', 'T_STRING', 'T_EVAL', 'T_OPEN_TAG_WITH_ECHO'];
+	public const TOKENS = ['T_ECHO', 'T_PRINT', 'T_EXIT', 'T_STRING', 'T_EVAL', 'T_OPEN_TAG_WITH_ECHO'];
 
 	/**
 	 * Function names that are disallowed in actions and views.
 	 * 
 	 * @var array<string>
 	 */
-	const FUNCTIONS = ['echo', 'print', 'die', 'exit', 'var_dump', 'eval', '<?='];
+	public const FUNCTIONS = ['echo', 'print', 'die', 'exit', 'var_dump', 'eval', '<?='];
 
 	/**
 	 * Router instance for accessing file paths.

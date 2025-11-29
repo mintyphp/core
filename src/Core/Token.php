@@ -10,15 +10,24 @@ namespace MintyPHP\Core;
  */
 class Token
 {
+    public const array ALGORITHMS = [
+        'HS256' => 'sha256',
+        'HS384' => 'sha384',
+        'HS512' => 'sha512',
+        'RS256' => 'sha256',
+        'RS384' => 'sha384',
+        'RS512' => 'sha512',
+    ];
+
     /**
      * Static configuration parameters
      */
     public static string $__algorithm = 'HS256';
-    public static string|false $__secret = false;
+    public static string $__secret = '';
     public static int $__leeway = 5; // 5 seconds
     public static int $__ttl = 30; // 1/2 minute
-    public static string|false $__audience = false;
-    public static string|false $__issuer = false;
+    public static string $__audience = '';
+    public static string $__issuer = '';
     public static string $__algorithms = '';
     public static string $__audiences = '';
     public static string $__issuers = '';
@@ -27,25 +36,25 @@ class Token
      * Actual configuration parameters
      */
     private readonly string $algorithm;
-    private readonly string|false $secret;
+    private readonly string $secret;
     private readonly int $leeway;
     private readonly int $ttl;
-    private readonly string|false $audience;
-    private readonly string|false $issuer;
+    private readonly string $audience;
+    private readonly string $issuer;
     private readonly string $algorithms;
     private readonly string $audiences;
     private readonly string $issuers;
 
     public function __construct(
-        string $algorithm = 'HS256',
-        string|false $secret = false,
-        int $leeway = 5,
-        int $ttl = 30,
-        string|false $audience = false,
-        string|false $issuer = false,
-        string $algorithms = '',
-        string $audiences = '',
-        string $issuers = ''
+        string $algorithm,
+        string $secret,
+        int $leeway,
+        int $ttl,
+        string $audience,
+        string $issuer,
+        string $algorithms,
+        string $audiences,
+        string $issuers,
     ) {
         $this->algorithm = $algorithm;
         $this->secret = $secret;
@@ -64,14 +73,6 @@ class Token
      */
     private function getVerifiedClaims(string $token, int $time, int $leeway, int $ttl, string $secret, array $requirements): array|false
     {
-        $algorithms = array(
-            'HS256' => 'sha256',
-            'HS384' => 'sha384',
-            'HS512' => 'sha512',
-            'RS256' => 'sha256',
-            'RS384' => 'sha384',
-            'RS512' => 'sha512',
-        );
         $tokenParts = explode('.', $token);
         if (count($tokenParts) < 3) {
             return false;
@@ -94,13 +95,13 @@ class Token
             return false;
         }
         $algorithm = $header['alg'];
-        if (!isset($algorithms[$algorithm])) {
+        if (!isset(self::ALGORITHMS[$algorithm])) {
             return false;
         }
         if (!empty($requirements['alg']) && !in_array($algorithm, $requirements['alg'])) {
             return false;
         }
-        $hmac = $algorithms[$algorithm];
+        $hmac = self::ALGORITHMS[$algorithm];
         $signature = base64_decode(strtr($tokenParts[2], '-_', '+/'));
         $data = "$tokenParts[0].$tokenParts[1]";
         switch ($algorithm[0]) {
@@ -118,8 +119,13 @@ class Token
                 }
                 break;
         }
-        $claims = json_decode(base64_decode(strtr($tokenParts[1], '-_', '+/')), true);
-        if (!$claims) {
+        $claimsBase64 = strtr($tokenParts[1], '-_', '+/');
+        $claimsJson = base64_decode($claimsBase64, true);
+        if ($claimsJson === false) {
+            return false;
+        }
+        $claims = json_decode($claimsJson, true);
+        if ($claims === null || !is_array($claims)) {
             return false;
         }
         foreach ($requirements as $field => $values) {

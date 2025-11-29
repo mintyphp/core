@@ -21,10 +21,10 @@ class Totp
     /**
      * Actual configuration parameters
      */
-    private int $period;
-    private string $algorithm;
-    private int $digits;
-    private int $secretLength;
+    private readonly int $period;
+    private readonly string $algorithm;
+    private readonly int $digits;
+    private readonly int $secretLength;
 
     /**
      * For testing purposes - allows overriding current timestamp
@@ -60,7 +60,7 @@ class Totp
             $b = $b . sprintf("%05b", strpos($t, $c));
         }
         foreach (str_split($b, 8) as $c) {
-            $r = $r . chr(bindec($c));
+            $r = $r . chr((int)bindec($c));
         }
         return ($r);
     }
@@ -106,27 +106,49 @@ class Totp
     /**
      * Calculate OTP from HMAC hash
      * 
+     * Implements the dynamic truncation algorithm from RFC 4226:
+     * 1. Use the last 4 bits of the hash to determine an offset (0-15)
+     * 2. Extract 4 bytes starting at that offset
+     * 3. Clear the most significant bit to avoid sign issues
+     * 4. Take modulo to get the desired number of digits
+     * 5. Zero-pad the result to the configured digit length
+     * 
      * @param string $hash HMAC hash value
      * @return string OTP code as a zero-padded string
      */
     private function calculateOtp(string $hash): string
     {
-        $offset = unpack('C', substr($hash, -1))[1] & 0xF;
-        $code = unpack('N', substr($hash, $offset, 4))[1] & 0x7FFFFFFF;
+        // Extract offset from last nibble of hash (0-15)
+        $lastByte = unpack('C', substr($hash, -1));
+        $offset = ($lastByte ? $lastByte[1] : 0) & 0xF;
+        // Extract 4 bytes at offset and clear the sign bit
+        $fourBytes = unpack('N', substr($hash, $offset, 4));
+        $code = ($fourBytes ? $fourBytes[1] : 0) & 0x7FFFFFFF;
+        // Reduce to desired number of digits
         $otp = $code % (10 ** $this->digits);
+        // Format with leading zeros
         return sprintf('%0' . $this->digits . 'd', $otp);
     }
 
     /**
      * Calculate HMAC hash for current time period
      * 
+     * Implements the TOTP time-based counter from RFC 6238:
+     * 1. Decode the Base32 encoded secret to binary
+     * 2. Calculate the time counter (current time / period)
+     * 3. Pack the counter as a 64-bit big-endian integer
+     * 4. Compute HMAC-SHA using the secret as the key
+     * 
      * @param string $secret Base32 encoded secret key
      * @return string HMAC hash value
      */
     private function calculateHash(string $secret): string
     {
+        // Decode Base32 secret to binary format
         $secret = $this->decodeBase32($secret);
+        // Calculate time counter and pack as 64-bit big-endian integer
         $data = pack('J', intval(($this->timestamp ?: time()) / $this->period));
+        // Generate HMAC hash using configured algorithm
         $hash = hash_hmac($this->algorithm, $data, $secret, true);
         return $hash;
     }
