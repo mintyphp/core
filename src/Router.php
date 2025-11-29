@@ -46,6 +46,7 @@ class Router
     public static function getInstance(): CoreRouter
     {
         return self::$instance ??= new CoreRouter(
+            Session::getInstance(),
             self::$baseUrl,
             self::$pageRoot,
             self::$templateRoot,
