@@ -57,50 +57,68 @@ class Debugger
         self::$instance = $instance;
     }
 
+    /**
+     * Check if the Debugger is enabled
+     * @return bool True if enabled, false otherwise
+     */
     public static function isEnabled(): bool
     {
         $instance = self::getInstance();
         return $instance->isEnabled();
     }
 
-    public static function logSession(string $title): void
+    /**
+     * Log the session state before processing the request
+     * @return void
+     */
+    public static function logSessionBefore(): void
     {
         $instance = self::getInstance();
-        $instance->logSession($title);
+        $instance->logSessionBefore();
     }
 
-    public static function set(string $key, mixed $value): void
+    /**
+     * Log the session state after processing the request
+     * @return void
+     */
+    public static function logSessionAfter(): void
     {
         $instance = self::getInstance();
-        $instance->set($key, $value);
+        $instance->logSessionAfter();
     }
 
-    public static function add(string $key, mixed $value): void
-    {
-        $instance = self::getInstance();
-        $instance->add($key, $value);
-    }
-
-    public static function get(string $key): mixed
-    {
-        $instance = self::getInstance();
-        return $instance->get($key);
-    }
-
+    /**
+     * Finalize and store the debugger data at the end of the request
+     * @param string $type The type of request completion (e.g., 'ok', 'abort')
+     * @return void
+     */
     public static function end(string $type): void
     {
         $instance = self::getInstance();
         $instance->end($type);
     }
 
+    /**
+     * Output the debugger toolbar HTML.
+     * @return void
+     */
     public static function toolbar(): void
     {
         $instance = self::getInstance();
         $instance->toolbar();
     }
 
-    /** @param array<object> $objects */
-    public static function debug(mixed $variable, int $strlen = 100, int $width = 25, int $depth = 10, int $i = 0, array &$objects = []): ?string
+    /**
+     * Debug a variable and return its string representation.
+     * @param mixed $variable The variable to debug
+     * @param int $strlen Maximum string length
+     * @param int $width Maximum array/object width
+     * @param int $depth Maximum depth for nested structures
+     * @param int $i Current depth (used internally) 
+     * @param array<object> $objects List of already processed objects (used internally)
+     * @return string String representation of the variable
+     */
+    public static function debug(mixed $variable, int $strlen = 100, int $width = 25, int $depth = 10, int $i = 0, array &$objects = []): string
     {
         $instance = self::getInstance();
         return $instance->debug($variable, $strlen, $width, $depth, $i, $objects);

@@ -193,7 +193,7 @@ class Curl
 
         if (Debugger::$enabled) {
             $duration = microtime(true) - $time;
-            Debugger::add('api_calls', compact('duration', 'method', 'url', 'data', 'options', 'headers', 'status', 'timing', 'result'));
+            Debugger::add('apiCalls', compact('duration', 'method', 'url', 'data', 'options', 'headers', 'status', 'timing', 'result'));
         }
 
         return $result;

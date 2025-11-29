@@ -446,7 +446,7 @@ class Router
 			$parameters['url'] = $this->parameters;
 			$parameters['get'] = $_GET;
 			$parameters['post'] = $_POST;
-			Debugger::set('router', compact('method', 'csrfOk', 'request', 'url', 'dir', 'viewFile', 'actionFile', 'templateFile', 'parameters'));
+			Debugger::set('route', compact('method', 'csrfOk', 'request', 'url', 'dir', 'viewFile', 'actionFile', 'templateFile', 'parameters'));
 			Debugger::set('status', $status);
 		}
 		if ($redirect) $this->redirect($redirect);

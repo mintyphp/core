@@ -41,7 +41,6 @@ class Session
     public static function getInstance(): CoreSession
     {
         return self::$instance ??= new CoreSession(
-            Debugger::getInstance(),
             self::$sessionId,
             self::$sessionName,
             self::$csrfSessionKey,
