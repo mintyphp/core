@@ -12,13 +12,13 @@ use MintyPHP\Core\Router;
  */
 class AnalyzerTest extends \PHPUnit\Framework\TestCase
 {
-    protected static string $path = '';
+    private static string $path = '';
     /** @var array<string> */
-    protected static array $pages = [];
+    private static array $pages = [];
     /** @var array<string> */
-    protected static array $templates = [];
+    private static array $templates = [];
     /** @var array<string, string> */
-    protected static array $fileContents = [];
+    private static array $fileContents = [];
 
     public static function setUpBeforeClass(): void
     {
@@ -80,7 +80,7 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
         }
     }
 
-    protected function createRouter(string $actionFile, ?string $viewFile = null, ?string $templateActionFile = null, ?string $templateViewFile = null): Router
+    private function createRouter(string $actionFile, ?string $viewFile = null, ?string $templateActionFile = null, ?string $templateViewFile = null): Router
     {
         $router = $this->getMockBuilder(Router::class)
             ->disableOriginalConstructor()
@@ -98,7 +98,8 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
 
         return $router;
     }
-    protected function assertWarningTriggered(callable $callback, string $expectedMessagePattern): void
+
+    private function assertWarningTriggered(callable $callback, string $expectedMessagePattern): void
     {
         $warningTriggered = false;
         $warningMessage = '';

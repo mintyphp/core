@@ -33,7 +33,7 @@ class CacheTest extends TestCase
         }
 
         // Create Cache instance with real Memcached
-        self::$cache = new Cache(self::$memcached, self::$testPrefix);
+        self::$cache = new Cache(self::$testPrefix, '127.0.0.1:11211', self::$memcached);
     }
 
     protected function setUp(): void
@@ -281,7 +281,7 @@ class CacheTest extends TestCase
     public function testPrefixIsApplied(): void
     {
         // Create a cache with a different prefix
-        $cache = new Cache(self::$memcached, 'myapp:cache:');
+        $cache = new Cache('myapp:cache:', '127.0.0.1:11211', self::$memcached);
 
         // Set a value with this cache
         $cache->set('testkey', 'value');
@@ -332,7 +332,7 @@ class CacheTest extends TestCase
     public function testConstructorWithNullMemcached(): void
     {
         // Verify the constructor creates a working Memcached instance when null is passed
-        $cache = new Cache(null, 'constructor_test_', '127.0.0.1:11211');
+        $cache = new Cache('constructor_test_', '127.0.0.1:11211');
         $this->assertInstanceOf(Cache::class, $cache);
 
         // Test that it actually works
