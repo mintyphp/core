@@ -11,7 +11,7 @@ class TokenTest extends \PHPUnit\Framework\TestCase
 		Token::$secret = 'secret';
 		$token = "eyJhbGciOiJOT05FIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.";
 		$claims = Token::getClaims($token);
-		$this->assertEquals(false, $claims);
+		$this->assertEquals([], $claims);
 	}
 
 	public function testJwtIoHs256Example(): void
@@ -53,7 +53,7 @@ class TokenTest extends \PHPUnit\Framework\TestCase
 		Token::$algorithms = 'HS512,RS512';
 		$claims = Token::getClaims($token);
 		Token::$algorithms = '';
-		$this->assertEquals(false, $claims);
+		$this->assertEquals([], $claims);
 	}
 
 	public function testJwtIoRs384Example(): void
@@ -77,7 +77,7 @@ class TokenTest extends \PHPUnit\Framework\TestCase
 		Token::$secret = 'secret';
 		$token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.";
 		$claims = Token::getClaims($token);
-		$this->assertEquals(false, $claims);
+		$this->assertEquals([], $claims);
 	}
 
 	public function testTokenGenerationAndVerificationHs256(): void

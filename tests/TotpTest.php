@@ -8,8 +8,8 @@ class TotpTest extends \PHPUnit\Framework\TestCase
 {
 	public function testDefaultToken(): void
 	{
-		$totp = Totp::getInstance();
-		$totp->timestamp = 319690800;
+		// set a fixed timestamp for testing
+		Totp::getInstance()->timestamp = 319690800;
 		$match = Totp::verify('JDDK4U6G3BJLEZ7Y', '762124');
 		$this->assertEquals(true, $match);
 		$secret = Totp::generateSecret();
