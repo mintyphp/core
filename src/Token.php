@@ -70,18 +70,22 @@ class Token
     }
 
     /**
-     * @return array<string, mixed>|false
+     * Retrieve and verify claims from a JWT token.
+     * @param string $token
+     * @return array<string, mixed> 
      */
-    public static function getClaims(string|false $token): array|false
+    public static function getClaims(string $token): array
     {
         $instance = self::getInstance();
         return $instance->getClaims($token);
     }
 
     /**
+     * Generate a JWT token with the given claims.
      * @param array<string, mixed> $claims
+     * @return string
      */
-    public static function getToken(array $claims): string|false
+    public static function getToken(array $claims): string
     {
         $instance = self::getInstance();
         return $instance->getToken($claims);
