@@ -33,7 +33,7 @@ class Router
 	/** @var array<string, string> */
 	private array $serverGlobal;
 	/** @var array<string, string> */
-	private array $routes = [];
+	private array $routes;
 
 	// Request state properties
 	private string $method;
@@ -95,7 +95,7 @@ class Router
 	private function error(string $message): void
 	{
 		if (Debugger::$enabled) {
-			Debugger::set('status', 500);
+			Debugger::setStatus(500);
 		}
 		throw new RouterError($message);
 	}
@@ -115,8 +115,8 @@ class Router
 		$url = parse_url($url, PHP_URL_HOST) ? $url : $this->getBaseUrl() . $url;
 		$status = $permanent ? 301 : 302;
 		if (Debugger::$enabled) {
-			Debugger::set('redirect', $url);
-			Debugger::set('status', $status);
+			Debugger::setRedirect($url);
+			Debugger::setStatus($status);
 			Debugger::end('redirect');
 		}
 		if ($this->executeRedirect) {
@@ -413,7 +413,7 @@ class Router
 		$root = $this->pageRoot;
 		$dir = '';
 		$redirect = false;
-		$status = false;
+		$status = 0;
 
 		$request = $this->parseRequest();
 		$csrfOk = $this->checkCsrfProtection();
@@ -442,12 +442,8 @@ class Router
 			$viewFile = $this->view;
 			$actionFile = $this->action;
 			$templateFile = $this->template;
-			$parameters = [];
-			$parameters['url'] = $this->parameters;
-			$parameters['get'] = $_GET;
-			$parameters['post'] = $_POST;
-			Debugger::set('route', compact('method', 'csrfOk', 'request', 'url', 'dir', 'viewFile', 'actionFile', 'templateFile', 'parameters'));
-			Debugger::set('status', $status);
+			Debugger::setRoute($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $this->parameters, $_GET,  $_POST);
+			Debugger::setStatus($status);
 		}
 		if ($redirect) $this->redirect($redirect);
 	}

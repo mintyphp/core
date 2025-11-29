@@ -109,7 +109,7 @@ class DB
                 $explain = false;
             }
             $equery = $this->mysqli->real_escape_string($query);
-            Debugger::add('queries', compact('duration', 'query', 'equery', 'arguments', 'result', 'explain'));
+            Debugger::addQuery($duration, $query, $equery, $arguments, $result, $explain);
         }
         return $result;
     }

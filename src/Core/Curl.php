@@ -141,18 +141,18 @@ class Curl
         $this->setOptions($ch, $method, $url, $data, $headers, $options);
 
         $result = strval($this->curlExec($ch));
-        $status = $this->curlGetInfo($ch, CURLINFO_HTTP_CODE);
+        $status = 0 + $this->curlGetInfo($ch, CURLINFO_HTTP_CODE);
         $location = $this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL);
 
         if (Debugger::$enabled) {
-            $timing = Debugger::createTiming(
-                0 + $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME),
-                0 + $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME),
-                0 + $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME),
-                0 + $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME),
-                0 + $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME),
-                0 + $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME),
-            );
+            $timing = [
+                'nameLookup' => 0 + $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME),
+                'connect' => 0 + $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME),
+                'preTransfer' => 0 + $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME),
+                'startTransfer' => 0 + $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME),
+                'redirect' => 0 + $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME),
+                'total' => 0 + $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME),
+            ];
         }
 
         if ($this->cookies && $cookieJar) {
@@ -179,10 +179,12 @@ class Curl
             }
         }
 
-        $result = array('status' => $status);
-        $result['headers'] = [];
-        $result['data'] = $body;
-        $result['url'] = $location;
+        $result = [
+            'status' => $status,
+            'headers' => [],
+            'data' => $body,
+            'url' => $location
+        ];
 
         foreach (explode("\r\n", $head) as $i => $header) {
             if ($i == 0) {

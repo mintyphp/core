@@ -58,7 +58,8 @@ class DebuggerApiCall
         /** @var array<string,string> */
         public array $headers,
         public int $status,
-        public DebuggerApiCallTiming $timing,
+        /** @var array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} */
+        public array $timing,
         public mixed $result,
     ) {}
 }
@@ -68,10 +69,13 @@ class DebuggerQuery
     public function __construct(
         public float $duration,
         public string $query,
-        /** @var array<int,mixed> */
+        public string $equery,
+        /** @var array<int|string, mixed> */
         public array $params,
         /** @var mixed */
         public mixed $result,
+        /** @var mixed */
+        public mixed $explain,
     ) {}
 }
 
@@ -108,6 +112,7 @@ class DebuggerRequest
         /** @var array<DebuggerCacheCall> */
         public array $cache,
         public float $start,
+        public int $status,
         public string $user,
         public string $type,
         public float $duration,
@@ -166,6 +171,7 @@ class Debugger
             ),
             cache: [],
             start: microtime(true),
+            status: 0,
             user: get_current_user(),
             type: '',
             duration: 0.0,
@@ -262,21 +268,6 @@ class Debugger
     }
 
     /**
-     * Create a timing object from the given info
-     * @param float $nameLookup
-     * @param float $connect
-     * @param float $preTransfer
-     * @param float $startTransfer
-     * @param float $redirect
-     * @param float $total
-     * @return DebuggerApiCallTiming The timing object
-     */
-    public function createTiming(float $nameLookup, float $connect, float $preTransfer, float $startTransfer, float $redirect, float $total): DebuggerApiCallTiming
-    {
-        return new DebuggerApiCallTiming($nameLookup, $connect, $preTransfer, $startTransfer, $redirect, $total);
-    }
-
-    /**
      * Add an API call entry to the debugger log
      * @param float $duration The duration of the API call
      * @param string $method The HTTP method used
@@ -285,13 +276,68 @@ class Debugger
      * @param array<string,mixed> $options The options used for the request
      * @param array<string,string> $headers The headers sent with the request
      * @param int $status The HTTP status code returned
-     * @param DebuggerApiCallTiming $timing The timing information for the call
+     * @param array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} $timing The timing information for the call
      * @param mixed $result The result returned from the API call
      * @return void
      */
-    public function addApiCall(float $duration, string $method, string $url, mixed $data, array $options, array $headers, int $status, DebuggerApiCallTiming $timing, mixed $result): void
+    public function addApiCall(float $duration, string $method, string $url, mixed $data, array $options, array $headers, int $status, array $timing, mixed $result): void
     {
         $this->request->apiCalls[] = new DebuggerApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
+    }
+
+    /**
+     * Add a query entry to the debugger log
+     * @param float $duration The duration of the query
+     * @param string $query The SQL query executed
+     * @param string $equery The SQL query executed
+     * @param array<int|string, mixed> $arguments The arguments passed to the query
+     * @param mixed $result The result returned from the query
+     * @param mixed $explain The result returned from the query
+     * @return void
+     */
+    public function addQuery(float $duration, string $query, string $equery, array $arguments, mixed $result, mixed $explain): void
+    {
+        $this->request->queries[] = new DebuggerQuery($duration, $query, $equery, $arguments, $result, $explain);
+    }
+
+    /**
+     * Set the route information for the current request
+     * @param string $method The HTTP method used
+     * @param bool $csrfOk Whether CSRF validation passed
+     * @param string $request The raw request string
+     * @param string $url The requested URL
+     * @param string $dir The directory of the request
+     * @param string $viewFile The view file used
+     * @param string $actionFile The action file used
+     * @param string $templateFile The template file used
+     * @param array<string,mixed> $urlParameters The URL parameters
+     * @param array<string,mixed> $getParameters The GET parameters
+     * @param array<string,mixed> $postParameters The POST parameters
+     * @return void
+     */
+    public function setRoute(string $method, bool $csrfOk, string $request, string $url, string $dir, string $viewFile, string $actionFile, string $templateFile, array $urlParameters, array $getParameters, array $postParameters): void
+    {
+        $this->request->route = new DebuggerRoute($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $urlParameters, $getParameters, $postParameters);
+    }
+
+    /**
+     * Set the redirect URL for the current request
+     * @param string $url The URL to redirect to
+     * @return void
+     */
+    public function setRedirect(string $url): void
+    {
+        $this->request->redirect = $url;
+    }
+
+    /**
+     * Set the status code for the current request
+     * @param int $status The HTTP status code
+     * @return void
+     */
+    public function setStatus(int $status): void
+    {
+        $this->request->status = $status;
     }
 
     /**
