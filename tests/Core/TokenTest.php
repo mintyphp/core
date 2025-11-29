@@ -153,33 +153,11 @@ class TokenTest extends TestCase
         }
     }
 
-    public function testGetTokenRequiresSecret(): void
+    public function testRequiresSecret(): void
     {
-        $tokenNoSecret = new Token('HS256', false, 5, 3600);
-        $claims = ['sub' => 'user123'];
-
-        $result = $tokenNoSecret->getToken($claims);
-
-        $this->assertFalse($result);
-    }
-
-    public function testGetClaimsRequiresSecret(): void
-    {
-        $tokenNoSecret = new Token('HS256', false, 5, 3600);
-
-        $result = $tokenNoSecret->getClaims('some.jwt.token');
-
-        $this->assertFalse($result);
-    }
-
-    public function testTokenConfiguration(): void
-    {
-        $this->assertEquals('HS256', Token::$__algorithm);
-        $this->assertEquals($this->secret, Token::$__secret);
-        $this->assertEquals(5, Token::$__leeway);
-        $this->assertEquals(3600, Token::$__ttl);
-        $this->assertEquals('test-audience', Token::$__audience);
-        $this->assertEquals('test-issuer', Token::$__issuer);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Token secret cannot be empty');
+        new Token('HS256', '', 5, 3600);
     }
 
     public function testClaimsRespectCustomAudienceAndIssuer(): void

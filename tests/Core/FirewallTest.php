@@ -12,7 +12,6 @@ class FirewallTest extends TestCase
 {
     private static Firewall $firewall;
     private static Cache $cache;
-    private static Debugger $debugger;
     private static Memcached $memcached;
     private static string $testPrefix = 'firewall_test_';
 
@@ -29,24 +28,10 @@ class FirewallTest extends TestCase
         }
 
         // Create dependencies
-        self::$cache = new Cache(self::$memcached, self::$testPrefix);
-        self::$debugger = new Debugger(
-            new \MintyPHP\Core\Session(null),
-            10,
-            false,
-            'test_debugger'
-        );
+        self::$cache = new Cache(self::$testPrefix, '127.0.0.1:11211', self::$memcached);
 
         // Create Firewall instance
-        self::$firewall = new Firewall(
-            self::$cache,
-            self::$debugger,
-            5, // Lower concurrency for testing
-            0.1, // Shorter spin lock
-            10, // Shorter interval
-            self::$testPrefix . 'fw_',
-            false
-        );
+        self::$firewall = new Firewall(self::$cache, 5, 0.1, 10, self::$testPrefix . 'fw_', false);
     }
 
     protected function setUp(): void
@@ -96,25 +81,7 @@ class FirewallTest extends TestCase
     public function testFirewallHandlesReverseProxy(): void
     {
         // Create a firewall with reverse proxy enabled
-        $firewall = new Firewall(
-            self::$cache,
-            self::$debugger,
-            5,
-            0.1,
-            10,
-            self::$testPrefix . 'fw_rp_',
-            true // Enable reverse proxy
-        );
-
+        $firewall = new Firewall(self::$cache, 5, 0.1, 10, self::$testPrefix . 'fw_rp_', true);
         $this->assertInstanceOf(Firewall::class, $firewall);
-    }
-
-    public function testFirewallConfiguration(): void
-    {
-        // Verify static configuration was set
-        $this->assertEquals(5, Firewall::$__concurrency);
-        $this->assertEquals(0.1, Firewall::$__spinLockSeconds);
-        $this->assertEquals(10, Firewall::$__intervalSeconds);
-        $this->assertStringContainsString('fw_', Firewall::$__cachePrefix);
     }
 }

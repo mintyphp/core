@@ -10,6 +10,9 @@ namespace MintyPHP\Core;
  */
 class Token
 {
+    /**
+     * Supported algorithms
+     */
     public const array ALGORITHMS = [
         'HS256' => 'sha256',
         'HS384' => 'sha384',
@@ -45,16 +48,19 @@ class Token
     private readonly string $audiences;
     private readonly string $issuers;
 
+    /**
+     * Create a new Token instance
+     */
     public function __construct(
         string $algorithm,
         string $secret,
         int $leeway,
         int $ttl,
-        string $audience,
-        string $issuer,
-        string $algorithms,
-        string $audiences,
-        string $issuers,
+        string $audience = '',
+        string $issuer = '',
+        string $algorithms = '',
+        string $audiences = '',
+        string $issuers = '',
     ) {
         $this->algorithm = $algorithm;
         $this->secret = $secret;
@@ -72,38 +78,39 @@ class Token
     }
 
     /**
+     * Verify the claims of a JWT token.
      * @param array<string, array<string>> $requirements
-     * @return array<string, mixed>|false
+     * @return array<string, mixed>
      */
-    private function getVerifiedClaims(string $token, int $time, int $leeway, int $ttl, string $secret, array $requirements): array|false
+    private function getVerifiedClaims(string $token, int $time, int $leeway, int $ttl, string $secret, array $requirements): array
     {
         $tokenParts = explode('.', $token);
         if (count($tokenParts) < 3) {
-            return false;
+            return [];
         }
         $headerJson = base64_decode(strtr($tokenParts[0], '-_', '+/'), true);
         if ($headerJson === false) {
-            return false;
+            return [];
         }
         $header = json_decode($headerJson, true);
         if (!is_array($header)) {
-            return false;
+            return [];
         }
         if (!$secret) {
-            return false;
+            return [];
         }
         if (!isset($header['typ']) || !is_string($header['typ']) || $header['typ'] != 'JWT') {
-            return false;
+            return [];
         }
         if (!isset($header['alg']) || !is_string($header['alg'])) {
-            return false;
+            return [];
         }
         $algorithm = $header['alg'];
         if (!isset(self::ALGORITHMS[$algorithm])) {
-            return false;
+            return [];
         }
         if (!empty($requirements['alg']) && !in_array($algorithm, $requirements['alg'])) {
-            return false;
+            return [];
         }
         $hmac = self::ALGORITHMS[$algorithm];
         $signature = base64_decode(strtr($tokenParts[2], '-_', '+/'));
@@ -113,65 +120,67 @@ class Token
                 $hash = hash_hmac($hmac, $data, $secret, true);
                 $equals = hash_equals($hash, $signature);
                 if (!$equals) {
-                    return false;
+                    return [];
                 }
                 break;
             case 'R':
                 $equals = openssl_verify($data, $signature, $secret, $hmac) == 1;
                 if (!$equals) {
-                    return false;
+                    return [];
                 }
                 break;
         }
         $claimsBase64 = strtr($tokenParts[1], '-_', '+/');
         $claimsJson = base64_decode($claimsBase64, true);
         if ($claimsJson === false) {
-            return false;
+            return [];
         }
         $claims = json_decode($claimsJson, true);
         if ($claims === null || !is_array($claims)) {
-            return false;
+            return [];
         }
         foreach ($requirements as $field => $values) {
             if (!empty($values)) {
                 if ($field != 'alg') {
                     if (!isset($claims[$field]) || !is_string($claims[$field]) || !in_array($claims[$field], $values)) {
-                        return false;
+                        return [];
                     }
                 }
             }
         }
         if (isset($claims['nbf']) && is_int($claims['nbf']) && $time + $leeway < $claims['nbf']) {
-            return false;
+            return [];
         }
         if (isset($claims['iat']) && is_int($claims['iat']) && $time + $leeway < $claims['iat']) {
-            return false;
+            return [];
         }
         if (isset($claims['exp']) && is_int($claims['exp']) && $time - $leeway > $claims['exp']) {
-            return false;
+            return [];
         }
         if (isset($claims['iat']) && is_int($claims['iat']) && !isset($claims['exp'])) {
             if ($time - $leeway > $claims['iat'] + $ttl) {
-                return false;
+                return [];
             }
         }
         return $claims;
     }
 
     /**
-     * @return array<string, mixed>|false
+     * Retrieve and verify claims from a JWT token.
+     * @param string $token
+     * @return array<string, mixed> 
      */
-    public function getClaims(string|false $token): array|false
+    public function getClaims(string $token): array
     {
         if (!$token) {
-            return false;
+            return [];
         }
         $time = time();
         $leeway = $this->leeway;
         $ttl = $this->ttl;
         $secret = $this->secret;
         if (!$secret) {
-            return false;
+            return [];
         }
         $requirements = [];
         $requirements['alg'] = array_filter(array_map('trim', explode(',', $this->algorithms)));
@@ -181,9 +190,11 @@ class Token
     }
 
     /**
+     * Generate a JWT token.
      * @param array<string, mixed> $claims
+     * @return string
      */
-    private function generateToken(array $claims, int $time, int $ttl, string $algorithm, string $secret): string|false
+    private function generateToken(array $claims, int $time, int $ttl, string $algorithm, string $secret): string
     {
         $algorithms = array(
             'HS256' => 'sha256',
@@ -202,7 +213,7 @@ class Token
         $claims['exp'] = $time + $ttl;
         $token[1] = rtrim(strtr(base64_encode(json_encode((object) $claims) ?: ''), '+/', '-_'), '=');
         if (!isset($algorithms[$algorithm])) {
-            return false;
+            return '';
         }
         $hmac = $algorithms[$algorithm];
         $data = "$token[0].$token[1]";
@@ -215,23 +226,25 @@ class Token
                 openssl_sign($data, $signature, $secret, $hmac);
                 break;
             default:
-                return false;
+                return '';
         }
         $token[2] = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
         return implode('.', $token);
     }
 
     /**
+     * Generate a JWT token with the given claims.
      * @param array<string, mixed> $claims
+     * @return string
      */
-    public function getToken(array $claims): string|false
+    public function getToken(array $claims): string
     {
         $time = time();
         $ttl = $this->ttl;
         $algorithm = $this->algorithm;
         $secret = $this->secret;
         if (!$secret) {
-            return false;
+            return '';
         }
         if (!isset($claims['aud']) && $this->audience) {
             $claims['aud'] = $this->audience;

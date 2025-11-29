@@ -21,15 +21,7 @@ class SessionTest extends TestCase
         $_SESSION = [];
 
         // Create session instance without debugger
-        $this->session = new Session(
-            null,
-            false,
-            'test_session_' . mt_rand(),
-            'test_csrf_token',
-            true,
-            16,
-            'Lax'
-        );
+        $this->session = new Session('', 'test_session_' . mt_rand(), 'test_csrf_token', true, 16, 'Lax');
     }
 
     protected function tearDown(): void
@@ -55,33 +47,30 @@ class SessionTest extends TestCase
     public function testCsrfTokenGeneration(): void
     {
         $this->session->start();
-        $csrfKey = Session::$__csrfSessionKey;
-        $this->assertArrayHasKey($csrfKey, $_SESSION);
-        $this->assertIsString($_SESSION[$csrfKey]);
-        $this->assertEquals(32, strlen($_SESSION[$csrfKey])); // 16 bytes = 32 hex chars
+        $this->assertArrayHasKey('test_csrf_token', $_SESSION);
+        $this->assertIsString($_SESSION['test_csrf_token']);
+        $this->assertEquals(32, strlen($_SESSION['test_csrf_token'])); // 16 bytes = 32 hex chars
     }
 
     public function testCsrfTokenPersists(): void
     {
         $this->session->start();
-        $csrfKey = Session::$__csrfSessionKey;
-        $firstToken = $_SESSION[$csrfKey];
+        $firstToken = $_SESSION['test_csrf_token'];
 
         // Start again should not regenerate token
         $this->session->start();
-        $this->assertEquals($firstToken, $_SESSION[$csrfKey]);
+        $this->assertEquals($firstToken, $_SESSION['test_csrf_token']);
     }
 
     public function testRegenerate(): void
     {
         $this->session->start();
-        $csrfKey = Session::$__csrfSessionKey;
-        $firstToken = $_SESSION[$csrfKey];
+        $firstToken = $_SESSION['test_csrf_token'];
         $firstSessionId = session_id();
 
         $this->session->regenerate();
 
-        $newToken = $_SESSION[$csrfKey];
+        $newToken = $_SESSION['test_csrf_token'];
         $newSessionId = session_id();
 
         $this->assertNotEquals($firstToken, $newToken);
@@ -91,25 +80,23 @@ class SessionTest extends TestCase
     public function testCheckCsrfTokenSuccess(): void
     {
         $this->session->start();
-        $csrfKey = Session::$__csrfSessionKey;
-        $_POST[$csrfKey] = $_SESSION[$csrfKey];
+        $_POST['test_csrf_token'] = $_SESSION['test_csrf_token'];
 
         $result = $this->session->checkCsrfToken();
         $this->assertTrue($result);
 
-        unset($_POST[$csrfKey]);
+        unset($_POST['test_csrf_token']);
     }
 
     public function testCheckCsrfTokenFailure(): void
     {
         $this->session->start();
-        $csrfKey = Session::$__csrfSessionKey;
-        $_POST[$csrfKey] = 'invalid_token';
+        $_POST['test_csrf_token'] = 'invalid_token';
 
         $result = $this->session->checkCsrfToken();
         $this->assertFalse($result);
 
-        unset($_POST[$csrfKey]);
+        unset($_POST['test_csrf_token']);
     }
 
     public function testCheckCsrfTokenMissing(): void
@@ -123,15 +110,14 @@ class SessionTest extends TestCase
     public function testGetCsrfInput(): void
     {
         $this->session->start();
-        $csrfKey = Session::$__csrfSessionKey;
 
         ob_start();
         $this->session->getCsrfInput();
-        $output = ob_get_clean();
+        $output = ob_get_clean() ?: '';
 
         $this->assertStringContainsString('<input type="hidden"', $output);
-        $this->assertStringContainsString('name="' . $csrfKey . '"', $output);
-        $this->assertStringContainsString('value="' . $_SESSION[$csrfKey] . '"', $output);
+        $this->assertStringContainsString('name="' . 'test_csrf_token' . '"', $output);
+        $this->assertStringContainsString('value="' . $_SESSION['test_csrf_token'] . '"', $output);
     }
 
     public function testSessionEnd(): void
@@ -144,15 +130,7 @@ class SessionTest extends TestCase
     }
     public function testDisabledSessionDoesNotStartSession(): void
     {
-        $disabledSession = new Session(
-            null,
-            false,
-            'test_disabled',
-            'csrf',
-            false, // disabled
-            16,
-            'Lax'
-        );
+        $disabledSession = new Session('', 'test_disabled', 'csrf', false, 16, 'Lax');
 
         // Close any active session first
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -167,25 +145,9 @@ class SessionTest extends TestCase
 
     public function testDisabledSessionAlwaysPassesCsrfCheck(): void
     {
-        $disabledSession = new Session(
-            null,
-            false,
-            'test_disabled',
-            'csrf',
-            false, // disabled
-            16,
-            'Lax'
-        );
+        $disabledSession = new Session('', 'test_disabled', 'csrf', false, 16, 'Lax');
 
         $result = $disabledSession->checkCsrfToken();
         $this->assertTrue($result);
-    }
-
-    public function testSessionConfiguration(): void
-    {
-        $this->assertEquals('test_csrf_token', Session::$__csrfSessionKey);
-        $this->assertTrue(Session::$__enabled);
-        $this->assertEquals(16, Session::$__csrfLength);
-        $this->assertEquals('Lax', Session::$__sameSite);
     }
 }
