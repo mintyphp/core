@@ -3,6 +3,7 @@
 namespace MintyPHP\Tests\Core;
 
 use MintyPHP\Core\Router;
+use MintyPHP\Core\Session;
 
 /**
  * Note: This test suite creates temporary files and directories
@@ -68,22 +69,25 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         }
     }
 
-    protected function createRouter(string $method, string $uri): Router
+    /**
+     * Create a Router instance for testing
+     * @param string $method The HTTP method
+     * @param string $uri The request URI
+     * @param array<string,string> $routes Custom routes
+     * @return Router
+     */
+    protected function createRouter(string $method, string $uri, array $routes = []): Router
     {
         $serverGlobal = [
             'REQUEST_METHOD' => $method,
             'REQUEST_URI' => $uri,
             'SCRIPT_NAME' => self::$path . '/web/index.php',
         ];
-
-        return new Router(
-            '/',
-            self::$pageRoot,
-            self::$templateRoot,
-            false, // executeRedirect
-            $serverGlobal,
-            []
-        );
+        $session = $this->createMock(Session::class);
+        $session->expects($this->any())
+            ->method('checkCsrfToken')
+            ->willReturn(true);
+        return new Router($session, '/', self::$pageRoot, self::$templateRoot, false, $serverGlobal, $routes);
     }
 
     public function testAdmin(): void
@@ -97,10 +101,16 @@ class RouterTest extends \PHPUnit\Framework\TestCase
 
     public function testRootRoute(): void
     {
-        $router = $this->createRouter('GET', '/');
-        $router->addRoute('', 'home');
+        $router = $this->createRouter('GET', '/', ['' => 'home']);
         $this->assertEquals(self::$pageRoot . 'home().php', $router->getAction());
         $this->assertEquals(self::$pageRoot . 'home(default).phtml', $router->getView());
+    }
+
+    public function testHomeRoute(): void
+    {
+        $router = $this->createRouter('GET', '/home/123', ['home/123' => 'slug']);
+        $this->assertEquals(self::$pageRoot . 'index($slug).php', $router->getAction());
+        $this->assertEquals(self::$pageRoot . 'index(default).phtml', $router->getView());
     }
 
     public function testTrailingSlashOnIndex(): void

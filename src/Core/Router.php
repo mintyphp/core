@@ -204,14 +204,14 @@ class Router
 	 */
 	public function applyRoutes(): void
 	{
-		foreach ($this->routes as $destinationPath => $sourcePath) {
+		foreach ($this->routes as $sourcePath => $destinationPath) {
 			if (rtrim($this->request, '/') == rtrim($this->baseUrl . $sourcePath, '/')) {
 				$this->request = $this->baseUrl . $destinationPath;
 				break;
 			}
 		}
 	}
-
+	
 	// ========================================
 	// Routing Logic
 	// ========================================
@@ -354,7 +354,19 @@ class Router
 		if ($matches === false || count($matches) == 0) {
 			$matches = glob($root . $dir . $pattern . '(*)' . '.php');
 		}
-		return $matches === false ? [] : $matches;
+		if ($matches === false) {
+			return [];
+		}
+		// Sort to prefer files without parameters over files with parameters
+		usort($matches, function ($a, $b) {
+			$aHasParams = strpos($a, '($') !== false;
+			$bHasParams = strpos($b, '($') !== false;
+			if ($aHasParams === $bHasParams) {
+				return strcmp($a, $b);
+			}
+			return $aHasParams ? 1 : -1;
+		});
+		return $matches;
 	}
 
 	/**
@@ -425,7 +437,12 @@ class Router
 			parse_str($query, $getParameters);
 		}
 
-		$parts = explode('/', $request);
+		// Handle empty request as root directory
+		if ($request === '') {
+			$parts = [];
+		} else {
+			$parts = explode('/', $request);
+		}
 		for ($i = count($parts); $i >= 0; $i--) {
 			if ($i == 0) $dir = '';
 			else $dir = implode('/', array_slice($parts, 0, $i)) . '/';
