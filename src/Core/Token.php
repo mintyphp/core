@@ -65,6 +65,10 @@ class Token
         $this->algorithms = $algorithms;
         $this->audiences = $audiences;
         $this->issuers = $issuers;
+        // throw on empty secret
+        if (empty($this->secret)) {
+            throw new \InvalidArgumentException('Token secret cannot be empty');
+        }
     }
 
     /**
