@@ -25,11 +25,11 @@ class Token
      * Static configuration parameters
      */
     public static string $algorithm = 'HS256';
-    public static string|false $secret = false;
+    public static string $secret = '';
     public static int $leeway = 5;
     public static int $ttl = 30;
-    public static string|false $audience = false;
-    public static string|false $issuer = false;
+    public static string $audience = '';
+    public static string $issuer = '';
     public static string $algorithms = '';
     public static string $audiences = '';
     public static string $issuers = '';
