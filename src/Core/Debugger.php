@@ -378,8 +378,6 @@ class Debugger
             return;
         }
 
-        var_dump($type);
-
         // finalize request data
         $this->request->type = $type;
         $this->request->duration = microtime(true) - (float)$this->request->start;
