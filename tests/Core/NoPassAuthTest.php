@@ -179,13 +179,14 @@ class NoPassAuthTest extends TestCase
     public function testExists(): void
     {
         $this->assertNotNull(self::$auth);
-        
+
         $exists = self::$auth->exists('testuser');
         $this->assertNotFalse($exists, 'user should exist');
-        
+
         $notExists = self::$auth->exists('nonexistent');
         $this->assertFalse($notExists, 'user should not exist');
-    }    public function testLogout(): void
+    }
+    public function testLogout(): void
     {
         $this->assertNotNull(self::$auth);
         $_SESSION['user'] = array('id' => 1, 'username' => 'testuser');
