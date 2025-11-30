@@ -6,6 +6,7 @@ use MintyPHP\Core\Auth;
 use MintyPHP\Core\DB;
 use MintyPHP\Core\Totp;
 use MintyPHP\Core\Session;
+use MintyPHP\Error\TotpError;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -89,6 +90,20 @@ class AuthTest extends TestCase
         $result = self::$auth->login('test', 'test');
         $this->assertNotEmpty($result, 'login failed');
         $this->assertArrayHasKey('users', $result);
+    }
+
+    public function testLoginTotpFailure(): void
+    {
+        $this->assertNotNull(self::$auth);
+
+        // Mock TOTP to return false for verification
+        $this->totp->expects($this->once())
+            ->method('verify')
+            ->with('', '')
+            ->willReturn(false);
+
+        $this->expectException(TotpError::class);
+        self::$auth->login('test', 'test');
     }
 
     public function testLogout(): void

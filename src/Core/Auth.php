@@ -3,6 +3,7 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Core\DB;
+use MintyPHP\Error\TotpError;
 
 /**
  * Authentication layer for MintyPHP
@@ -107,7 +108,7 @@ class Auth
                     if (!is_string($username)) {
                         $username = '';
                     }
-                    return [];
+                    throw new TotpError($username);
                 }
                 $this->session->regenerate();
                 $_SESSION['user'] = $user[$this->usersTable];

@@ -8,6 +8,7 @@ use MintyPHP\Core\Token;
 use MintyPHP\Core\Totp;
 use MintyPHP\Core\Session;
 use MintyPHP\Core\Router;
+use MintyPHP\Error\TotpError;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -157,8 +158,8 @@ class NoPassAuthTest extends TestCase
             ->with('TESTSECRET123456', '')
             ->willReturn(false);
 
-        $result = self::$auth->login($token);
-        $this->assertEmpty($result, 'login should return empty array when TOTP verification fails');
+        $this->expectException(TotpError::class);
+        self::$auth->login($token);
     }
 
     public function testUpdate(): void
