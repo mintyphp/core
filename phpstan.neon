@@ -3,5 +3,3 @@ parameters:
     paths:
         - src
         - tests
-    ignoreErrors:
-        - '#Constructor of class MintyPHP\\Core\\NoPassAuth has an unused parameter \$(session|router)\.#'
