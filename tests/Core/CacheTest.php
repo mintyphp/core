@@ -348,50 +348,18 @@ class CacheTest extends TestCase
 
     public function testExpiration(): void
     {
-        // Create a mock Memcached that simulates expiration
-        $mockMemcached = $this->createMock(Memcached::class);
-        $storage = [];
-        $expirations = [];
-
-        // Mock set to store expiration time
-        $mockMemcached->method('set')->willReturnCallback(
-            function ($key, $value, $expire) use (&$storage, &$expirations) {
-                $storage[$key] = $value;
-                $expirations[$key] = $expire > 0 ? time() + $expire : 0;
-                return true;
-            }
-        );
-
-        // Mock get to check expiration
-        $mockMemcached->method('get')->willReturnCallback(
-            function ($key) use (&$storage, &$expirations) {
-                if (!isset($storage[$key])) {
-                    return false;
-                }
-                // Check if expired
-                if (isset($expirations[$key]) && $expirations[$key] > 0 && $expirations[$key] < time()) {
-                    unset($storage[$key]);
-                    unset($expirations[$key]);
-                    return false;
-                }
-                return $storage[$key];
-            }
-        );
-
-        $cache = new Cache('test_expire_', '127.0.0.1:11211', $mockMemcached);
-
-        // Set a key with 1 second expiration
-        $cache->set('expiring_key', 'value', 1);
+        // Test that expiration works (set a key with 1 second expiration)
+        self::$cache->set('expiring_key', 'value', 1);
 
         // Should exist immediately
-        $value = $cache->get('expiring_key');
+        $value = self::$cache->get('expiring_key');
         $this->assertEquals('value', $value);
 
-        // Simulate time passing by setting expiration in the past
-        $expirations['test_expire_expiring_key'] = time() - 1;
+        // Wait 1 second
+        sleep(1);
 
         // Should be expired now
-        $value = $cache->get('expiring_key');
+        $value = self::$cache->get('expiring_key');
         $this->assertFalse($value);
     }
 }
