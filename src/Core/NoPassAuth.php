@@ -288,7 +288,9 @@ class NoPassAuth
                 if (!$this->totp->verify(is_string($totpSecret) ? $totpSecret : '', $totp ?: '')) {
                     throw new TotpError($usernameStr);
                 }
-                session_regenerate_id(true);
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_regenerate_id(true);
+                }
                 $_SESSION['user'] = $user[$table];
                 if ($rememberMe) {
                     $this->doRemember($usernameStr);
@@ -317,7 +319,9 @@ class NoPassAuth
                 unset($_SESSION[$key]);
             }
         }
-        session_regenerate_id(true);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
         $this->unRemember();
         return true;
     }
