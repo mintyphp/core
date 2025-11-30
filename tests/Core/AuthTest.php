@@ -73,6 +73,9 @@ class AuthTest extends TestCase
         $this->assertNotFalse($registered, 'user not registered');
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testLogin(): void
     {
         $this->assertNotNull(self::$auth);
@@ -92,6 +95,9 @@ class AuthTest extends TestCase
         $this->assertArrayHasKey('users', $result);
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testLoginTotpFailure(): void
     {
         $this->assertNotNull(self::$auth);

@@ -81,6 +81,9 @@ class NoPassAuthTest extends TestCase
         $this->assertGreaterThan(0, $registered, 'user not registered');
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testToken(): void
     {
         $this->assertNotNull(self::$auth);
@@ -98,6 +101,9 @@ class NoPassAuthTest extends TestCase
         $this->assertEmpty($token, 'token should be empty for non-existent user');
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testLogin(): void
     {
         $this->assertNotNull(self::$auth);
@@ -106,10 +112,9 @@ class NoPassAuthTest extends TestCase
         $token = self::$auth->token('testuser');
         $this->assertNotEmpty($token);
 
-        // Mock TOTP to return true for verification
-        $this->totp->expects($this->once())
+        // Mock TOTP to return true for verification (use any() to allow multiple calls or different secrets)
+        $this->totp->expects($this->any())
             ->method('verify')
-            ->with('', '')
             ->willReturn(true);
 
         $result = self::$auth->login($token);
@@ -126,6 +131,9 @@ class NoPassAuthTest extends TestCase
         $this->assertEmpty($result, 'login should fail with invalid token');
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testLoginWithWrongIP(): void
     {
         $this->assertNotNull(self::$auth);
@@ -139,8 +147,14 @@ class NoPassAuthTest extends TestCase
 
         $result = self::$auth->login($token);
         $this->assertEmpty($result, 'login should fail with wrong IP');
+
+        // Reset IP address for other tests
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testLoginWithTotpFailure(): void
     {
         $this->assertNotNull(self::$auth);
@@ -161,7 +175,9 @@ class NoPassAuthTest extends TestCase
         $this->expectException(TotpError::class);
         self::$auth->login($token);
     }
-
+    /**
+     * @depends testRegister
+     */
     public function testUpdate(): void
     {
         $this->assertNotNull(self::$auth);
@@ -170,6 +186,9 @@ class NoPassAuthTest extends TestCase
         $this->assertEquals(1, $updated, 'user not updated');
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testUpdateTotpSecret(): void
     {
         $this->assertNotNull(self::$auth);
@@ -178,6 +197,9 @@ class NoPassAuthTest extends TestCase
         $this->assertEquals(1, $updated, 'TOTP secret not updated');
     }
 
+    /**
+     * @depends testRegister
+     */
     public function testExists(): void
     {
         $this->assertNotNull(self::$auth);

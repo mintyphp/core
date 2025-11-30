@@ -111,7 +111,7 @@ class TemplateTest extends TestCase
 
     public function testNoEscape(): void
     {
-        self::$template = new Template('none');
-        $this->assertEquals('<script>alert("xss")</script>', self::$template->render('{{a|raw}}', ['a' => '<script>alert("xss")</script>'], []));
+        $template = new Template('none');
+        $this->assertEquals('<script>alert("xss")</script>', $template->render('{{a|raw}}', ['a' => '<script>alert("xss")</script>'], []));
     }
 }
