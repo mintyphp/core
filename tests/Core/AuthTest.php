@@ -36,15 +36,10 @@ class AuthTest extends TestCase
 
         // Drop and recreate users table
         self::$db->query('DROP TABLE IF EXISTS `users`;');
-        self::$db->query('CREATE TABLE `users` (
-			`id` int(11) NOT NULL AUTO_INCREMENT,
-			`username` varchar(255) COLLATE utf8_bin NOT NULL,
-			`password` varchar(255) COLLATE utf8_bin NOT NULL,
-            `totp_secret` varchar(255) COLLATE utf8_bin DEFAULT NULL,
-			`created` datetime NOT NULL,
-			PRIMARY KEY (`id`),
-			UNIQUE KEY `username` (`username`)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;');
+        // Read schema file containing users table creation
+        $schema = file_get_contents(__DIR__ . '/../Schemas/Auth.sql') ?: '';
+        // Execute schema to create users table
+        self::$db->query($schema);
     }
 
     public function setUp(): void
