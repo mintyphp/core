@@ -5,7 +5,6 @@ namespace MintyPHP\Core;
 use MintyPHP\Core\DB;
 use MintyPHP\Core\Token;
 use MintyPHP\Core\Totp;
-use MintyPHP\Error\TotpError;
 
 /**
  * Passwordless Authentication for MintyPHP
@@ -294,7 +293,7 @@ class NoPassAuth
             if ($claims && $claims['user'] == $usernameStr && $claims['ip'] == $_SERVER['REMOTE_ADDR']) {
                 $totpSecret = $user[$table][$this->totpSecretField] ?? '';
                 if (!$this->totp->verify(is_string($totpSecret) ? $totpSecret : '', $totp ?: '')) {
-                    throw new TotpError($usernameStr);
+                    return [];
                 }
                 $this->session->regenerate();
                 $_SESSION['user'] = $user[$table];
