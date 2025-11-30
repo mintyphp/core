@@ -52,6 +52,7 @@ class NoPassAuth
         return self::$instance ??= new CoreNoPassAuth(
             DB::getInstance(),
             Totp::getInstance(),
+            Session::getInstance(),
             self::$usersTable,
             self::$usernameField,
             self::$passwordField,

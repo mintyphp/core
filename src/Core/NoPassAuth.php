@@ -58,10 +58,16 @@ class NoPassAuth
     private Totp $totp;
 
     /**
+     * Session instance for managing user sessions.
+     */
+    private Session $session;
+
+    /**
      * Constructor for the NoPassAuth class.
      * 
      * @param DB $db Database instance for executing queries.
      * @param Totp $totp Totp instance for handling TOTP verification.
+     * @param Session $session Session instance for managing user sessions.
      * @param string $usersTable Name of the users table.
      * @param string $usernameField Name of the username field.
      * @param string $passwordField Name of the password field (used as secret for tokens).
@@ -78,6 +84,7 @@ class NoPassAuth
     public function __construct(
         DB $db,
         Totp $totp,
+        Session $session,
         string $usersTable = 'users',
         string $usernameField = 'username',
         string $passwordField = 'password',
@@ -93,6 +100,7 @@ class NoPassAuth
     ) {
         $this->db = $db;
         $this->totp = $totp;
+        $this->session = $session;
         $this->usersTable = $usersTable;
         $this->usernameField = $usernameField;
         $this->passwordField = $passwordField;
@@ -181,7 +189,7 @@ class NoPassAuth
             $username = $user[$table][$this->usernameField];
             $hash = $user[$table][$this->rememberTokenField] ?? '';
             if (is_string($hash) && password_verify($token, $hash)) {
-                session_regenerate_id(true);
+                $this->session->regenerate();
                 $_SESSION['user'] = $user[$table];
                 return true;
             }
@@ -288,9 +296,7 @@ class NoPassAuth
                 if (!$this->totp->verify(is_string($totpSecret) ? $totpSecret : '', $totp ?: '')) {
                     throw new TotpError($usernameStr);
                 }
-                if (session_status() === PHP_SESSION_ACTIVE) {
-                    session_regenerate_id(true);
-                }
+                $this->session->regenerate();
                 $_SESSION['user'] = $user[$table];
                 if ($rememberMe) {
                     $this->doRemember($usernameStr);
@@ -319,9 +325,7 @@ class NoPassAuth
                 unset($_SESSION[$key]);
             }
         }
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_regenerate_id(true);
-        }
+        $this->session->regenerate();
         $this->unRemember();
         return true;
     }

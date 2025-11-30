@@ -48,11 +48,13 @@ class NoPassAuthTest extends TestCase
     {
         // Create mock instances per test
         $this->totp = $this->createMock(Totp::class);
+        $session = $this->createMock(Session::class);
 
         // Create Core NoPassAuth instance with mocks
         self::$auth = new NoPassAuth(
             self::$db,
             $this->totp,
+            $session,
             'users',
             'username',
             'password',
