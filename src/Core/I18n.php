@@ -42,6 +42,10 @@ class I18n
             'nl' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
             'es' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
             'it' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+            'dk' => ['thousandSeparator' => '.', 'decimalSeparator' => ','],
+            'se' => ['thousandSeparator' => ' ', 'decimalSeparator' => ','],
+            'fi' => ['thousandSeparator' => ' ', 'decimalSeparator' => ','],
+            'pl' => ['thousandSeparator' => ' ', 'decimalSeparator' => ','],
         ],
         'datetime' => [
             'en' => ['date' => 'm/d/Y', 'datetime' => 'm/d/Y H:i:s', 'time' => 'H:i:s'],
@@ -50,6 +54,10 @@ class I18n
             'nl' => ['date' => 'd-m-Y', 'datetime' => 'd-m-Y H:i:s', 'time' => 'H:i:s'],
             'es' => ['date' => 'd/m/Y', 'datetime' => 'd/m/Y H:i:s', 'time' => 'H:i:s'],
             'it' => ['date' => 'd/m/Y', 'datetime' => 'd/m/Y H:i:s', 'time' => 'H:i:s'],
+            'dk' => ['date' => 'd-m-Y', 'datetime' => 'd-m-Y H:i:s', 'time' => 'H:i:s'],
+            'se' => ['date' => 'Y-m-d', 'datetime' => 'Y-m-d H:i:s', 'time' => 'H:i:s'],
+            'fi' => ['date' => 'd.m.Y', 'datetime' => 'd.m.Y H:i:s', 'time' => 'H:i:s'],
+            'pl' => ['date' => 'Y-m-d', 'datetime' => 'Y-m-d H:i:s', 'time' => 'H:i:s'],
         ],
         'weekDays' => [
             'en' => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -58,6 +66,10 @@ class I18n
             'nl' => ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'],
             'es' => ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'],
             'it' => ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'],
+            'dk' => ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'],
+            'se' => ['söndag', 'måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag', 'söndag'],
+            'fi' => ['sunnuntai', 'maanantai', 'tiistai', 'keskiviikko', 'torstai', 'perjantai', 'lauantai', 'sunnuntai'],
+            'pl' => ['niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota', 'niedziela'],
         ],
         'monthNames' => [
             'en' => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -66,6 +78,10 @@ class I18n
             'nl' => ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'],
             'es' => ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
             'it' => ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'],
+            'dk' => ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'december'],
+            'se' => ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'],
+            'fi' => ['tammikuu', 'helmikuu', 'maaliskuu', 'huhtikuu', 'toukokuu', 'kesäkuu', 'heinäkuu', 'elokuu', 'syyskuu', 'lokakuu', 'marraskuu', 'joulukuu'],
+            'pl' => ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'],
         ]
     ];
 
