@@ -2,3 +2,7 @@ composer.phar
 composer.lock
 vendor/
 .phpunit*
+mintyphp
+.vscode/
+.specify/
+.github/

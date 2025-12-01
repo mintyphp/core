@@ -26,7 +26,9 @@ class Debugger
      */
     public static int $history = 10;
     public static bool $enabled = false;
-    public static string $sessionKey = 'debugger';
+    public static string $cookieName = 'minty_debug_session';
+    public static int $retentionHours = 24;
+    public static ?string $storagePath = null;
 
     /**
      * The Debugger instance
@@ -43,7 +45,9 @@ class Debugger
         return self::$instance ??= new CoreDebugger(
             self::$history,
             self::$enabled,
-            self::$sessionKey
+            self::$cookieName,
+            self::$retentionHours,
+            self::$storagePath
         );
     }
 
@@ -177,16 +181,6 @@ class Debugger
     {
         $instance = self::getInstance();
         $instance->logSessionAfter();
-    }
-
-    /**
-     * Get the session key used for storing debugger data
-     * @return string The session key
-     */
-    public static function getSessionKey(): string
-    {
-        $instance = self::getInstance();
-        return $instance->getSessionKey();
     }
 
     /**

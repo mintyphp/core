@@ -137,25 +137,31 @@ class Debugger
      */
     public static int $__history = 10;
     public static bool $__enabled = false;
-    public static string $__sessionKey = 'debugger';
+    public static string $__cookieName = 'minty_debug_session';
+    public static int $__retentionHours = 24;
+    public static ?string $__storagePath = null;
 
     /**
      * Actual configuration parameters
      */
     private readonly int $history;
     private readonly bool $enabled;
-    private readonly string $sessionKey;
+    private readonly string $cookieName;
+    private readonly int $retentionHours;
+    private readonly string $storagePath;
 
     /**
      * The request data for the current session
      */
     public DebuggerRequest $request;
 
-    public function __construct(int $history, bool $enabled, string $sessionKey)
+    public function __construct(int $history, bool $enabled, string $cookieName, int $retentionHours, ?string $storagePath)
     {
         $this->history = $history;
         $this->enabled = $enabled;
-        $this->sessionKey = $sessionKey;
+        $this->cookieName = $cookieName;
+        $this->retentionHours = $retentionHours;
+        $this->storagePath = $storagePath ?: sys_get_temp_dir() . '/mintyphp-debug';
         // initialize request data
         $this->request = new DebuggerRequest(
             log: [],
@@ -192,6 +198,14 @@ class Debugger
         if (!$this->enabled) {
             return;
         }
+
+        // Initialize storage directory
+        $storagePath = $this->storagePath;
+        $this->ensureDirectory($storagePath);
+
+        // Clean old sessions on initialization
+        $this->cleanHistory();
+
         // only run on first instantiation
         static $run = 0;
         if ($run++ == 1) {
@@ -213,14 +227,7 @@ class Debugger
 
     private function getSessionData(): string
     {
-        $session = [];
-        foreach ($_SESSION as $k => $v) {
-            if ($k == $this->sessionKey) {
-                $v = true;
-            }
-            $session[$k] = $v;
-        }
-        $data = $this->debug($session);
+        $data = $this->debug($_SESSION);
         array_pop($this->request->log);
         if ($data !== null) {
             $pos = strpos($data, "\n");
@@ -248,6 +255,336 @@ class Debugger
             }
         }
         return $result;
+    }
+
+    /**
+     * Generate RFC 4122 version 4 UUID
+     * @return string UUID string like 550e8400-e29b-41d4-a716-446655440000
+     */
+    private function generateUUID(): string
+    {
+        $data = random_bytes(16);
+
+        // Set version (4) - bits 12-15 of 7th byte
+        $data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
+
+        // Set variant (RFC 4122) - bits 6-7 of 9th byte
+        $data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
+
+        return sprintf(
+            '%s-%s-%s-%s-%s',
+            bin2hex(substr($data, 0, 4)),
+            bin2hex(substr($data, 4, 2)),
+            bin2hex(substr($data, 6, 2)),
+            bin2hex(substr($data, 8, 2)),
+            bin2hex(substr($data, 10, 6))
+        );
+    }
+
+    /**
+     * Get or create browser session identifier via cookie
+     * @return string 32-character session identifier
+     */
+    private function getBrowserSessionId(): string
+    {
+        // Check for existing cookie
+        if (isset($_COOKIE[$this->cookieName])) {
+            $identifier = $_COOKIE[$this->cookieName];
+
+            // Validate format (32 chars, alphanumeric + - _)
+            if (preg_match('/^[A-Za-z0-9_-]{32}$/', $identifier)) {
+                return $identifier;
+            }
+        }
+
+        // Generate new identifier: 24 bytes (192 bits) → base64 URL-safe
+        $identifier = rtrim(strtr(base64_encode(random_bytes(24)), '+/', '-_'), '=');
+
+        // Set cookie
+        if (!headers_sent()) {
+            setcookie(
+                name: $this->cookieName,
+                value: $identifier,
+                expires_or_options: [
+                    'expires' => 0,          // Session cookie (browser close)
+                    'path' => '/',
+                    'domain' => '',
+                    'secure' => false,       // Development uses HTTP
+                    'httponly' => true,      // XSS protection
+                    'samesite' => 'Lax',     // CSRF protection
+                ]
+            );
+        }
+
+        return $identifier;
+    }
+
+    /**
+     * Ensure directory exists, create if needed
+     * @param string $path Directory path to ensure
+     * @return bool True if directory exists or was created, false on failure
+     */
+    private function ensureDirectory(string $path): bool
+    {
+        if (is_dir($path)) {
+            return true;
+        }
+
+        // Try to create with 0777, let umask adjust
+        if (@mkdir($path, 0777, true)) {
+            return true;
+        }
+
+        // Log error for developer awareness
+        error_log("MintyPHP Debugger: Failed to create directory: {$path}");
+        return false;
+    }
+
+    /**
+     * Write data to file atomically using write-then-rename pattern
+     * @param string $path File path to write to
+     * @param string $data Data to write
+     * @return bool True on success, false on failure
+     */
+    private function atomicWrite(string $path, string $data): bool
+    {
+        $dir = dirname($path);
+        if (!$this->ensureDirectory($dir)) {
+            return false;
+        }
+
+        // Write to temporary file first
+        $tempPath = $path . '.tmp.' . getmypid();
+        if (@file_put_contents($tempPath, $data) === false) {
+            error_log("MintyPHP Debugger: Failed to write temp file: {$tempPath}");
+            return false;
+        }
+
+        // Atomic rename
+        if (@rename($tempPath, $path)) {
+            return true;
+        }
+
+        // Cleanup temp file on failure
+        @unlink($tempPath);
+        error_log("MintyPHP Debugger: Failed to rename {$tempPath} to {$path}");
+        return false;
+    }
+
+    /**
+     * Get file path for request data
+     * @param string $uuid Request UUID
+     * @return string File path like /tmp/mintyphp-debug/{sessionId}/{uuid}.json
+     */
+    private function getRequestPath(string $uuid): string
+    {
+        $storagePath = $this->storagePath;
+        $sessionId = $this->getBrowserSessionId();
+        return "{$storagePath}/{$sessionId}/{$uuid}.json";
+    }
+
+    /**
+     * Get file path for history data
+     * @return string File path like /tmp/mintyphp-debug/{sessionId}/history.json
+     */
+    private function getHistoryPath(): string
+    {
+        $storagePath = $this->storagePath;
+        $sessionId = $this->getBrowserSessionId();
+        return "{$storagePath}/{$sessionId}/history.json";
+    }
+
+    /**
+     * Read history file with shared lock
+     * @return array<string> Array of UUIDs, most recent first
+     */
+    private function readHistory(): array
+    {
+        $historyPath = $this->getHistoryPath();
+
+        if (!file_exists($historyPath)) {
+            return [];
+        }
+
+        $fp = @fopen($historyPath, 'r');
+        if ($fp === false) {
+            error_log("MintyPHP Debugger: Failed to open history file: {$historyPath}");
+            return [];
+        }
+
+        // Shared lock with timeout
+        $timeout = microtime(true) + 0.1; // 100ms timeout
+        while (!flock($fp, LOCK_SH | LOCK_NB)) {
+            if (microtime(true) > $timeout) {
+                fclose($fp);
+                error_log("MintyPHP Debugger: Timeout acquiring shared lock on history");
+                return [];
+            }
+            usleep(1000); // 1ms
+        }
+
+        $contents = stream_get_contents($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+
+        if ($contents === false) {
+            return [];
+        }
+
+        $history = json_decode($contents, true);
+        return is_array($history) ? $history : [];
+    }
+
+    /**
+     * Write history file with exclusive lock
+     * @param array<string> $history Array of UUIDs
+     * @return bool True on success, false on failure
+     */
+    private function writeHistory(array $history): bool
+    {
+        $historyPath = $this->getHistoryPath();
+        $dir = dirname($historyPath);
+
+        if (!$this->ensureDirectory($dir)) {
+            return false;
+        }
+
+        $fp = @fopen($historyPath, 'c+');
+        if ($fp === false) {
+            error_log("MintyPHP Debugger: Failed to open history file for writing: {$historyPath}");
+            return false;
+        }
+
+        // Exclusive lock with timeout
+        $timeout = microtime(true) + 0.1; // 100ms timeout
+        while (!flock($fp, LOCK_EX | LOCK_NB)) {
+            if (microtime(true) > $timeout) {
+                fclose($fp);
+                error_log("MintyPHP Debugger: Timeout acquiring exclusive lock on history");
+                return false;
+            }
+            usleep(1000); // 1ms
+        }
+
+        rewind($fp);
+        ftruncate($fp, 0);
+        $jsonData = json_encode($history, JSON_PRETTY_PRINT);
+        if ($jsonData !== false) {
+            fwrite($fp, $jsonData);
+        }
+        flock($fp, LOCK_UN);
+        fclose($fp);
+
+        return true;
+    }
+
+    /**
+     * Update history file with new UUID and enforce limit
+     * @param string $uuid New request UUID to add
+     * @return bool True on success, false on failure
+     */
+    private function updateHistory(string $uuid): bool
+    {
+        $history = $this->readHistory();
+
+        // Prepend new UUID (most recent first)
+        array_unshift($history, $uuid);
+
+        // Enforce history limit - delete old request files
+        if (count($history) > $this->history) {
+            $toDelete = array_slice($history, $this->history);
+            $history = array_slice($history, 0, $this->history);
+
+            // Delete old request files
+            foreach ($toDelete as $oldUuid) {
+                $this->deleteRequestFile($oldUuid);
+            }
+        }
+
+        return $this->writeHistory($history);
+    }
+
+    /**
+     * Delete a request file by UUID
+     * @param string $uuid Request UUID
+     * @return bool True on success, false on failure
+     */
+    private function deleteRequestFile(string $uuid): bool
+    {
+        $requestPath = $this->getRequestPath($uuid);
+
+        if (file_exists($requestPath)) {
+            if (@unlink($requestPath)) {
+                return true;
+            }
+            error_log("MintyPHP Debugger: Failed to delete request file: {$requestPath}");
+            return false;
+        }
+
+        return true; // Already deleted or never existed
+    }
+
+    /**
+     * Clean old debug sessions older than retention period
+     * Removes session directories and history files for expired sessions
+     * @return void
+     */
+    private function cleanHistory(): void
+    {
+        $storagePath = $this->storagePath;
+
+        if (!is_dir($storagePath)) {
+            return;
+        }
+
+        $cutoffTime = time() - ($this->retentionHours * 3600);
+
+        // Scan for session directories
+        $entries = @scandir($storagePath);
+        if ($entries === false) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $fullPath = "{$storagePath}/{$entry}";
+
+            // Handle session history files (session-*.json)
+            if (is_file($fullPath) && preg_match('/^session-[A-Za-z0-9_-]{32}\.json$/', $entry)) {
+                $mtime = @filemtime($fullPath);
+                if ($mtime !== false && $mtime < $cutoffTime) {
+                    @unlink($fullPath);
+                }
+                continue;
+            }
+
+            // Handle session directories (32-char session IDs)
+            if (is_dir($fullPath) && preg_match('/^[A-Za-z0-9_-]{32}$/', $entry)) {
+                $mtime = @filemtime($fullPath);
+                if ($mtime !== false && $mtime < $cutoffTime) {
+                    // Delete all request files in the directory
+                    $requestFiles = @scandir($fullPath);
+                    if ($requestFiles !== false) {
+                        foreach ($requestFiles as $requestFile) {
+                            if ($requestFile !== '.' && $requestFile !== '..') {
+                                @unlink("{$fullPath}/{$requestFile}");
+                            }
+                        }
+                    }
+                    // Remove the empty directory
+                    @rmdir($fullPath);
+
+                    // Remove corresponding history file
+                    $historyFile = "{$storagePath}/session-{$entry}.json";
+                    if (file_exists($historyFile)) {
+                        @unlink($historyFile);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -355,15 +692,6 @@ class Debugger
     }
 
     /**
-     * Get the session key used for storing debugger data
-     * @return string The session key
-     */
-    public function getSessionKey(): string
-    {
-        return $this->sessionKey;
-    }
-
-    /**
      * Finalize and store the debugger data at the end of the request
      * @param string $type The type of request completion (e.g., 'ok', 'abort')
      * @return void
@@ -384,10 +712,23 @@ class Debugger
         $this->request->memory = memory_get_peak_usage(true);
         $this->request->classes = $this->getLoadedFiles();
 
-        // store in session
-        $_SESSION[$this->sessionKey][] = $this->request;
-        while (count($_SESSION[$this->sessionKey]) > $this->history) {
-            array_shift($_SESSION[$this->sessionKey]);
+        // Generate UUID for this request
+        $uuid = $this->generateUUID();
+
+        // Store request data to filesystem
+        $requestPath = $this->getRequestPath($uuid);
+        $jsonData = json_encode($this->request, JSON_PRETTY_PRINT);
+        if ($jsonData !== false) {
+            if (!$this->atomicWrite($requestPath, $jsonData)) {
+                error_log("MintyPHP Debugger: Failed to write request file: {$requestPath}");
+                // Continue execution - graceful degradation
+            }
+        }
+
+        // Update history file
+        if (!$this->updateHistory($uuid)) {
+            error_log("MintyPHP Debugger: Failed to update history");
+            // Continue execution - graceful degradation
         }
     }
 

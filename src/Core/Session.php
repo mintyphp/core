@@ -114,20 +114,10 @@ class Session
                 session_id($this->sessionId);
             }
             session_start();
-            if (!$this->enabled && $this->debugger !== null) {
-                foreach ($_SESSION as $k => $v) {
-                    if ($k != $this->debugger->getSessionKey()) {
-                        unset($_SESSION[$k]);
-                    }
-                }
-            }
         }
         $this->started = true;
 
         if ($this->debugger !== null) {
-            if (!isset($_SESSION[$this->debugger->getSessionKey()])) {
-                $_SESSION[$this->debugger->getSessionKey()] = [];
-            }
             $this->debugger->logSessionBefore();
         }
     }

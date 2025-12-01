@@ -12,7 +12,7 @@ class DebuggerTest extends TestCase
     protected function setUp(): void
     {
         // Create debugger instance
-        $this->debugger = new Debugger(10, true, 'test_debugger_key');
+        $this->debugger = new Debugger(10, true, 'test_debugger_key', 24, '/tmp/minty_debug');
     }
 
     public function testDebuggerConstruction(): void
@@ -22,7 +22,7 @@ class DebuggerTest extends TestCase
 
     public function testIsEnabledReturnsFalse(): void
     {
-        $this->debugger = new Debugger(10, false, 'test_debugger_key');
+        $this->debugger = new Debugger(10, false, 'test_debugger_key', 24, '/tmp/minty_debug');
         $this->assertFalse($this->debugger->isEnabled());
     }
 
@@ -50,7 +50,7 @@ class DebuggerTest extends TestCase
     }
     public function testDebugReturnsEmptyStringWhenDisabled(): void
     {
-        $this->debugger = new Debugger(10, false, 'test_debugger_disabled');
+        $this->debugger = new Debugger(10, false, 'test_debugger_disabled', 24, '/tmp/minty_debug');
         $result = $this->debugger->debug(['test' => 'data']);
         $this->assertEquals('', $result);
     }
@@ -120,18 +120,6 @@ class DebuggerTest extends TestCase
         $this->assertStringContainsString('stdClass', $result);
         // Should handle circular references without infinite loop
         $this->assertIsString($result);
-    }
-
-    public function testStaticConfiguration(): void
-    {
-        // Verify static configuration was set
-        \MintyPHP\Debugger::$sessionKey = 'test_configuration_key';
-        // Reset instance to apply new config
-        \MintyPHP\Debugger::setInstance(null);
-        // Get new instance
-        $this->debugger = \MintyPHP\Debugger::getInstance();
-        // Verify the configuration
-        $this->assertEquals('test_configuration_key', $this->debugger->getSessionKey());
     }
 
     public function testEnd(): void
