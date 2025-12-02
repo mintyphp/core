@@ -29,8 +29,6 @@ class Router
     public static string $templateRoot = 'templates/';
     public static bool $executeRedirect = true;
     /** @var array<string, string> */
-    public static array $serverGlobal = [];
-    /** @var array<string, string> */
     public static array $routes = [];
 
     /**
@@ -51,8 +49,8 @@ class Router
             self::$pageRoot,
             self::$templateRoot,
             self::$executeRedirect,
-            self::$serverGlobal,
             self::$routes,
+            null,
             Debugger::$enabled ? Debugger::getInstance() : null
         );
     }

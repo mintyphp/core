@@ -72,6 +72,16 @@ class Debugger
     }
 
     /**
+     * Get all requests from history
+     * @return array<int,\MintyPHP\Core\Debugger\Request> Array of request objects, most recent first
+     */
+    public static function getHistory(): array
+    {
+        $instance = self::getInstance();
+        return $instance->getHistory();
+    }
+
+    /**
      * Add a cache call entry to the debugger log
      * @param float $duration The duration of the cache call
      * @param string $command The cache command executed

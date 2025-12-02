@@ -2,127 +2,12 @@
 
 namespace MintyPHP\Core;
 
-class DebuggerApiCallResult
-{
-    public function __construct(
-        public int $status,
-        /** @var array<string,string> */
-        public array $headers,
-        public string $data,
-        public string $url,
-    ) {}
-}
-
-class DebuggerCacheCall
-{
-    public function __construct(
-        public float $duration,
-        public string $command,
-        /** @var array<mixed> */
-        public array $arguments,
-        /** @var mixed */
-        public mixed $result
-    ) {}
-}
-
-class DebuggerSessionStates
-{
-    public function __construct(
-        public string $before,
-        public string $after,
-    ) {}
-}
-
-class DebuggerApiCallTiming
-{
-    public function __construct(
-        public float $nameLookup,
-        public float $connect,
-        public float $preTransfer,
-        public float $startTransfer,
-        public float $redirect,
-        public float $total,
-    ) {}
-}
-
-class DebuggerApiCall
-{
-    public function __construct(
-        public float $duration,
-        public string $method,
-        public string $url,
-        /** @var array<string,mixed> */
-        public array $data,
-        /** @var array<string,mixed> */
-        public array $options,
-        /** @var array<string,string> */
-        public array $headers,
-        public int $status,
-        /** @var array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} */
-        public array $timing,
-        public mixed $result,
-    ) {}
-}
-
-class DebuggerQuery
-{
-    public function __construct(
-        public float $duration,
-        public string $query,
-        public string $equery,
-        /** @var array<int|string, mixed> */
-        public array $params,
-        /** @var mixed */
-        public mixed $result,
-        /** @var mixed */
-        public mixed $explain,
-    ) {}
-}
-
-class DebuggerRoute
-{
-    public function __construct(
-        public string $method,
-        public bool $csrfOk,
-        public string $request,
-        public string $url,
-        public string $dir,
-        public string $viewFile,
-        public string $actionFile,
-        public string $templateFile,
-        /** @var array<string,mixed> */
-        public array $urlParameters,
-        /** @var array<string,mixed> */
-        public array $getParameters,
-        /** @var array<string,mixed> */
-        public array $postParameters
-    ) {}
-}
-
-class DebuggerRequest
-{
-    public function __construct(
-        /** @var array<string> */
-        public array $log,
-        /** @var array<DebuggerQuery> */
-        public array $queries,
-        /** @var array<DebuggerApiCall> */
-        public array $apiCalls,
-        public DebuggerSessionStates $session,
-        /** @var array<DebuggerCacheCall> */
-        public array $cache,
-        public float $start,
-        public int $status,
-        public string $user,
-        public string $type,
-        public float $duration,
-        public int $memory,
-        /** @var array<string> */
-        public array $classes,
-        public DebuggerRoute $route,
-        public string $redirect,
-    ) {}
-}
+use MintyPHP\Core\Debugger\ApiCall;
+use MintyPHP\Core\Debugger\CacheCall;
+use MintyPHP\Core\Debugger\Request;
+use MintyPHP\Core\Debugger\Route;
+use MintyPHP\Core\Debugger\SessionStates;
+use MintyPHP\Core\Debugger\Query;
 
 /**
  * Debugger class for development and debugging support.
@@ -153,7 +38,7 @@ class Debugger
     /**
      * The request data for the current session
      */
-    public DebuggerRequest $request;
+    public Request $request;
 
     public function __construct(int $history, bool $enabled, string $cookieName, int $retentionHours, ?string $storagePath)
     {
@@ -163,11 +48,11 @@ class Debugger
         $this->retentionHours = $retentionHours;
         $this->storagePath = $storagePath ?: sys_get_temp_dir() . '/mintyphp-debug';
         // initialize request data
-        $this->request = new DebuggerRequest(
+        $this->request = new Request(
             log: [],
             queries: [],
             apiCalls: [],
-            session: new DebuggerSessionStates(
+            session: new SessionStates(
                 before: '',
                 after: '',
             ),
@@ -179,7 +64,7 @@ class Debugger
             duration: 0.0,
             memory: 0,
             classes: [],
-            route: new DebuggerRoute(
+            route: new Route(
                 method: '',
                 csrfOk: false,
                 request: '',
@@ -401,7 +286,6 @@ class Debugger
     private function readHistory(): array
     {
         $historyPath = $this->getHistoryPath();
-
         if (!file_exists($historyPath)) {
             return [];
         }
@@ -525,6 +409,97 @@ class Debugger
     }
 
     /**
+     * Get all requests from history
+     * @return array<int,\MintyPHP\Core\Debugger\Request> Array of request objects, most recent first
+     */
+    public function getHistory(): array
+    {
+        $history = $this->readHistory();
+        $requests = [];
+
+        foreach ($history as $uuid) {
+            $requestPath = $this->getRequestPath($uuid);
+
+            if (!file_exists($requestPath)) {
+                continue;
+            }
+
+            $contents = @file_get_contents($requestPath);
+            if ($contents === false) {
+                continue;
+            }
+
+            $data = json_decode($contents, true);
+            if (!is_array($data)) {
+                continue;
+            }
+
+            // Reconstruct Request object from JSON data
+            try {
+                $request = new Request(
+                    log: $data['log'] ?? [],
+                    queries: array_map(fn($q) => new Query(
+                        $q['duration'],
+                        $q['query'],
+                        $q['equery'],
+                        $q['params'],
+                        $q['result'],
+                        $q['explain']
+                    ), $data['queries'] ?? []),
+                    apiCalls: array_map(fn($a) => new ApiCall(
+                        $a['duration'],
+                        $a['method'],
+                        $a['url'],
+                        $a['data'],
+                        $a['options'],
+                        $a['headers'],
+                        $a['status'],
+                        $a['timing'],
+                        $a['result']
+                    ), $data['apiCalls'] ?? []),
+                    session: new SessionStates(
+                        $data['session']['before'] ?? '',
+                        $data['session']['after'] ?? ''
+                    ),
+                    cache: array_map(fn($c) => new CacheCall(
+                        $c['duration'],
+                        $c['command'],
+                        $c['arguments'],
+                        $c['result']
+                    ), $data['cache'] ?? []),
+                    start: $data['start'] ?? 0.0,
+                    status: $data['status'] ?? 0,
+                    user: $data['user'] ?? '',
+                    type: $data['type'] ?? '',
+                    duration: $data['duration'] ?? 0.0,
+                    memory: $data['memory'] ?? 0,
+                    classes: $data['classes'] ?? [],
+                    route: new Route(
+                        $data['route']['method'] ?? '',
+                        $data['route']['csrfOk'] ?? false,
+                        $data['route']['request'] ?? '',
+                        $data['route']['url'] ?? '',
+                        $data['route']['dir'] ?? '',
+                        $data['route']['viewFile'] ?? '',
+                        $data['route']['actionFile'] ?? '',
+                        $data['route']['templateFile'] ?? '',
+                        $data['route']['urlParameters'] ?? [],
+                        $data['route']['getParameters'] ?? [],
+                        $data['route']['postParameters'] ?? []
+                    ),
+                    redirect: $data['redirect'] ?? ''
+                );
+
+                $requests[] = $request;
+            } catch (\Throwable $e) {
+                error_log("MintyPHP Debugger: Failed to reconstruct request from {$requestPath}: {$e->getMessage()}");
+                continue;
+            }
+        }
+        return $requests;
+    }
+
+    /**
      * Clean old debug sessions older than retention period
      * Removes session directories and history files for expired sessions
      * @return void
@@ -597,7 +572,7 @@ class Debugger
      */
     public function addCacheCall(float $duration, string $command, array $arguments, mixed $result): void
     {
-        $this->request->cache[] = new DebuggerCacheCall($duration, $command, $arguments, $result);
+        $this->request->cache[] = new CacheCall($duration, $command, $arguments, $result);
     }
 
     /**
@@ -615,7 +590,7 @@ class Debugger
      */
     public function addApiCall(float $duration, string $method, string $url, mixed $data, array $options, array $headers, int $status, array $timing, mixed $result): void
     {
-        $this->request->apiCalls[] = new DebuggerApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
+        $this->request->apiCalls[] = new ApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
     }
 
     /**
@@ -630,7 +605,7 @@ class Debugger
      */
     public function addQuery(float $duration, string $query, string $equery, array $arguments, mixed $result, mixed $explain): void
     {
-        $this->request->queries[] = new DebuggerQuery($duration, $query, $equery, $arguments, $result, $explain);
+        $this->request->queries[] = new Query($duration, $query, $equery, $arguments, $result, $explain);
     }
 
     /**
@@ -650,7 +625,7 @@ class Debugger
      */
     public function setRoute(string $method, bool $csrfOk, string $request, string $url, string $dir, string $viewFile, string $actionFile, string $templateFile, array $urlParameters, array $getParameters, array $postParameters): void
     {
-        $this->request->route = new DebuggerRoute($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $urlParameters, $getParameters, $postParameters);
+        $this->request->route = new Route($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $urlParameters, $getParameters, $postParameters);
     }
 
     /**
@@ -755,9 +730,7 @@ class Debugger
         $parts[] = round((float)$this->request->duration * 1000) . ' ms ';
         $parts[] = round((float)$this->request->memory / 1000000) . ' MB';
         $html .= implode(' - ', $parts) . ' - <a href="debugger/">debugger</a>';
-        if (isset($_SERVER['SERVER_SOFTWARE']) && substr($_SERVER['SERVER_SOFTWARE'], 0, 4) == 'PHP ') {
-            $html .= ' - <a href="/adminer.php">adminer</a>';
-        }
+        $html .= ' - <a href="/adminer.php">adminer</a>';
         $html .= '</div></div>';
         echo $html;
     }

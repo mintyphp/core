@@ -20,8 +20,6 @@ class Router
 	public static string $__templateRoot = 'templates/';
 	public static bool $__executeRedirect = true;
 	/** @var array<string, string> */
-	public static array $__serverGlobal = [];
-	/** @var array<string, string> */
 	public static array $__routes = [];
 
 	/**
@@ -32,9 +30,9 @@ class Router
 	private readonly string $templateRoot;
 	private readonly bool $executeRedirect;
 	/** @var array<string, string> */
-	private readonly array $serverGlobal;
-	/** @var array<string, string> */
 	private readonly array $routes;
+	/** @var array<string, string> */
+	private readonly array $serverGlobal;
 
 	/**
 	 * Session instance for managing user sessions
@@ -68,8 +66,9 @@ class Router
 	 * @param string $pageRoot
 	 * @param string $templateRoot
 	 * @param bool $executeRedirect
-	 * @param array<string, string> $serverGlobal
 	 * @param array<string, string> $routes
+	 * @param ?array<string, string> $serverGlobal
+	 * @param Debugger|null $debugger
 	 */
 	public function __construct(
 		Session $session,
@@ -77,8 +76,8 @@ class Router
 		string $pageRoot,
 		string $templateRoot,
 		bool $executeRedirect,
-		array $serverGlobal,
 		array $routes = [],
+		?array $serverGlobal = null,
 		?Debugger $debugger = null
 	) {
 		$this->session = $session;
@@ -86,8 +85,8 @@ class Router
 		$this->pageRoot = $pageRoot;
 		$this->templateRoot = $templateRoot;
 		$this->executeRedirect = $executeRedirect;
-		$this->serverGlobal = $serverGlobal;
 		$this->routes = $routes;
+		$this->serverGlobal = $serverGlobal ?? $_SERVER;
 		$this->debugger = $debugger;
 		$this->method = $this->serverGlobal['REQUEST_METHOD'] ?? 'GET';
 		$this->request = $this->serverGlobal['REQUEST_URI'] ?? '/';
