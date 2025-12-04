@@ -112,7 +112,7 @@ class DB
                 $explain = false;
             }
             $equery = $this->mysqli->real_escape_string($query);
-            $this->debugger->addQuery($duration, $query, $equery, $arguments, $result, $explain);
+            $this->debugger->addQuery($duration, $query, $equery, $params, $result, $explain);
         }
         return $result;
     }

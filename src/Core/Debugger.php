@@ -440,7 +440,7 @@ class Debugger
                         $q['duration'],
                         $q['query'],
                         $q['equery'],
-                        $q['params'],
+                        $q['arguments'],
                         $q['result'],
                         $q['explain']
                     ), $data['queries'] ?? []),
