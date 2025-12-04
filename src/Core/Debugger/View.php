@@ -19,9 +19,8 @@ class View
         $html[] = '</div>';
         $html[] = '<div class="col-md-8">';
         $html[] = '<div class="tab-content">';
-        $last = count($requests) - 1;
         foreach ($requests as $i => $request):
-            $html[] = '<div class="tab-pane ' . ($i == $last ? 'active' : '') . '" id="debug-request-' . $i . '">';
+            $html[] = '<div class="tab-pane ' . ($i == 0 ? 'active' : '') . '" id="debug-request-' . $i . '">';
             $html[] = $this->getTabList($i);
             $html[] = '<div class="tab-content">';
             $html[] = $this->getRoutingTabPane($i, $request);
@@ -71,13 +70,12 @@ class View
     {
         $html = array();
         $html[] = '<ul class="nav nav-pills nav-stacked">';
-        $last = count($requests) - 1;
         /** @var Request $request */
         foreach ($requests as $i => $request) {
             if (!isset($request->status)) {
                 continue;
             }
-            $active = ($i == $last ? 'active' : '');
+            $active = ($i == 0 ? 'active' : '');
             $html[] = '<li class="' . $active . '"><a href="#debug-request-' . $i . '" data-toggle="tab">';
             $html[] = $this->getRequestCaption($request);
             $html[] = '</a></li>';
