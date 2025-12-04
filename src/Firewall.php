@@ -49,7 +49,8 @@ class Firewall
             self::$spinLockSeconds,
             self::$intervalSeconds,
             self::$cachePrefix,
-            self::$reverseProxy
+            self::$reverseProxy,
+            null
         );
     }
 
@@ -63,12 +64,28 @@ class Firewall
         self::$instance = $instance;
     }
 
+    /**
+     * Start the firewall check
+     * 
+     * Increments the concurrency count for the client IP. If the limit is exceeded,
+     * waits using a spin-lock mechanism until a slot is available or the timeout is reached.
+     * If the timeout is reached, sends a 429 Too Many Requests response and terminates.
+     * 
+     * @return void
+     */
     public static function start(): void
     {
         $instance = self::getInstance();
         $instance->start();
     }
 
+    /**
+     * End the firewall check
+     * 
+     * Decrements the concurrency count for the client IP.
+     * 
+     * @return void
+     */
     public static function end(): void
     {
         $instance = self::getInstance();
