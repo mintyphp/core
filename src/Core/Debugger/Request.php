@@ -7,12 +7,13 @@ class Request
     public function __construct(
         /** @var array<string> */
         public array $log,
-        /** @var array<Query> */
+        /** @var array<int,Query> */
         public array $queries,
-        /** @var array<ApiCall> */
+        /** @var array<int,ApiCall> */
         public array $apiCalls,
-        public SessionStates $session,
-        /** @var array<CacheCall> */
+        public string $sessionBefore,
+        public string $sessionAfter,
+        /** @var array<int,CacheCall> */
         public array $cache,
         public float $start,
         public int $status,

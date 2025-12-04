@@ -142,7 +142,7 @@ class Curl
 
         $result = strval($this->curlExec($ch));
         $status = 0 + $this->curlGetInfo($ch, CURLINFO_HTTP_CODE);
-        $location = $this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL);
+        $effectiveUrl = "" . $this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL);
 
         if (Debugger::$enabled) {
             $timing = [
@@ -179,27 +179,26 @@ class Curl
             }
         }
 
-        $result = [
-            'status' => $status,
-            'headers' => [],
-            'data' => $body,
-            'url' => $location
-        ];
-
+        $responseHeaders = [];
         foreach (explode("\r\n", $head) as $i => $header) {
             if ($i == 0) {
                 continue;
             }
             list($key, $value) = explode(': ', $header);
-            $result['headers'][$key] = $value;
+            $responseHeaders[$key] = $value;
         }
 
         if (Debugger::$enabled) {
             $duration = microtime(true) - $time;
-            Debugger::addApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
+            Debugger::addApiCall($duration, $method, $url, $data, $options, $headers, $timing, $status, $effectiveUrl, $responseHeaders, $body);
         }
 
-        return $result;
+        return [
+            'status' => $status,
+            'headers' => $responseHeaders,
+            'data' => $body,
+            'url' => $effectiveUrl,
+        ];
     }
 
     /**

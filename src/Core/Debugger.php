@@ -52,10 +52,8 @@ class Debugger
             log: [],
             queries: [],
             apiCalls: [],
-            session: new SessionStates(
-                before: '',
-                after: '',
-            ),
+            sessionBefore: '',
+            sessionAfter: '',
             cache: [],
             start: microtime(true),
             status: 0,
@@ -453,14 +451,14 @@ class Debugger
                         $a['data'],
                         $a['options'],
                         $a['headers'],
-                        $a['status'],
                         $a['timing'],
-                        $a['result']
+                        $a['status'],
+                        $a['effectiveUrl'],
+                        $a['responseHeaders'],
+                        $a['body']
                     ), $data['apiCalls'] ?? []),
-                    session: new SessionStates(
-                        $data['session']['before'] ?? '',
-                        $data['session']['after'] ?? ''
-                    ),
+                    sessionBefore: $data['sessionBefore'] ?? '',
+                    sessionAfter: $data['sessionAfter'] ?? '',
                     cache: array_map(fn($c) => new CacheCall(
                         $c['duration'],
                         $c['command'],
@@ -580,17 +578,19 @@ class Debugger
      * @param float $duration The duration of the API call
      * @param string $method The HTTP method used
      * @param string $url The URL called
-     * @param array<string,mixed> $data The data sent with the request
+     * @param string $data The data sent with the request
      * @param array<string,mixed> $options The options used for the request
      * @param array<string,string> $headers The headers sent with the request
-     * @param int $status The HTTP status code returned
      * @param array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} $timing The timing information for the call
-     * @param mixed $result The result returned from the API call
+     * @param int $status The HTTP status code returned
+     * @param string $effectiveUrl The effective URL after redirects
+     * @param array<string,string> $responseHeaders The response headers received
+     * @param string $body The response body received
      * @return void
      */
-    public function addApiCall(float $duration, string $method, string $url, mixed $data, array $options, array $headers, int $status, array $timing, mixed $result): void
+    public function addApiCall(float $duration, string $method, string $url, string $data, array $options, array $headers, array $timing, int $status, string $effectiveUrl, array $responseHeaders, string $body): void
     {
-        $this->request->apiCalls[] = new ApiCall($duration, $method, $url, $data, $options, $headers, $status, $timing, $result);
+        $this->request->apiCalls[] = new ApiCall($duration, $method, $url, $data, $options, $headers, $timing, $status, $effectiveUrl, $responseHeaders, $body);
     }
 
     /**
@@ -654,7 +654,7 @@ class Debugger
      */
     public function logSessionBefore(): void
     {
-        $this->request->session->before = $this->getSessionData();
+        $this->request->sessionBefore = $this->getSessionData();
     }
 
     /**
@@ -663,7 +663,7 @@ class Debugger
      */
     public function logSessionAfter(): void
     {
-        $this->request->session->after = $this->getSessionData();
+        $this->request->sessionAfter = $this->getSessionData();
     }
 
     /**

@@ -40,13 +40,13 @@ class DebuggerTest extends TestCase
     public function testAddApiCall(): void
     {
         $timing = ['nameLookup' => 0.01, 'connect' => 0.02, 'preTransfer' => 0.03, 'startTransfer' => 0.04, 'redirect' => 0.0, 'total' => 0.05];
-        $this->debugger->addApiCall(0.123, 'GET', '/api/items', ['id' => 1], [], ['Authorization' => 'Bearer token'], 200, $timing, 'Fetched successfully');
-        $this->debugger->addApiCall(0.125, 'POST', '/api/items', ['name' => 'item2'], [], ['Authorization' => 'Bearer token'], 200, $timing, 'Created successfully');
-        $this->debugger->addApiCall(0.111, 'DELETE', '/api/items/1', [], [], ['Authorization' => 'Bearer token'], 200, $timing, 'Deleted successfully');
+        $this->debugger->addApiCall(0.123, 'GET', '/api/items', json_encode(['id' => 1]) ?: '', [], ['Authorization' => 'Bearer token'], $timing, 200, '', [], 'Fetched successfully');
+        $this->debugger->addApiCall(0.125, 'POST', '/api/items', json_encode(['name' => 'item2']) ?: '', [], ['Authorization' => 'Bearer token'], $timing, 200, '', [], 'Created successfully');
+        $this->debugger->addApiCall(0.111, 'DELETE', '/api/items/1', json_encode([]) ?: '', [], ['Authorization' => 'Bearer token'], $timing, 200, '', [], 'Deleted successfully');
         $items = $this->debugger->request->apiCalls;
         $this->assertIsArray($items);
         $this->assertCount(3, $items);
-        $this->assertEquals('Deleted successfully', $items[2]->result);
+        $this->assertEquals('Deleted successfully', $items[2]->body);
     }
     public function testDebugReturnsEmptyStringWhenDisabled(): void
     {

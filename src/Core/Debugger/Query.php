@@ -9,7 +9,7 @@ class Query
         public string $query,
         public string $equery,
         /** @var array<int|string, mixed> */
-        public array $params,
+        public array $arguments,
         /** @var mixed */
         public mixed $result,
         /** @var mixed */

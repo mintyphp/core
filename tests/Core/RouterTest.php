@@ -87,7 +87,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $session->expects($this->any())
             ->method('checkCsrfToken')
             ->willReturn(true);
-        return new Router($session, '/', self::$pageRoot, self::$templateRoot, false, $serverGlobal, $routes);
+        return new Router($session, '/', self::$pageRoot, self::$templateRoot, false, $routes, $serverGlobal);
     }
 
     public function testAdmin(): void
