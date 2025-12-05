@@ -59,7 +59,8 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
             'good.phtml' => '<html><body><?php $safe = htmlentities($config["key"]); ?></body></html>',
             'bad_echo.php' => '<?php echo "template action";',
             'bad_print.phtml' => '<?php print "template view";',
-        ];        // Create page files
+        ];
+        // Create page files
         foreach (self::$pages as $file) {
             $path = self::$path . '/pages/' . $file;
             if (!file_exists(dirname($path))) {
