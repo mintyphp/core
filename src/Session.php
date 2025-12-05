@@ -64,30 +64,50 @@ class Session
         self::$instance = $instance;
     }
 
+    /**
+     * Regenerate the session ID and CSRF token
+     * @return void
+     */
     public static function regenerate(): void
     {
         $instance = self::getInstance();
         $instance->regenerate();
     }
 
+    /**
+     * Start the session
+     * @return void
+     */
     public static function start(): void
     {
         $instance = self::getInstance();
         $instance->start();
     }
 
+    /**
+     * End the session
+     * @return void
+     */
     public static function end(): void
     {
         $instance = self::getInstance();
         $instance->end();
     }
 
+    /**
+     * Check the CSRF token from the POST data against the session
+     * @return bool True if the token is valid, false otherwise
+     */
     public static function checkCsrfToken(): bool
     {
         $instance = self::getInstance();
         return $instance->checkCsrfToken();
     }
 
+    /**
+     * Output a hidden input field with the CSRF token
+     * @return void
+     */
     public static function getCsrfInput(): void
     {
         $instance = self::getInstance();

@@ -69,7 +69,7 @@ class Curl
      * @param string|array<mixed> $data Request data
      * @param array<string,string> $headers Additional headers
      * @param array<string,mixed> $options Additional cURL options
-     * @return array<string,mixed> Response array with status, headers, data, and url
+     * @return array{status:int,headers:array<string,string>,data:string,url:string} Response array with status, headers, data, and url
      */
     public static function navigateCached(int $expire, string $method, string $url, mixed $data, array $headers = [], array $options = []): array
     {
@@ -86,7 +86,7 @@ class Curl
      * @param string|array<mixed> $data Request data
      * @param array<string,string> $headers Additional headers
      * @param array<string,mixed> $options Additional cURL options
-     * @return array<string,mixed> Response array with status, headers, data, and url
+     * @return array{status:int,headers:array<string,string>,data:string,url:string} Response array with status, headers, data, and url
      */
     public static function callCached(int $expire, string $method, string $url, mixed $data, array $headers = [], array $options = []): array
     {
@@ -102,7 +102,7 @@ class Curl
      * @param string|array<mixed> $data Request data
      * @param array<string,string> $headers Additional headers
      * @param array<string,mixed> $options Additional cURL options
-     * @return array<string,mixed> Response array with status, headers, data, and url
+     * @return array{status:int,headers:array<string,string>,data:string,url:string} Response array with status, headers, data, and url
      */
     public static function navigate(string $method, string $url, $data = '', array $headers = [], array $options = []): array
     {
@@ -118,7 +118,7 @@ class Curl
      * @param string|array<mixed> $data Request data
      * @param array<string,string> $headers Additional headers
      * @param array<string,mixed> $options Additional cURL options
-     * @return array<string,mixed> Response array with status, headers, data, and url
+     * @return array{status:int,headers:array<string,string>,data:string,url:string} Response array with status, headers, data, and url
      */
     public static function call(string $method, string $url, $data = '', array $headers = [], array $options = []): array
     {

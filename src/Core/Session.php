@@ -45,6 +45,17 @@ class Session
      */
     private bool $ended = false;
 
+    /**
+     * Create a new Session instance
+     * 
+     * @param string $sessionId Optional session ID to use
+     * @param string $sessionName Name of the session cookie
+     * @param string $csrfSessionKey Key in $_SESSION to store CSRF token
+     * @param bool $enabled Whether session management is enabled
+     * @param int $csrfLength Length of the CSRF token in bytes
+     * @param string $sameSite SameSite attribute for session cookie
+     * @param ?Debugger $debugger Optional Debugger instance for logging
+     */
     public function __construct(
         string $sessionId = '',
         string $sessionName = 'mintyphp',
@@ -67,6 +78,10 @@ class Session
         $this->setCsrfToken();
     }
 
+    /**
+     * Set the CSRF token in the session if not already set
+     * @return void
+     */
     private function setCsrfToken(): void
     {
         if (isset($_SESSION[$this->csrfSessionKey])) {
@@ -82,6 +97,10 @@ class Session
         $_SESSION[$this->csrfSessionKey] = bin2hex($buffer);
     }
 
+    /**
+     * Regenerate the session ID and CSRF token
+     * @return void
+     */
     public function regenerate(): void
     {
         if (!$this->enabled) {
@@ -93,6 +112,10 @@ class Session
         $this->setCsrfToken();
     }
 
+    /**
+     * Start the session
+     * @return void
+     */
     public function start(): void
     {
         if ($this->started) {
@@ -122,6 +145,10 @@ class Session
         }
     }
 
+    /**
+     * End the session
+     * @return void
+     */
     public function end(): void
     {
         if ($this->ended) {
@@ -144,6 +171,10 @@ class Session
         }
     }
 
+    /**
+     * Check the CSRF token from the POST data against the session
+     * @return bool True if the token is valid, false otherwise
+     */
     public function checkCsrfToken(): bool
     {
         if (!$this->enabled) {
@@ -157,6 +188,10 @@ class Session
         return $success;
     }
 
+    /**
+     * Output a hidden input field with the CSRF token
+     * @return void
+     */
     public function getCsrfInput(): void
     {
         if (!$this->enabled) {
