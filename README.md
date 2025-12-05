@@ -2,11 +2,13 @@
 
 A lightweight, minimalist PHP framework providing essential components for modern web applications.
 
+MintyPHP will run on any Linux web server running PHP + MySQL + Memcache
+
 ## Requirements
 
 - **PHP**: >= 8.0
 - **Extensions**:
-  - `ext-memcache`: Required for caching functionality
+  - `ext-memcached`: Required for caching functionality
   - `ext-mysqli`: Required for database operations
 
 ## Installation
