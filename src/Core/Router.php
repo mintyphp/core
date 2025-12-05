@@ -201,7 +201,7 @@ class Router
 	 * Apply route mappings to the current request
 	 * @return void
 	 */
-	public function applyRoutes(): void
+	private function applyRoutes(): void
 	{
 		foreach ($this->routes as $sourcePath => $destinationPath) {
 			if (rtrim($this->request, '/') == rtrim($this->baseUrl . $sourcePath, '/')) {

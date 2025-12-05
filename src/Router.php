@@ -113,16 +113,6 @@ class Router
     }
 
     /**
-    	 * Apply route mappings to the current request
-    	 * @return void
-    	 */
-    public static function applyRoutes(): void
-    {
-        $instance = self::getInstance();
-        $instance->applyRoutes();
-    }
-
-    /**
     	 * Get the matched URL path (view or action name with directory)
     	 * @return string The URL path
     	 */
