@@ -70,7 +70,7 @@ class Firewall
             $ips = explode(',', $this->serverGlobal['HTTP_X_FORWARDED_FOR']);
             $ip = array_pop($ips);
         } else {
-            $ip = $this->serverGlobal['REMOTE_ADDR'];
+            $ip = $this->serverGlobal['REMOTE_ADDR'] ?? '';
         }
         return $ip;
     }
