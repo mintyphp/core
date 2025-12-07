@@ -76,7 +76,7 @@ foreach ($classes as $className) {
     }
 
     // Find all static variables starting with __ (public, private, or protected) with optional docblocks
-    preg_match_all('/(\/\*\*(?:(?!\*\/).)*?\*\/\s+)?(public|private|protected)\s+static\s+(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$__([a-zA-Z_]+)\s*=\s*([^;]+);/s', $coreContent, $staticVarMatches, PREG_SET_ORDER);
+    preg_match_all('/(\/\*\*(?:(?!\*\/).)*?\*\/\s+)?(public|private|protected)\s+static\s+(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$__([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^;]+);/s', $coreContent, $staticVarMatches, PREG_SET_ORDER);
 
     $staticVars = [];
     $constructorParams = [];
@@ -116,7 +116,7 @@ foreach ($classes as $className) {
         $params = explode(',', $constructorSignature);
         foreach ($params as $param) {
             $param = trim($param);
-            if (preg_match('/(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$([a-zA-Z_]+)(\s*=\s*[^,]+)?/', $param, $paramMatch)) {
+            if (preg_match('/(\??[a-zA-Z]+(?:\|[a-zA-Z]+)*)\s+\$([a-zA-Z_][a-zA-Z0-9_]*)(\s*=\s*[^,]+)?/', $param, $paramMatch)) {
                 $coreConstructorParams[] = [
                     'type' => $paramMatch[1],
                     'name' => $paramMatch[2],
@@ -182,7 +182,7 @@ foreach ($classes as $className) {
             $paramParts = explode(',', $paramSignature);
             foreach ($paramParts as $paramPart) {
                 $paramPart = trim($paramPart);
-                if (preg_match('/\$([a-zA-Z_]+)/', $paramPart, $paramNameMatch)) {
+                if (preg_match('/\$([a-zA-Z_][a-zA-Z0-9_]*)/', $paramPart, $paramNameMatch)) {
                     $params[] = $paramPart;
                     // Check if this parameter is variadic
                     if (preg_match('/\.\.\.\$' . $paramNameMatch[1] . '/', $paramPart)) {

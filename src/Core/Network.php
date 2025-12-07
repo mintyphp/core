@@ -2,8 +2,16 @@
 
 namespace MintyPHP\Core;
 
+/**
+ * Core Network class providing network-related functionalities.
+ */
 class Network
 {
+    /**
+     * Check if the given IP address is assigned to a local network interface.
+     * @param string $ipAddress
+     * @return bool
+     */
     public function isLocalIP(string $ipAddress): bool
     {
         preg_match_all('|inet6? ([^/]+)/|', `ip a`, $matches);
@@ -11,10 +19,17 @@ class Network
         return in_array($ipAddress, $ipAddresses);
     }
 
+    /**
+     * Check if an IPv4 address is within a given CIDR range.
+     * @param string $ip4
+     * @param string $range
+     * @return bool
+     */
     public function ip4Match(string $ip4, string $range): bool
     {
         if (strpos($range, '/')) {
             list($subnet, $bits) = explode('/', $range);
+            $bits = (int)$bits;
         } else {
             $subnet = $range;
             $bits = 32;
@@ -25,10 +40,17 @@ class Network
         return ($ip & $mask) == ($subnet & $mask);
     }
 
+    /**
+     * Check if an IPv6 address is within a given CIDR range.
+     * @param string $ip6
+     * @param string $range
+     * @return bool
+     */
     public function ip6Match(string $ip6, string $range): bool
     {
         if (strpos($range, '/')) {
             list($subnet, $bits) = explode('/', $range);
+            $bits = (int)$bits;
         } else {
             $subnet = $range;
             $bits = 128;
