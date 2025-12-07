@@ -186,13 +186,15 @@ class NetworkTest extends \PHPUnit\Framework\TestCase
 
     public function testIp6MatchOddCIDR(): void
     {
-        // /96 prefix
-        $this->assertTrue($this->network->ip6Match('2001:db8::192.0.2.1', '2001:db8::/96'));
+        // /40 prefix (first 5 bytes must match)
+        $this->assertTrue($this->network->ip6Match('2001:db8:ab00::1', '2001:db8:ab00::/40'));
+        $this->assertTrue($this->network->ip6Match('2001:db8:abff::1', '2001:db8:ab00::/40'));
+        $this->assertFalse($this->network->ip6Match('2001:db8:ac00::1', '2001:db8:ab00::/40'));
 
-        // /56 prefix
-        $this->assertTrue($this->network->ip6Match('2001:db8:ab00::1', '2001:db8:ab00::/56'));
-        $this->assertTrue($this->network->ip6Match('2001:db8:abff::1', '2001:db8:ab00::/56'));
-        $this->assertFalse($this->network->ip6Match('2001:db8:ac00::1', '2001:db8:ab00::/56'));
+        // /120 prefix (very specific - last byte can vary)
+        $this->assertTrue($this->network->ip6Match('2001:db8::ff', '2001:db8::/120'));
+        $this->assertTrue($this->network->ip6Match('2001:db8::1', '2001:db8::/120'));
+        $this->assertFalse($this->network->ip6Match('2001:db8::100', '2001:db8::/120'));
     }
 
     public function testIp6MatchInvalidAddresses(): void

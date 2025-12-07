@@ -67,8 +67,8 @@ class Network
         $ipBin = '';
         $subnetBin = '';
         for ($i = 0; $i < strlen($ip); $i++) {
-            $ipBin .= str_pad(decbin(ord($ip[$i] ?? '0')), 8, '0', STR_PAD_LEFT);
-            $subnetBin .= str_pad(decbin(ord($subnet[$i] ?? '0')), 8, '0', STR_PAD_LEFT);
+            $ipBin .= str_pad(decbin(ord($ip[$i] ?? chr(0))), 8, '0', STR_PAD_LEFT);
+            $subnetBin .= str_pad(decbin(ord($subnet[$i] ?? chr(0))), 8, '0', STR_PAD_LEFT);
         }
 
         // Compare only the prefix bits
