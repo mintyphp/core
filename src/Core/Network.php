@@ -27,6 +27,10 @@ class Network
      */
     public function ip4Match(string $ip4, string $range): bool
     {
+        if (!filter_var($ip4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return false;
+        }
+
         if (strpos($range, '/')) {
             list($subnet, $bits) = explode('/', $range);
             $bits = (int)$bits;
@@ -34,6 +38,11 @@ class Network
             $subnet = $range;
             $bits = 32;
         }
+
+        if (!filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return false;
+        }
+
         $ip = ip2long($ip4);
         $subnet = ip2long($subnet);
         $mask = -1 << (32 - $bits);
@@ -48,12 +57,20 @@ class Network
      */
     public function ip6Match(string $ip6, string $range): bool
     {
+        if (!filter_var($ip6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return false;
+        }
+
         if (strpos($range, '/')) {
             list($subnet, $bits) = explode('/', $range);
             $bits = (int)$bits;
         } else {
             $subnet = $range;
             $bits = 128;
+        }
+
+        if (!filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return false;
         }
 
         $ip = inet_pton($ip6);
@@ -67,8 +84,8 @@ class Network
         $ipBin = '';
         $subnetBin = '';
         for ($i = 0; $i < strlen($ip); $i++) {
-            $ipBin .= str_pad(decbin(ord($ip[$i] ?? chr(0))), 8, '0', STR_PAD_LEFT);
-            $subnetBin .= str_pad(decbin(ord($subnet[$i] ?? chr(0))), 8, '0', STR_PAD_LEFT);
+            $ipBin .= str_pad(decbin(ord($ip[$i])), 8, '0', STR_PAD_LEFT);
+            $subnetBin .= str_pad(decbin(ord($subnet[$i])), 8, '0', STR_PAD_LEFT);
         }
 
         // Compare only the prefix bits
