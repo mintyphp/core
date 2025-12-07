@@ -228,4 +228,14 @@ class NetworkTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($this->network->ip6Match('2001:db8::1', '::/0'));
         $this->assertTrue($this->network->ip6Match('fe80::1', '::/0'));
     }
+
+    public function testIp6MatchIpv4Subnet(): void
+    {
+        $this->assertFalse($this->network->ip6Match('2001:db8:1234:5678::1', '192.168.1.0/24'));
+    }
+
+    public function testIp4MatchIpv6Subnet(): void
+    {
+        $this->assertFalse($this->network->ip4Match('192.168.1.1', '2001:db8::/32'));
+    }
 }
