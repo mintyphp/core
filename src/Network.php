@@ -30,9 +30,7 @@ class Network
      */
     public static function getInstance(): CoreNetwork
     {
-        return self::$instance ??= new CoreNetwork(
-
-        );
+        return self::$instance ??= new CoreNetwork();
     }
 
     /**
@@ -62,10 +60,10 @@ class Network
      * @param string $range
      * @return bool
      */
-    public static function ip4Match(string $ip4, string $range): bool
+    public static function ipv4Match(string $ip4, string $range): bool
     {
         $instance = self::getInstance();
-        return $instance->ip4Match($ip4, $range);
+        return $instance->ipv4Match($ip4, $range);
     }
 
     /**
@@ -74,9 +72,9 @@ class Network
      * @param string $range
      * @return bool
      */
-    public static function ip6Match(string $ip6, string $range): bool
+    public static function ipv6Match(string $ip6, string $range): bool
     {
         $instance = self::getInstance();
-        return $instance->ip6Match($ip6, $range);
+        return $instance->ipv6Match($ip6, $range);
     }
 }

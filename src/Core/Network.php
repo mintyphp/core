@@ -25,7 +25,7 @@ class Network
      * @param string $range
      * @return bool
      */
-    public function ip4Match(string $ip4, string $range): bool
+    public function ipv4Match(string $ip4, string $range): bool
     {
         if (!filter_var($ip4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return false;
@@ -55,7 +55,7 @@ class Network
      * @param string $range
      * @return bool
      */
-    public function ip6Match(string $ip6, string $range): bool
+    public function ipv6Match(string $ip6, string $range): bool
     {
         if (!filter_var($ip6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             return false;
