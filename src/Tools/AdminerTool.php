@@ -2,7 +2,9 @@
 
 namespace MintyPHP\Tools;
 
-class Adminer
+use MintyPHP\DB;
+
+class AdminerTool
 {
     private ?string $host;
     private ?int $port;
@@ -11,6 +13,17 @@ class Adminer
     private ?string $db;
     private string $url;
     private string $storagePath;
+
+    public static function run()
+    {
+        (new self(
+            DB::$host ?? null,
+            DB::$port ?? null,
+            DB::$username ?? null,
+            DB::$password ?? null,
+            DB::$database ?? null
+        ))->execute();
+    }
 
     /**
      * Constructor with optional parameters
@@ -42,9 +55,9 @@ class Adminer
     }
 
     /**
-     * Run Adminer by executing the stored file
+     * Execute Adminer by including the stored file
      */
-    public function run(): void
+    public function execute(): void
     {
         // Check if the file exists
         if (!file_exists($this->storagePath)) {
