@@ -10,6 +10,7 @@ class Server
     const array MAPPING = [
         '/debugger.php' => DebuggerTool::class,
         '/adminer.php' => AdminerTool::class,
+        '/configurator.php' => ConfiguratorTool::class,
     ];
 
     private string $documentRoot;
