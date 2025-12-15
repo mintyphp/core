@@ -17,9 +17,7 @@ require_once 'config/config.php';
 if (Debugger::$enabled) {
     Debugger::$enabled = false;
     if (Network::isLocalIP($_SERVER['REMOTE_ADDR'] ?? '')) {
-        if (DB::$username == DB::$password) {
-            die((new Adminer(DB::$host, DB::$port, DB::$username, DB::$password, DB::$database))->run());
-        }
+        die((new Adminer(DB::$host, DB::$port, DB::$username, DB::$password, DB::$database))->run());
     }
 }
 Router::redirect('/');

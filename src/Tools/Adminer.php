@@ -27,7 +27,7 @@ class Adminer
     }
 
     /**
-     * Download Adminer from the specified URL and store it compressed
+     * Download Adminer from the specified URL and store it
      */
     public function download(): bool
     {
@@ -42,11 +42,11 @@ class Adminer
     }
 
     /**
-     * Run Adminer by decompressing and executing the stored file
+     * Run Adminer by executing the stored file
      */
     public function run(): void
     {
-        // Check if the gzipped file exists
+        // Check if the file exists
         if (!file_exists($this->storagePath)) {
             // Download if not present
             if (!$this->download()) {
@@ -58,7 +58,7 @@ class Adminer
         $content = file_get_contents($this->storagePath);
 
         if ($content === false) {
-            throw new \RuntimeException('Failed to decompress Adminer file');
+            throw new \RuntimeException('Failed to read Adminer file');
         }
 
         // database auto-login credentials
