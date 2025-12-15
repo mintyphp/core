@@ -4,6 +4,61 @@ namespace MintyPHP\Core\Debugger;
 
 class View
 {
+    /**
+     * Get the full HTML for the debugger view
+     * @param array<int,Request> $requests The history of requests
+     * @return string The full HTML code for the debugger view
+     */
+    public function getHtml($requests): string
+    {
+        $html = [];
+        $html[] = '<!DOCTYPE html>';
+        $html[] = '<html>';
+        $html[] = '<head>';
+        $html[] = '    <title>MintyPHP Debugger</title>';
+        $html[] = '    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+        $html[] = '    <meta name="viewport" content="width=device-width, initial-scale=1.0">';
+        $html[] = '    <link rel="shortcut icon" href="debugger/img/favicon.ico">';
+        $html[] = '    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">';
+        $html[] = '    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">';
+        $html[] = '    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>';
+        $html[] = '    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>';
+        $html[] = '</head>';
+        $html[] = '<body>';
+        $html[] = '    <div class="container">';
+        $html[] = '        <div class="row">';
+        $html[] = '            <div class="col-md-4">';
+        $html[] = '                <h3>';
+        $html[] = '                    MintyPHP Debugger';
+        $html[] = '                </h3>';
+        $html[] = '            </div>';
+        $html[] = '        </div>';
+        $html[] = $this->getMainView($requests);
+        $script = <<<'SCRIPT'
+        $(function() {
+            var classes = [];
+            $('#debug-request-0 a[data-toggle="tab"]').each(function(e) {
+                classes.push($(this).attr('class'));
+            });
+            $(classes).each(function(i, c) {
+                $('a[data-toggle="tab"].' + c).on('shown.bs.tab', function() {
+                    $('a[data-toggle="tab"].' + c).each(function() {
+                        $(this).tab('show');
+                    });
+                });
+            });
+        });
+        SCRIPT;
+        $html[] = '        <script>';
+        $html[] = $script;
+        $html[] = '        </script>';
+        $html[] = '    </div>';
+        $html[] = '</body>';
+        $html[] = '';
+        $html[] = '</html>';
+        return implode("\n", $html);
+    }
+
 
     /**
      * Get the main view for the debugger

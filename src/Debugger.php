@@ -231,4 +231,14 @@ class Debugger
         $instance = self::getInstance();
         return $instance->debug($variable, $strlen, $width, $depth, $i, $objects);
     }
+
+    /**
+     * Generate the HTML view of the debugger data.
+     * @return string HTML representation of the debugger data
+     */
+    public static function view(): string
+    {
+        $instance = self::getInstance();
+        return $instance->view();
+    }
 }
