@@ -23,7 +23,7 @@ class Adminer
         $this->password = $password;
         $this->db = $db;
         $this->url = $url ?: 'https://www.adminer.org/latest-en.php';
-        $this->storagePath = $storagePath ?: (__DIR__ . '/adminer.php.gz');
+        $this->storagePath = $storagePath ?: (__DIR__ . '/latest-en.txt');
     }
 
     /**
@@ -38,14 +38,7 @@ class Adminer
             return false;
         }
 
-        // Compress and store the file
-        $compressed = gzencode($content, 9);
-
-        if ($compressed === false) {
-            return false;
-        }
-
-        return file_put_contents($this->storagePath, $compressed) !== false;
+        return file_put_contents($this->storagePath, $content) !== false;
     }
 
     /**
@@ -61,15 +54,8 @@ class Adminer
             }
         }
 
-        // Read the gzipped file
-        $compressed = file_get_contents($this->storagePath);
-
-        if ($compressed === false) {
-            throw new \RuntimeException('Failed to read Adminer file');
-        }
-
-        // Decompress the content
-        $content = gzdecode($compressed);
+        // Read the file
+        $content = file_get_contents($this->storagePath);
 
         if ($content === false) {
             throw new \RuntimeException('Failed to decompress Adminer file');
