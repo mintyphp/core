@@ -1,0 +1,18 @@
+<?php
+
+use MintyPHP\Debugger;
+use MintyPHP\Tools\Debugger as DebuggerTool;
+use MintyPHP\Router;
+
+// Change directory to project root
+chdir(__DIR__ . '/..');
+// Load the libraries
+require_once 'vendor/autoload.php';
+// Load the config parameters
+require_once 'config/config.php';
+
+if (Debugger::$enabled) {
+    Debugger::$enabled = false;
+    die((new DebuggerTool())->run(Debugger::view()));
+}
+Router::redirect('/');
