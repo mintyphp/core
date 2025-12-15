@@ -14,7 +14,7 @@ class AdminerTool
     private string $url;
     private string $storagePath;
 
-    public static function run()
+    public static function run(): void
     {
         (new self(
             DB::$host ?? null,

@@ -7,7 +7,7 @@ use MintyPHP\Debugger;
 
 class DebuggerTool
 {
-    public static function run()
+    public static function run(): void
     {
         (new self())->execute(Debugger::view());
     }

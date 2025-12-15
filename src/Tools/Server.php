@@ -24,7 +24,7 @@ class Server
     public function run(): bool
     {
         $dir = $this->documentRoot;
-        $file = realpath($dir . $this->scriptName);
+        $file = realpath($dir . $this->scriptName) ?: '';
         if (file_exists($file) && (strpos($file, $dir) === 0)) {
             return false;
         }
