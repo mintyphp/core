@@ -30,7 +30,9 @@ class Network
      */
     public static function getInstance(): CoreNetwork
     {
-        return self::$instance ??= new CoreNetwork();
+        return self::$instance ??= new CoreNetwork(
+
+        );
     }
 
     /**
