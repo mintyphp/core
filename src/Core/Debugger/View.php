@@ -9,7 +9,7 @@ class View
      * @param array<int,Request> $requests The history of requests
      * @return string The full HTML code for the debugger view
      */
-    public function getHtml($requests): string
+    public function getHtml(array $requests): string
     {
         $html = [];
         $html[] = '<!DOCTYPE html>';
@@ -99,7 +99,7 @@ class View
      * @param Request $request The request object
      * @return string The caption for the request
      */
-    public function getRequestCaption($request): string
+    public function getRequestCaption(Request $request): string
     {
         $parts = array();
         if (isset($request->type)) {
@@ -165,7 +165,7 @@ class View
      * @param string $prefix The prefix for the keys
      * @return array<string,mixed> The flattened array
      */
-    public function flattenParameters($array, $prefix = ''): array
+    public function flattenParameters(array $array, string $prefix = ''): array
     {
         $result = [];
         foreach ($array as $key => $value) {
@@ -187,7 +187,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the routing tab pane
      */
-    public function getRoutingTabPane($requestId, $request)
+    public function getRoutingTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane active" id="debug-request-' . $requestId . '-routing">';
@@ -250,7 +250,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the execution tab pane
      */
-    public function getExecutionTabPane($requestId, $request): string
+    public function getExecutionTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-execution">';
@@ -312,7 +312,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the session tab pane
      */
-    public function getSessionTabPane($requestId, $request): string
+    public function getSessionTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-session">';
@@ -336,7 +336,7 @@ class View
      * @param int $rows The number of result rows
      * @return string The HTML code for the tab list
      */
-    public function getQueriesTabPaneTabList($requestId, $i, $args, $rows): string
+    public function getQueriesTabPaneTabList(int $requestId, int $i, int $args, int $rows): string
     {
         $html = array();
         $html[] = '<ul class="nav nav-pills">';
@@ -356,7 +356,7 @@ class View
      * @param int $queryId The query index
      * @return string The HTML code for the tab pane
      */
-    public function getQueriesTabPaneTabPaneArguments($requestId, $query, $queryId): string
+    public function getQueriesTabPaneTabPaneArguments(int $requestId, Query $query, int $queryId): string
     {
         $html = [];
         $html[] = '<div class="tab-pane active" id="debug-request-' . $requestId . '-query-' . $queryId . '-arguments">';
@@ -386,7 +386,7 @@ class View
      * @param int $queryId The query index
      * @return string The HTML code for the tab pane
      */
-    public function getQueriesTabPaneTabPaneResult($requestId, $query, $queryId): string
+    public function getQueriesTabPaneTabPaneResult(int $requestId, Query $query, int $queryId): string
     {
         $html = [];
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-query-' . $queryId . '-result">';
@@ -428,7 +428,7 @@ class View
      * @param int $queryId The query index
      * @return string The HTML code for the tab pane
      */
-    public function getQueriesTabPaneTabPaneExplain($requestId, $query, $queryId): string
+    public function getQueriesTabPaneTabPaneExplain(int $requestId, Query $query, int $queryId): string
     {
         $html = [];
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-query-' . $queryId . '-explain">';
@@ -469,7 +469,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the queries tab pane
      */
-    public function getQueriesTabPane($requestId, $request): string
+    public function getQueriesTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-queries">';
@@ -509,7 +509,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the API calls tab pane
      */
-    public function getApiCallsTabPane($requestId, $request): string
+    public function getApiCallsTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-api_calls">';
@@ -577,7 +577,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the cache tab pane
      */
-    public function getCacheTabPane($requestId, $request)
+    public function getCacheTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-cache">';
@@ -609,7 +609,7 @@ class View
      * @param Request $request The request object
      * @return string The HTML code for the logging tab pane
      */
-    public function getLoggingTabPane($requestId, $request)
+    public function getLoggingTabPane(int $requestId, Request $request): string
     {
         $html = array();
         $html[] = '<div class="tab-pane" id="debug-request-' . $requestId . '-logging">';
