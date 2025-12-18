@@ -6,9 +6,7 @@ use MintyPHP\Core\Debugger\ApiCall;
 use MintyPHP\Core\Debugger\CacheCall;
 use MintyPHP\Core\Debugger\Request;
 use MintyPHP\Core\Debugger\Route;
-use MintyPHP\Core\Debugger\SessionStates;
 use MintyPHP\Core\Debugger\Query;
-use MintyPHP\Core\Debugger\View;
 
 /**
  * Debugger class for development and debugging support.
@@ -730,8 +728,11 @@ class Debugger
         $parts[] = strtolower($method) . ' ' . htmlentities($url);
         $parts[] = round((float)$this->request->duration * 1000) . ' ms ';
         $parts[] = round((float)$this->request->memory / 1000000) . ' MB';
-        $html .= implode(' - ', $parts) . ' - <a href="debugger.php">debugger</a>';
+        $html .= implode(' - ', $parts);
+        $html .= ' - <a href="debugger.php">debugger</a>';
         $html .= ' - <a href="adminer.php">adminer</a>';
+        $html .= ' - <a href="configurator.php">configurator</a>';
+        $html .= ' - <a href="translator.php">translator</a>';
         $html .= '</div></div>';
         echo $html;
     }
@@ -846,14 +847,5 @@ class Debugger
         $this->request->log[] = $string;
 
         return $string;
-    }
-
-    /**
-     * Generate the HTML view of the debugger data.
-     * @return string HTML representation of the debugger data
-     */
-    public function view(): string
-    {
-        return (new View())->getHtml($this->getHistory());
     }
 }
