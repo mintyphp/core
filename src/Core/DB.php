@@ -47,11 +47,19 @@ class DB
      * @param \mysqli|null $mysqli Existing mysqli connection
      * @throws \RuntimeException if connection fails
      */
-    public function __construct(private readonly ?string $host, private readonly ?string $username, private readonly ?string $password, private readonly ?string $database, private readonly ?int $port, private readonly ?string $socket, ?\mysqli $mysqli = null, /**
-     * Debugger instance for logging database operations
-     */
-    private ?Debugger $debugger = null)
-    {
+    public function __construct(
+        private readonly ?string $host,
+        private readonly ?string $username,
+        private readonly ?string $password,
+        private readonly ?string $database,
+        private readonly ?int $port,
+        private readonly ?string $socket,
+        ?\mysqli $mysqli = null,
+        /**
+         * Debugger instance for logging database operations
+         */
+        private ?Debugger $debugger = null
+    ) {
         // Establish the database connection
         mysqli_report(MYSQLI_REPORT_STRICT);
         if ($mysqli === null) {
@@ -74,7 +82,7 @@ class DB
      * 
      * @param string $query SQL query with ? placeholders
      * @param mixed ...$params Query parameters
-     * @return mixed Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
+     * @return array<int, array<string, array<string, mixed>>>|int Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
      * @throws \RuntimeException if query execution fails or database is closed
      */
     public function query(string $query, mixed ...$params): mixed
@@ -85,7 +93,6 @@ class DB
         $result = $this->queryTyped($query, ...$params);
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
-            $arguments = [$query, ...$params];
             if (strtoupper(substr(trim($query), 0, 6)) == 'SELECT') {
                 $explain = $this->queryTyped('explain ' . $query, ...$params);
             } else {
@@ -102,7 +109,7 @@ class DB
      * 
      * @param string $query SQL query with ? placeholders
      * @param mixed ...$params Query parameters
-     * @return mixed Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
+     * @return array<int, array<string, array<string, mixed>>>|int Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
      * @throws \RuntimeException if query execution fails or database is closed
      */
     private function queryTyped(string $query, mixed ...$params): mixed
@@ -110,8 +117,9 @@ class DB
         if ($this->closed) {
             throw new DBError('Database can only be used in MintyPHP action');
         }
-        $nargs = [''];
         if (count($params) > 0) {
+            $types = '';
+            $arguments = [''];
             for ($i = 0; $i < count($params); $i++) {
                 if (is_array($params[$i])) {
                     if (count($params[$i])) {
@@ -124,28 +132,26 @@ class DB
                         $query = $replaced;
                     }
                     foreach (array_keys($params[$i]) as $j) {
-                        $nargs[0] .= 's';
-                        $nargs[] = &$params[$i][$j];
+                        $types .= 's';
+                        $arguments[] = &$params[$i][$j];
                     }
                 } else {
-                    $nargs[0] .= 's';
-                    $nargs[] = &$params[$i];
+                    $types .= 's';
+                    $arguments[] = &$params[$i];
                 }
             }
             $stmt = $this->mysqli->prepare($query);
             if ($stmt === false) {
                 throw new DBError($this->mysqli->error);
             }
-            assert($stmt instanceof mysqli_stmt);
-            if ($nargs[0]) {
-                $stmt->bind_param(...$nargs);
+            if ($types) {
+                $stmt->bind_param($types, ...$arguments);
             }
         } else {
             $stmt = $this->mysqli->prepare($query);
             if ($stmt === false) {
                 throw new DBError($this->mysqli->error);
             }
-            assert($stmt instanceof mysqli_stmt);
         }
         $stmt->execute();
         if ($stmt->errno) {
@@ -155,6 +161,7 @@ class DB
         }
         if ($stmt->affected_rows > -1) {
             $result = $stmt->affected_rows;
+            $result = is_int($result) ? $result : (int)$result;
             $stmt->close();
             return $result;
         }
@@ -179,7 +186,9 @@ class DB
 
         $result = [];
         while ($stmt->fetch()) {
-            $result[] = unserialize(serialize($row));
+            /** @var array<string, array<string, mixed>> $copy */
+            $copy = unserialize(serialize($row));
+            $result[] = $copy;
         }
 
         $stmt->close();
@@ -261,7 +270,8 @@ class DB
     {
         $result = $this->query($query, ...$params);
         if (!is_array($result)) return [];
-        return $result[0] ?? $result;
+        if (count($result) == 0) return false;
+        return $result[0];
     }
 
     /**
@@ -276,9 +286,8 @@ class DB
     {
         $result = $this->query($query, ...$params);
         if (!is_array($result)) return false;
-        if (!isset($result[0])) return false;
+        if (count($result) == 0) return false;
         $record = $result[0];
-        if (!is_array($record)) return false;
         $firstTable = array_shift($record);
         if (!is_array($firstTable)) return false;
         return array_shift($firstTable);
@@ -299,7 +308,6 @@ class DB
         if (!is_array($result)) return [];
         $list = [];
         foreach ($result as $record) {
-            if (!is_array($record)) return [];
             $firstTable = array_shift($record);
             if (!is_array($firstTable)) return [];
             $list[] = array_shift($firstTable);
@@ -321,13 +329,17 @@ class DB
         if (!is_array($result)) return [];
         $list = [];
         foreach ($result as $record) {
-            if (!is_array($record)) return [];
             $columns = [];
             foreach ($record as $table) {
-                if (!is_array($table)) return [];
                 $columns = array_merge($columns, $table);
             }
-            $list[array_shift($columns)] = array_shift($columns);
+            $key = array_shift($columns);
+            $value = array_shift($columns);
+            if (is_int($key) || is_string($key)) {
+                $list[$key] = $value;
+            } else {
+                $list[] = $value;
+            }
         }
         return $list;
     }
