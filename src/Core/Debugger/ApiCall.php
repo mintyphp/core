@@ -13,8 +13,7 @@ class ApiCall
         public array $options,
         /** @var array<string,string> */
         public array $headers,
-        /** @var array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} */
-        public array $timing,
+        public ApiCallTiming $timing,
         public int $status,
         public string $effectiveUrl,
         /** @var array<string,string> */
@@ -36,15 +35,8 @@ class ApiCall
         $options = is_array($data['options']) ? $data['options'] : [];
         /** @var array<string,string> */
         $headers = is_array($data['headers']) ? $data['headers'] : [];
-        /** @var array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} */
-        $timing = is_array($data['timing']) ? $data['timing'] : [
-            'nameLookup' => 0.0,
-            'connect' => 0.0,
-            'preTransfer' => 0.0,
-            'startTransfer' => 0.0,
-            'redirect' => 0.0,
-            'total' => 0.0,
-        ];
+        /** @var array<string,mixed> */
+        $timing = is_array($data['timing']) ? $data['timing'] : [];
         $status = is_int($data['status'] ?? null) ? $data['status'] : 0;
         $effectiveUrl = is_string($data['effectiveUrl'] ?? null) ? $data['effectiveUrl'] : '';
         /** @var array<string,string> */
@@ -57,7 +49,7 @@ class ApiCall
             $dataStr,
             $options,
             $headers,
-            $timing,
+            ApiCallTiming::fromArray($timing),
             $status,
             $effectiveUrl,
             $responseHeaders,

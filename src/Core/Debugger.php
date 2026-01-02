@@ -3,6 +3,7 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Core\Debugger\ApiCall;
+use MintyPHP\Core\Debugger\ApiCallTiming;
 use MintyPHP\Core\Debugger\CacheCall;
 use MintyPHP\Core\Debugger\Request;
 use MintyPHP\Core\Debugger\Route;
@@ -526,14 +527,14 @@ class Debugger
      * @param string $data The data sent with the request
      * @param array<string,mixed> $options The options used for the request
      * @param array<string,string> $headers The headers sent with the request
-     * @param array{nameLookup:float,connect:float,preTransfer:float,startTransfer:float,redirect:float,total:float} $timing The timing information for the call
+     * @param ApiCallTiming $timing The timing information for the call
      * @param int $status The HTTP status code returned
      * @param string $effectiveUrl The effective URL after redirects
      * @param array<string,string> $responseHeaders The response headers received
      * @param string $body The response body received
      * @return void
      */
-    public function addApiCall(float $duration, string $method, string $url, string $data, array $options, array $headers, array $timing, int $status, string $effectiveUrl, array $responseHeaders, string $body): void
+    public function addApiCall(float $duration, string $method, string $url, string $data, array $options, array $headers, ApiCallTiming $timing, int $status, string $effectiveUrl, array $responseHeaders, string $body): void
     {
         $this->request->apiCalls[] = new ApiCall($duration, $method, $url, $data, $options, $headers, $timing, $status, $effectiveUrl, $responseHeaders, $body);
     }
