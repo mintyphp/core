@@ -39,6 +39,7 @@ class Firewall
      */
     public function __construct(private Cache $cache, private readonly int $concurrency, private readonly float $spinLockSeconds, private readonly int $intervalSeconds, private readonly string $cachePrefix, private readonly bool $reverseProxy, ?array $serverGlobal = null)
     {
+        /** @var array<string,string> $_SERVER */
         $this->serverGlobal = $serverGlobal ?? $_SERVER;
         $this->key = $this->cachePrefix . '_' . $this->getClientIp();
     }
