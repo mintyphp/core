@@ -3,6 +3,7 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Cache;
+use MintyPHP\Core\Debugger\ApiCallTiming;
 use MintyPHP\Debugger;
 
 /**
@@ -139,14 +140,14 @@ class Curl
         $effectiveUrl = $asString($this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL));
 
         if (Debugger::$enabled) {
-            $timing = [
+            $timing = ApiCallTiming::fromArray([
                 'nameLookup' => $asFloat($this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME)),
                 'connect' => $asFloat($this->curlGetInfo($ch, CURLINFO_CONNECT_TIME)),
                 'preTransfer' => $asFloat($this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME)),
                 'startTransfer' => $asFloat($this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME)),
                 'redirect' => $asFloat($this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME)),
                 'total' => $asFloat($this->curlGetInfo($ch, CURLINFO_TOTAL_TIME)),
-            ];
+            ]);
         }
 
         if ($this->cookies && $cookieJar) {
