@@ -130,17 +130,22 @@ class Curl
         $this->setOptions($ch, $method, $url, $data, $headers, $options);
 
         $result = strval($this->curlExec($ch));
-        $status = 0 + $this->curlGetInfo($ch, CURLINFO_HTTP_CODE);
-        $effectiveUrl = "" . $this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL);
+
+        $asFloat = fn(mixed $value): float => is_numeric($value) ? floatval($value) : 0.0;
+        $asInt = fn(mixed $value): int => is_numeric($value)  ? intval($value) : 0;
+        $asString = fn(mixed $value): string => is_numeric($value) || is_string($value) ? strval($value) : '';
+
+        $status = $asInt($this->curlGetInfo($ch, CURLINFO_HTTP_CODE));
+        $effectiveUrl = $asString($this->curlGetInfo($ch, CURLINFO_EFFECTIVE_URL));
 
         if (Debugger::$enabled) {
             $timing = [
-                'nameLookup' => 0 + $this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME),
-                'connect' => 0 + $this->curlGetInfo($ch, CURLINFO_CONNECT_TIME),
-                'preTransfer' => 0 + $this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME),
-                'startTransfer' => 0 + $this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME),
-                'redirect' => 0 + $this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME),
-                'total' => 0 + $this->curlGetInfo($ch, CURLINFO_TOTAL_TIME),
+                'nameLookup' => $asFloat($this->curlGetInfo($ch, CURLINFO_NAMELOOKUP_TIME)),
+                'connect' => $asFloat($this->curlGetInfo($ch, CURLINFO_CONNECT_TIME)),
+                'preTransfer' => $asFloat($this->curlGetInfo($ch, CURLINFO_PRETRANSFER_TIME)),
+                'startTransfer' => $asFloat($this->curlGetInfo($ch, CURLINFO_STARTTRANSFER_TIME)),
+                'redirect' => $asFloat($this->curlGetInfo($ch, CURLINFO_REDIRECT_TIME)),
+                'total' => $asFloat($this->curlGetInfo($ch, CURLINFO_TOTAL_TIME)),
             ];
         }
 
@@ -177,6 +182,10 @@ class Curl
             $responseHeaders[$key] = $value;
         }
 
+        if (is_array($data)) {
+            $data = http_build_query($data);
+        }
+
         if (Debugger::$enabled) {
             $duration = microtime(true) - $time;
             Debugger::addApiCall($duration, $method, $url, $data, $options, $headers, $timing, $status, $effectiveUrl, $responseHeaders, $body);
@@ -200,7 +209,7 @@ class Curl
      * @param array<string,string> $headers Headers to send
      * @param array<string,mixed> $options cURL options
      */
-    private function setOptions(\CurlHandle $ch, string $method, string &$url, mixed &$data, array $headers, array $options): void
+    private function setOptions(\CurlHandle $ch, string $method, string &$url, mixed $data, array $headers, array $options): void
     {
         // Set default options
         foreach ($options as $option => $value) {
@@ -224,25 +233,29 @@ class Curl
         curl_setopt($ch, CURLOPT_HTTPHEADER, $head);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
-        switch (strtoupper($method)) {
-            case 'HEAD':
-                curl_setopt($ch, CURLOPT_NOBODY, true);
-                break;
-            case 'GET':
-                curl_setopt($ch, CURLOPT_HTTPGET, true);
-                if ($data) {
-                    $url .= '?' . $data;
-                    $data = '';
-                }
-                break;
-            case 'POST':
-                curl_setopt($ch, CURLOPT_POST, true);
-                break;
-            default:
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        if (!empty($method)) {
+            switch (strtoupper($method)) {
+                case 'HEAD':
+                    curl_setopt($ch, CURLOPT_NOBODY, true);
+                    break;
+                case 'GET':
+                    curl_setopt($ch, CURLOPT_HTTPGET, true);
+                    if ($data) {
+                        $url .= '?' . $data;
+                        $data = '';
+                    }
+                    break;
+                case 'POST':
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    break;
+                default:
+                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+            }
         }
 
-        curl_setopt($ch, CURLOPT_URL, $url);
+        if (!empty($url)) {
+            curl_setopt($ch, CURLOPT_URL, $url);
+        }
 
         if (!empty($data)) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -266,7 +279,7 @@ class Curl
      * Wrapper for curl_getinfo to allow mocking in tests
      * 
      * @param \CurlHandle $ch The cURL handle
-     * @param int $option The CURLINFO option
+     * @param int $option The cURL info option
      * @return mixed The information value
      */
     private function curlGetInfo(\CurlHandle $ch, int $option): mixed
