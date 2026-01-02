@@ -34,20 +34,4 @@ class ApiCallTiming
             $total,
         );
     }
-
-    /**
-     * Convert the ApiCallTiming object to an associative array
-     * @return array<string, float>
-     */
-    public function toArray(): array
-    {
-        return [
-            'nameLookup' => $this->nameLookup,
-            'connect' => $this->connect,
-            'preTransfer' => $this->preTransfer,
-            'startTransfer' => $this->startTransfer,
-            'redirect' => $this->redirect,
-            'total' => $this->total,
-        ];
-    }
 }
