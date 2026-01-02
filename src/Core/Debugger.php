@@ -31,11 +31,18 @@ class Debugger
      */
     public Request $request;
 
-    public function __construct(/**
-     * Actual configuration parameters
-     */
-    private readonly int $history, private readonly bool $enabled, private readonly string $cookieName, private readonly int $retentionHours, ?string $storagePath)
-    {
+    private static int $run = 0;
+
+    public function __construct(
+        /**
+         * Actual configuration parameters
+         */
+        private readonly int $history,
+        private readonly bool $enabled,
+        private readonly string $cookieName,
+        private readonly int $retentionHours,
+        ?string $storagePath
+    ) {
         $this->storagePath = $storagePath ?: sys_get_temp_dir() . '/mintyphp-debug';
         // initialize request data
         $this->request = new Request(
@@ -80,8 +87,8 @@ class Debugger
         $this->cleanHistory();
 
         // only run on first instantiation
-        static $run = 0;
-        if ($run++ == 1) {
+        self::$run++;
+        if (self::$run == 1) {
             // configure error reporting
             ini_set('display_errors', 1);
             error_reporting(-1);
@@ -102,11 +109,9 @@ class Debugger
     {
         $data = $this->debug($_SESSION);
         array_pop($this->request->log);
-        if ($data !== null) {
-            $pos = strpos($data, "\n");
-            $data = substr($data, $pos !== false ? $pos : 0);
-            $data = trim($data);
-        }
+        $pos = strpos($data, "\n");
+        $data = substr($data, $pos !== false ? $pos : 0);
+        $data = trim($data);
         return $data;
     }
 
@@ -160,6 +165,8 @@ class Debugger
      */
     private function getBrowserSessionId(): string
     {
+        /** @var array<string,string> $_COOKIE */
+
         // Check for existing cookie
         if (isset($_COOKIE[$this->cookieName])) {
             $identifier = $_COOKIE[$this->cookieName];
@@ -303,6 +310,7 @@ class Debugger
             return [];
         }
 
+        /** @var array<string>|null $history */
         $history = json_decode($contents, true);
         return is_array($history) ? $history : [];
     }
@@ -417,6 +425,7 @@ class Debugger
                 continue;
             }
 
+            /** @var array<string,mixed>|null */
             $data = json_decode($contents, true);
             if (!is_array($data)) {
                 continue;
@@ -424,61 +433,7 @@ class Debugger
 
             // Reconstruct Request object from JSON data
             try {
-                $request = new Request(
-                    log: $data['log'] ?? [],
-                    queries: array_map(fn($q) => new Query(
-                        $q['duration'],
-                        $q['query'],
-                        $q['equery'],
-                        $q['arguments'],
-                        $q['result'],
-                        $q['explain']
-                    ), $data['queries'] ?? []),
-                    apiCalls: array_map(fn($a) => new ApiCall(
-                        $a['duration'],
-                        $a['method'],
-                        $a['url'],
-                        $a['data'],
-                        $a['options'],
-                        $a['headers'],
-                        $a['timing'],
-                        $a['status'],
-                        $a['effectiveUrl'],
-                        $a['responseHeaders'],
-                        $a['body']
-                    ), $data['apiCalls'] ?? []),
-                    sessionBefore: $data['sessionBefore'] ?? '',
-                    sessionAfter: $data['sessionAfter'] ?? '',
-                    cache: array_map(fn($c) => new CacheCall(
-                        $c['duration'],
-                        $c['command'],
-                        $c['arguments'],
-                        $c['result']
-                    ), $data['cache'] ?? []),
-                    start: $data['start'] ?? 0.0,
-                    status: $data['status'] ?? 0,
-                    user: $data['user'] ?? '',
-                    type: $data['type'] ?? '',
-                    duration: $data['duration'] ?? 0.0,
-                    memory: $data['memory'] ?? 0,
-                    classes: $data['classes'] ?? [],
-                    route: new Route(
-                        $data['route']['method'] ?? '',
-                        $data['route']['csrfOk'] ?? false,
-                        $data['route']['request'] ?? '',
-                        $data['route']['url'] ?? '',
-                        $data['route']['dir'] ?? '',
-                        $data['route']['viewFile'] ?? '',
-                        $data['route']['actionFile'] ?? '',
-                        $data['route']['templateFile'] ?? '',
-                        $data['route']['urlParameters'] ?? [],
-                        $data['route']['getParameters'] ?? [],
-                        $data['route']['postParameters'] ?? []
-                    ),
-                    redirect: $data['redirect'] ?? ''
-                );
-
-                $requests[] = $request;
+                $requests[] = Request::fromArray($data);
             } catch (\Throwable $e) {
                 error_log("MintyPHP Debugger: Failed to reconstruct request from {$requestPath}: {$e->getMessage()}");
                 continue;
@@ -831,10 +786,9 @@ class Debugger
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         do $caller = array_shift($backtrace);
         while ($caller && !isset($caller['file']));
-        if ($caller && isset($caller['file'], $caller['line'])) {
+        if ($caller && $caller['file'] && isset($caller['line'])) {
             $string = $caller['file'] . ':' . $caller['line'] . "\n" . $string;
         }
-
         $this->request->log[] = $string;
 
         return $string;
