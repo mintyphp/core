@@ -165,7 +165,7 @@ class DBTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('posts', array_keys($result)[0]);
         $this->assertEquals('id', array_keys($result['posts'])[0]);
         $result = self::$db->selectOne("SELECT * FROM `posts` WHERE slug like 'm%' limit 1;");
-        $this->assertEquals([], $result);
+        $this->assertEquals(false, $result);
         $this->expectException(\MintyPHP\Error\DBError::class);
         $result = self::$db->selectOne("some bogus query;");
     }

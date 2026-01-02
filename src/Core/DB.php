@@ -119,7 +119,7 @@ class DB
         }
         if (count($params) > 0) {
             $types = '';
-            $arguments = [''];
+            $arguments = [];
             for ($i = 0; $i < count($params); $i++) {
                 if (is_array($params[$i])) {
                     if (count($params[$i])) {
