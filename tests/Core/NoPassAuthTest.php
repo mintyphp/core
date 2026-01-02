@@ -69,7 +69,6 @@ class NoPassAuthTest extends TestCase
 
     public function testRegister(): void
     {
-        $this->assertNotNull(self::$auth);
         $registered = self::$auth->register('testuser');
         $this->assertGreaterThan(0, $registered, 'user not registered');
     }
@@ -79,7 +78,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testToken(): void
     {
-        $this->assertNotNull(self::$auth);
 
         $token = self::$auth->token('testuser');
         $this->assertNotEmpty($token, 'token generation failed');
@@ -88,7 +86,6 @@ class NoPassAuthTest extends TestCase
 
     public function testTokenNonExistentUser(): void
     {
-        $this->assertNotNull(self::$auth);
 
         $token = self::$auth->token('nonexistent');
         $this->assertEmpty($token, 'token should be empty for non-existent user');
@@ -99,7 +96,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testLogin(): void
     {
-        $this->assertNotNull(self::$auth);
 
         // Generate a valid token
         $token = self::$auth->token('testuser');
@@ -118,7 +114,6 @@ class NoPassAuthTest extends TestCase
 
     public function testLoginWithInvalidToken(): void
     {
-        $this->assertNotNull(self::$auth);
 
         $result = self::$auth->login('invalid.token.here');
         $this->assertEmpty($result, 'login should fail with invalid token');
@@ -129,7 +124,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testLoginWithWrongIP(): void
     {
-        $this->assertNotNull(self::$auth);
 
         // Generate a valid token
         $token = self::$auth->token('testuser');
@@ -150,7 +144,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testLoginWithTotpFailure(): void
     {
-        $this->assertNotNull(self::$auth);
 
         // Update user with TOTP secret
         self::$auth->updateTotpSecret('testuser', 'TESTSECRET123456');
@@ -173,7 +166,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testUpdate(): void
     {
-        $this->assertNotNull(self::$auth);
 
         $updated = self::$auth->update('testuser');
         $this->assertEquals(1, $updated, 'user not updated');
@@ -184,7 +176,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testUpdateTotpSecret(): void
     {
-        $this->assertNotNull(self::$auth);
 
         $updated = self::$auth->updateTotpSecret('testuser', 'NEWSECRET123456');
         $this->assertEquals(1, $updated, 'TOTP secret not updated');
@@ -195,7 +186,6 @@ class NoPassAuthTest extends TestCase
      */
     public function testExists(): void
     {
-        $this->assertNotNull(self::$auth);
 
         $exists = self::$auth->exists('testuser');
         $this->assertNotFalse($exists, 'user should exist');
@@ -205,8 +195,7 @@ class NoPassAuthTest extends TestCase
     }
     public function testLogout(): void
     {
-        $this->assertNotNull(self::$auth);
-        $_SESSION['user'] = array('id' => 1, 'username' => 'testuser');
+        $_SESSION['user'] = ['id' => 1, 'username' => 'testuser'];
         $_SESSION['other'] = 'data';
         $_SESSION['debugger'] = 'debug_data';
 

@@ -17,22 +17,11 @@ class Cache
     public static string $__prefix = 'mintyphp';
     public static string $__servers = '127.0.0.1';
 
-    /**
-     * Actual configuration parameters
-     */
-    private readonly string $prefix;
-    private readonly string $servers;
-
 
     /**
      * The Memcached instance used for caching
      */
     private Memcached $memcache;
-
-    /**
-     * Debugger instance for logging cache operations
-     */
-    private ?Debugger $debugger;
 
     /**
      * Create a new Cache instance
@@ -41,10 +30,11 @@ class Cache
      * @param string $prefix Prefix for cache keys.
      * @param string $servers Comma-separated list of Memcached servers (host:port).
      */
-    public function __construct(string $prefix, string $servers, ?Memcached $memcache = null, ?Debugger $debugger = null)
+    public function __construct(private readonly string $prefix, private readonly string $servers, ?Memcached $memcache = null, /**
+     * Debugger instance for logging cache operations
+     */
+    private ?Debugger $debugger = null)
     {
-        $this->prefix = $prefix;
-        $this->servers = $servers;
         // Initialize Memcached instance
         if ($memcache === null) {
             $memcache = new Memcached();
@@ -59,7 +49,6 @@ class Cache
             }
         }
         $this->memcache = $memcache;
-        $this->debugger = $debugger;
     }
     /**
      * Convert a variable to a string representation for debugging
@@ -110,7 +99,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'add';
-            $arguments = array($key, $this->variable($var));
+            $arguments = [$key, $this->variable($var)];
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);
@@ -132,7 +121,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'decrement';
-            $arguments = array($key);
+            $arguments = [$key];
             if ($value > 1) $arguments[] = $value;
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);
@@ -153,7 +142,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'delete';
-            $arguments = array($key);
+            $arguments = [$key];
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
@@ -173,7 +162,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'get';
-            $arguments = array($key);
+            $arguments = [$key];
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);
         }
@@ -194,7 +183,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'increment';
-            $arguments = array($key);
+            $arguments = [$key];
             if ($value > 1) $arguments[] = $value;
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);
@@ -217,7 +206,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'replace';
-            $arguments = array($key, $this->variable($var));
+            $arguments = [$key, $this->variable($var)];
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);
@@ -240,7 +229,7 @@ class Cache
         if ($this->debugger !== null) {
             $duration = microtime(true) - $time;
             $command = 'set';
-            $arguments = array($key, $this->variable($var));
+            $arguments = [$key, $this->variable($var)];
             if ($expire) $arguments[] = $expire;
             $result = $this->variable($res);
             $this->debugger->addCacheCall($duration, $command, $arguments, $result);

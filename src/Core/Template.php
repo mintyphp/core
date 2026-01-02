@@ -24,16 +24,12 @@ class Template
     // Default static configuration
     public static string $__escape = 'html';
 
-    // Configuration properties
-    private string $escape;
-
     /**
      * Constructor
      * @param string $escape
      */
-    public function __construct(string $escape)
+    public function __construct(private string $escape)
     {
-        $this->escape = $escape;
     }
 
     /**
@@ -47,11 +43,10 @@ class Template
         if ($string instanceof RawValue) {
             return $string->value;
         }
-        switch ($this->escape) {
-            case 'html':
-                return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
-        }
-        return $string;
+        return match ($this->escape) {
+            'html' => htmlspecialchars($string, ENT_QUOTES, 'UTF-8'),
+            default => $string,
+        };
     }
 
     /**
@@ -68,9 +63,7 @@ class Template
         $tokens = $this->tokenize($template);
         $tree = $this->createSyntaxTree($tokens);
         // Add built-in 'raw' filter
-        $functions['raw'] = function ($value) {
-            return new RawValue((string)$value);
-        };
+        $functions['raw'] = (fn($value) => new RawValue((string)$value));
         return $this->renderChildren($tree, $data, $functions);
     }
 
@@ -195,29 +188,29 @@ class Template
                 } elseif ($token == 'else') {
                     $type = 'else';
                     $expression = false;
-                } elseif (substr($token, 0, 7) == 'elseif:') {
+                } elseif (str_starts_with($token, 'elseif:')) {
                     $type = 'elseif';
                     $expression = substr($token, 7);
-                } elseif (substr($token, 0, 3) == 'if:') {
+                } elseif (str_starts_with($token, 'if:')) {
                     $type = 'if';
                     $expression = substr($token, 3);
-                } elseif (substr($token, 0, 4) == 'for:') {
+                } elseif (str_starts_with($token, 'for:')) {
                     $type = 'for';
                     $expression = substr($token, 4);
                 } else {
                     $type = 'var';
                     $expression = $token;
                 }
-                if (in_array($type, array('endif', 'endfor', 'elseif', 'else'))) {
+                if (in_array($type, ['endif', 'endfor', 'elseif', 'else'])) {
                     if (count($stack)) {
                         $current = array_pop($stack);
                     }
                 }
-                if (in_array($type, array('var'))) {
+                if (in_array($type, ['var'])) {
                     $node = $this->createNode($type, $expression);
                     array_push($current->children, $node);
                 }
-                if (in_array($type, array('if', 'for', 'elseif', 'else'))) {
+                if (in_array($type, ['if', 'for', 'elseif', 'else'])) {
                     $node = $this->createNode($type, $expression);
                     array_push($current->children, $node);
                     array_push($stack, $current);
@@ -250,7 +243,7 @@ class Template
             switch ($child->type) {
                 case 'if':
                     $result .= $this->renderIfNode($child, $data, $functions);
-                    $ifNodes = array($child);
+                    $ifNodes = [$child];
                     break;
                 case 'elseif':
                     $result .= $this->renderElseIfNode($child, $ifNodes, $data, $functions);
@@ -400,10 +393,10 @@ class Template
         }
         $path = $this->explode(':', $path, 3);
         if (count($path) == 2) {
-            list($var, $path) = $path;
+            [$var, $path] = $path;
             $key = false;
         } elseif (count($path) == 3) {
-            list($var, $key, $path) = $path;
+            [$var, $key, $path] = $path;
         } else {
             return $this->escape('{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
         }

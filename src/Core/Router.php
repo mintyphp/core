@@ -21,28 +21,8 @@ class Router
 	public static bool $__executeRedirect = true;
 	/** @var array<string, string> */
 	public static array $__routes = [];
-
-	/**
-	 * Actual configuration parameters
-	 */
-	private readonly string $baseUrl;
-	private readonly string $pageRoot;
-	private readonly string $templateRoot;
-	private readonly bool $executeRedirect;
-	/** @var array<string, string> */
-	private readonly array $routes;
 	/** @var array<string, string> */
 	private readonly array $serverGlobal;
-
-	/**
-	 * Session instance for managing user sessions
-	 */
-	private readonly Session $session;
-
-	/**
-	 * Debugger instance for logging routing operations
-	 */
-	private ?Debugger $debugger;
 
 	// Request state properties
 	private string $method;
@@ -71,23 +51,16 @@ class Router
 	 * @param Debugger|null $debugger
 	 */
 	public function __construct(
-		Session $session,
-		string $baseUrl,
-		string $pageRoot,
-		string $templateRoot,
-		bool $executeRedirect,
-		array $routes = [],
+		private readonly Session $session,
+		private readonly string $baseUrl,
+		private readonly string $pageRoot,
+		private readonly string $templateRoot,
+		private readonly bool $executeRedirect,
+		private readonly array $routes = [],
 		?array $serverGlobal = null,
-		?Debugger $debugger = null
+		private ?Debugger $debugger = null
 	) {
-		$this->session = $session;
-		$this->baseUrl = $baseUrl;
-		$this->pageRoot = $pageRoot;
-		$this->templateRoot = $templateRoot;
-		$this->executeRedirect = $executeRedirect;
-		$this->routes = $routes;
 		$this->serverGlobal = $serverGlobal ?? $_SERVER;
-		$this->debugger = $debugger;
 		$this->method = $this->serverGlobal['REQUEST_METHOD'] ?? 'GET';
 		$this->request = $this->serverGlobal['REQUEST_URI'] ?? '/';
 		$this->script = $this->serverGlobal['SCRIPT_NAME'] ?? 'index.php';
@@ -272,7 +245,7 @@ class Router
 				$view = array_pop($parts) ?: '';
 			}
 		}
-		return array($view, $template, $action, $parameters);
+		return [$view, $template, $action, $parameters];
 	}
 
 	/**
@@ -290,7 +263,7 @@ class Router
 	{
 		$redirect = false;
 
-		list($view, $template, $action, $parameterNames) = $this->extractParts($root, $dir, $path);
+		[$view, $template, $action, $parameterNames] = $this->extractParts($root, $dir, $path);
 
 		$url = $view ? $dir . $view : $dir . $action;
 
@@ -358,8 +331,8 @@ class Router
 		}
 		// Sort to prefer files without parameters over files with parameters
 		usort($matches, function ($a, $b) {
-			$aHasParams = strpos($a, '($') !== false;
-			$bHasParams = strpos($b, '($') !== false;
+			$aHasParams = str_contains($a, '($');
+			$bHasParams = str_contains($b, '($');
 			if ($aHasParams === $bHasParams) {
 				return strcmp($a, $b);
 			}
@@ -412,7 +385,7 @@ class Router
 				$this->error('Could not find 404');
 			}
 		}
-		return array($status, $this->routeFile($templateRoot, $root, $dir, $matches[0], $parameters, $getParameters));
+		return [$status, $this->routeFile($templateRoot, $root, $dir, $matches[0], $parameters, $getParameters)];
 	}
 
 	/**
@@ -432,7 +405,7 @@ class Router
 		$getParameters = [];
 		$questionMarkPosition = strpos($request, '?');
 		if ($questionMarkPosition !== false) {
-			list($request, $query) = explode('?', $request, 2);
+			[$request, $query] = explode('?', $request, 2);
 			parse_str($query, $getParameters);
 		}
 
@@ -447,7 +420,7 @@ class Router
 			else $dir = implode('/', array_slice($parts, 0, $i)) . '/';
 			if (file_exists($root . $dir) && is_dir($root . $dir)) {
 				$parameters = array_slice($parts, $i, count($parts) - $i);
-				list($status, $redirect) = $this->routeDir($csrfOk, $this->templateRoot, $root, $dir, $parameters, $getParameters);
+				[$status, $redirect] = $this->routeDir($csrfOk, $this->templateRoot, $root, $dir, $parameters, $getParameters);
 				break;
 			}
 		}
@@ -497,7 +470,7 @@ class Router
 	 */
 	private function removePrefix(string $string, string $prefix): string
 	{
-		if (substr($string, 0, strlen($prefix)) == $prefix) {
+		if (str_starts_with($string, $prefix)) {
 			$string = substr($string, strlen($prefix));
 		}
 		return $string;
@@ -605,9 +578,9 @@ class Router
 	public function getBaseUrl(): string
 	{
 		$url = $this->baseUrl;
-		if (substr($url, 0, 4) != 'http') {
+		if (!str_starts_with($url, 'http')) {
 			$host = ($this->serverGlobal['HTTP_HOST'] ?? 'localhost');
-			if (substr($url, 0, 2) != '//') {
+			if (!str_starts_with($url, '//')) {
 				$url = '//' . $host . $url;
 			}
 			$s = ($this->serverGlobal['HTTPS'] ?? '') ? 's' : '';

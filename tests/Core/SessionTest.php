@@ -110,6 +110,8 @@ class SessionTest extends TestCase
     public function testGetCsrfInput(): void
     {
         $this->session->start();
+        /** @var string $firstToken */
+        $firstToken = $_SESSION['test_csrf_token'];
 
         ob_start();
         $this->session->getCsrfInput();
@@ -117,7 +119,7 @@ class SessionTest extends TestCase
 
         $this->assertStringContainsString('<input type="hidden"', $output);
         $this->assertStringContainsString('name="' . 'test_csrf_token' . '"', $output);
-        $this->assertStringContainsString('value="' . $_SESSION['test_csrf_token'] . '"', $output);
+        $this->assertStringContainsString('value="' . $firstToken . '"', $output);
     }
 
     public function testSessionEnd(): void

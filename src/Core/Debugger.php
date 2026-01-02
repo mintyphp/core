@@ -24,14 +24,6 @@ class Debugger
     public static string $__cookieName = 'minty_debug_session';
     public static int $__retentionHours = 24;
     public static ?string $__storagePath = null;
-
-    /**
-     * Actual configuration parameters
-     */
-    private readonly int $history;
-    private readonly bool $enabled;
-    private readonly string $cookieName;
-    private readonly int $retentionHours;
     private readonly string $storagePath;
 
     /**
@@ -39,12 +31,11 @@ class Debugger
      */
     public Request $request;
 
-    public function __construct(int $history, bool $enabled, string $cookieName, int $retentionHours, ?string $storagePath)
+    public function __construct(/**
+     * Actual configuration parameters
+     */
+    private readonly int $history, private readonly bool $enabled, private readonly string $cookieName, private readonly int $retentionHours, ?string $storagePath)
     {
-        $this->history = $history;
-        $this->enabled = $enabled;
-        $this->cookieName = $cookieName;
-        $this->retentionHours = $retentionHours;
         $this->storagePath = $storagePath ?: sys_get_temp_dir() . '/mintyphp-debug';
         // initialize request data
         $this->request = new Request(
@@ -126,7 +117,7 @@ class Debugger
         $classes = get_declared_classes();
         $afterComposer = false;
         foreach ($classes as $class) {
-            if (substr($class, 0, 8) == 'Composer') {
+            if (str_starts_with($class, 'Composer')) {
                 $afterComposer = true;
             } elseif ($afterComposer) {
                 $reflection = new \ReflectionClass($class);
@@ -753,8 +744,8 @@ class Debugger
             return '';
         }
 
-        $search = array("\0", "\a", "\b", "\f", "\n", "\r", "\t", "\v");
-        $replace = array('\0', '\a', '\b', '\f', '\n', '\r', '\t', '\v');
+        $search = ["\0", "\a", "\b", "\f", "\n", "\r", "\t", "\v"];
+        $replace = ['\0', '\a', '\b', '\f', '\n', '\r', '\t', '\v'];
 
         $string = '';
 
@@ -814,14 +805,14 @@ class Debugger
             case 'object':
                 $id = array_search($variable, $objects, true);
                 if ($id !== false) {
-                    $string .= get_class($variable) . '#' . (((int)$id) + 1) . ' {...}';
+                    $string .= $variable::class . '#' . (((int)$id) + 1) . ' {...}';
                 } else if ($i == $depth) {
-                    $string .= get_class($variable) . ' {...}';
+                    $string .= $variable::class . ' {...}';
                 } else {
                     $id = array_push($objects, $variable);
                     $array = (array) $variable;
                     $spaces = str_repeat(' ', $i * 2);
-                    $string .= get_class($variable) . "#$id\n" . $spaces . '{';
+                    $string .= $variable::class . "#$id\n" . $spaces . '{';
                     $properties = array_keys($array);
                     foreach ($properties as $property) {
                         $name = str_replace("\0", ':', trim($property));

@@ -58,7 +58,6 @@ class CurlTest extends TestCase
     {
         $result = $this->curl->call('GET', self::$baseUrl . '/test.php');
 
-        $this->assertIsArray($result);
         $this->assertArrayHasKey('status', $result);
         $this->assertArrayHasKey('headers', $result);
         $this->assertArrayHasKey('data', $result);
@@ -71,7 +70,6 @@ class CurlTest extends TestCase
     {
         $result = $this->curl->navigate('GET', self::$baseUrl . '/redirect.php?target=final.php');
 
-        $this->assertIsArray($result);
         $this->assertEquals(200, $result['status']);
         $this->assertEquals('Final page content', $result['data']);
     }
@@ -83,7 +81,6 @@ class CurlTest extends TestCase
         $result = $this->curl->call('POST', self::$baseUrl . '/post.php', $postData);
 
         $this->assertEquals(200, $result['status']);
-        $this->assertIsString($result['data']);
         $decoded = json_decode($result['data'], true);
         $this->assertIsArray($decoded);
         $this->assertEquals('value', $decoded['key']);
@@ -97,7 +94,6 @@ class CurlTest extends TestCase
         $result = $this->curl->call('POST', self::$baseUrl . '/json.php', $jsonData);
 
         $this->assertEquals(200, $result['status']);
-        $this->assertIsString($result['data']);
         $decoded = json_decode($result['data'], true);
         $this->assertIsArray($decoded);
         $this->assertEquals('data', $decoded['test']);
@@ -126,9 +122,8 @@ class CurlTest extends TestCase
         $result = $this->curl->call('PUT', self::$baseUrl . '/method.php', $jsonData);
 
         $this->assertEquals(200, $result['status']);
-        $this->assertIsString($result['data']);
+        /** @var array<string, mixed> $decoded */
         $decoded = json_decode($result['data'], true);
-        $this->assertIsArray($decoded);
         $this->assertEquals('PUT', $decoded['method']);
     }
 

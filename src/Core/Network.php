@@ -32,7 +32,7 @@ class Network
         }
 
         if (strpos($range, '/')) {
-            list($subnet, $bits) = explode('/', $range);
+            [$subnet, $bits] = explode('/', $range);
             $bits = (int)$bits;
         } else {
             $subnet = $range;
@@ -62,7 +62,7 @@ class Network
         }
 
         if (strpos($range, '/')) {
-            list($subnet, $bits) = explode('/', $range);
+            [$subnet, $bits] = explode('/', $range);
             $bits = (int)$bits;
         } else {
             $subnet = $range;

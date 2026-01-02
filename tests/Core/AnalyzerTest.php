@@ -66,7 +66,7 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
             if (!file_exists(dirname($path))) {
                 mkdir(dirname($path), 0755, true);
             }
-            $content = self::$fileContents[$file] ?? '<?php // empty file';
+            $content = self::$fileContents[$file];
             file_put_contents($path, $content);
         }
 
@@ -76,7 +76,7 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
             if (!file_exists(dirname($path))) {
                 mkdir(dirname($path), 0755, true);
             }
-            $content = self::$fileContents[$file] ?? '<?php // empty template';
+            $content = self::$fileContents[$file];
             file_put_contents($path, $content);
         }
     }
@@ -272,7 +272,7 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
     {
         // Cleanup temporary files and directories
         // Ensure removal is in the temp directory
-        if (file_exists(self::$path) && strpos(self::$path, sys_get_temp_dir()) === 0) {
+        if (file_exists(self::$path) && str_starts_with(self::$path, sys_get_temp_dir())) {
             system('rm -Rf ' . escapeshellarg(self::$path));
         }
     }

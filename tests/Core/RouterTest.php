@@ -225,7 +225,7 @@ class RouterTest extends \PHPUnit\Framework\TestCase
     {
         // Cleanup temporary files and directories
         // Ensure removal is in the temp directory
-        if (file_exists(self::$path) && strpos(self::$path, sys_get_temp_dir()) === 0) {
+        if (file_exists(self::$path) && str_starts_with(self::$path, sys_get_temp_dir())) {
             // Remove the temporary directory and its contents
             system('rm -Rf ' . escapeshellarg(self::$path));
         }

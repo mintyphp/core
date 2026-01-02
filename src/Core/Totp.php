@@ -19,14 +19,6 @@ class Totp
     public static int $__secretLength = 10;
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly int $period;
-    private readonly string $algorithm;
-    private readonly int $digits;
-    private readonly int $secretLength;
-
-    /**
      * For testing purposes - allows overriding current timestamp
      */
     public int $timestamp = 0;
@@ -39,12 +31,8 @@ class Totp
      * @param int $digits Number of digits in the OTP code
      * @param int $secretLength Length of the generated secret in bytes
      */
-    public function __construct(int $period, string $algorithm, int $digits, int $secretLength)
+    public function __construct(private readonly int $period, private readonly string $algorithm, private readonly int $digits, private readonly int $secretLength)
     {
-        $this->period = $period;
-        $this->algorithm = $algorithm;
-        $this->digits = $digits;
-        $this->secretLength = $secretLength;
     }
 
     /**
@@ -55,12 +43,12 @@ class Totp
      */
     private function decodeBase32(string $d): string
     {
-        list($t, $b, $r) = array("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "", "");
+        [$t, $b, $r] = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "", ""];
         foreach (str_split($d) as $c) {
-            $b = $b . sprintf("%05b", strpos($t, $c));
+            $b .= sprintf("%05b", strpos($t, $c));
         }
         foreach (str_split($b, 8) as $c) {
-            $r = $r . chr((int)bindec($c));
+            $r .= chr((int)bindec($c));
         }
         return ($r);
     }
@@ -73,12 +61,12 @@ class Totp
      */
     private function encodeBase32(string $d): string
     {
-        list($t, $b, $r) = array("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "", "");
+        [$t, $b, $r] = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "", ""];
         foreach (str_split($d) as $c) {
-            $b = $b . sprintf("%08b", ord($c));
+            $b .= sprintf("%08b", ord($c));
         }
         foreach (str_split($b, 5) as $c) {
-            $r = $r . $t[bindec($c)];
+            $r .= $t[bindec($c)];
         }
         return ($r);
     }

@@ -36,41 +36,22 @@ class Token
     public static string $__issuers = '';
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly string $algorithm;
-    private readonly string $secret;
-    private readonly int $leeway;
-    private readonly int $ttl;
-    private readonly string $audience;
-    private readonly string $issuer;
-    private readonly string $algorithms;
-    private readonly string $audiences;
-    private readonly string $issuers;
-
-    /**
      * Create a new Token instance
      */
     public function __construct(
-        string $algorithm,
-        string $secret,
-        int $leeway,
-        int $ttl,
-        string $audience = '',
-        string $issuer = '',
-        string $algorithms = '',
-        string $audiences = '',
-        string $issuers = '',
+        /**
+         * Actual configuration parameters
+         */
+        private readonly string $algorithm,
+        private readonly string $secret,
+        private readonly int $leeway,
+        private readonly int $ttl,
+        private readonly string $audience = '',
+        private readonly string $issuer = '',
+        private readonly string $algorithms = '',
+        private readonly string $audiences = '',
+        private readonly string $issuers = '',
     ) {
-        $this->algorithm = $algorithm;
-        $this->secret = $secret;
-        $this->leeway = $leeway;
-        $this->ttl = $ttl;
-        $this->audience = $audience;
-        $this->issuer = $issuer;
-        $this->algorithms = $algorithms;
-        $this->audiences = $audiences;
-        $this->issuers = $issuers;
         // throw on empty secret
         if (empty($this->secret)) {
             throw new \InvalidArgumentException('Token secret cannot be empty');
@@ -196,14 +177,14 @@ class Token
      */
     private function generateToken(array $claims, int $time, int $ttl, string $algorithm, string $secret): string
     {
-        $algorithms = array(
+        $algorithms = [
             'HS256' => 'sha256',
             'HS384' => 'sha384',
             'HS512' => 'sha512',
             'RS256' => 'sha256',
             'RS384' => 'sha384',
             'RS512' => 'sha512',
-        );
+        ];
         $header = [];
         $header['typ'] = 'JWT';
         $header['alg'] = $algorithm;

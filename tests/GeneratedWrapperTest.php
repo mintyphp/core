@@ -110,27 +110,15 @@ class GeneratedWrapperTest extends TestCase
                     $typeName = $paramType->getName();
 
                     // Create appropriate mock values based on type
-                    switch ($typeName) {
-                        case 'string':
-                            $mockValue = 'test_' . $param->getName();
-                            break;
-                        case 'int':
-                            $mockValue = 42;
-                            break;
-                        case 'float':
-                            $mockValue = 3.14;
-                            break;
-                        case 'bool':
-                            $mockValue = true;
-                            break;
-                        case 'array':
-                            $mockValue = ['key' => 'value'];
-                            break;
-                        default:
-                            // For object types, use a simple stdClass
-                            $mockValue = new \stdClass();
-                            break;
-                    }
+                    $mockValue = match ($typeName) {
+                        'string' => 'test_' . $param->getName(),
+                        'int' => 42,
+                        'float' => 3.14,
+                        'bool' => true,
+                        'array' => ['key' => 'value'],
+                        // For object types, use a simple stdClass
+                        default => new \stdClass(),
+                    };
                 } else {
                     // Mixed or no type hint - use a string
                     $mockValue = 'mixed_value';
@@ -142,7 +130,7 @@ class GeneratedWrapperTest extends TestCase
                     // For now, just use the default
                     try {
                         $mockValue = $param->getDefaultValue();
-                    } catch (\ReflectionException $e) {
+                    } catch (\ReflectionException) {
                         // If we can't get the default, use our mock value
                     }
                 }
@@ -166,29 +154,15 @@ class GeneratedWrapperTest extends TestCase
             if ($returnType instanceof \ReflectionNamedType) {
                 $returnTypeName = $returnType->getName();
 
-                switch ($returnTypeName) {
-                    case 'int':
-                        $returnValue = 123;
-                        break;
-                    case 'bool':
-                        $returnValue = true;
-                        break;
-                    case 'string':
-                        $returnValue = 'test_return';
-                        break;
-                    case 'array':
-                        $returnValue = ['result' => 'data'];
-                        break;
-                    case 'float':
-                        $returnValue = 1.23;
-                        break;
-                    case 'void':
-                        $returnValue = null;
-                        break;
-                    default:
-                        $returnValue = new \stdClass();
-                        break;
-                }
+                $returnValue = match ($returnTypeName) {
+                    'int' => 123,
+                    'bool' => true,
+                    'string' => 'test_return',
+                    'array' => ['result' => 'data'],
+                    'float' => 1.23,
+                    'void' => null,
+                    default => new \stdClass(),
+                };
             }
 
             $expectation->willReturn($returnValue);

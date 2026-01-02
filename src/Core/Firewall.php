@@ -22,17 +22,6 @@ class Firewall
     public static int $__intervalSeconds = 300;
     public static string $__cachePrefix = 'fw_concurrency_';
     public static bool $__reverseProxy = false;
-
-    /**
-     * Actual configuration parameters
-     */
-    private readonly int $concurrency;
-    private readonly float $spinLockSeconds;
-    private readonly int $intervalSeconds;
-    private readonly string $cachePrefix;
-    private readonly bool $reverseProxy;
-
-    private Cache $cache;
     /** @var array<string,string> */
     private array $serverGlobal;
     private string $key;
@@ -48,14 +37,8 @@ class Firewall
      * @param bool $reverseProxy Whether to trust X-Forwarded-For header for client IP
      * @param ?array<string,string> $serverGlobal Optional server global array (defaults to $_SERVER)
      */
-    public function __construct(Cache $cache, int $concurrency, float $spinLockSeconds, int $intervalSeconds, string $cachePrefix, bool $reverseProxy, ?array $serverGlobal = null)
+    public function __construct(private Cache $cache, private readonly int $concurrency, private readonly float $spinLockSeconds, private readonly int $intervalSeconds, private readonly string $cachePrefix, private readonly bool $reverseProxy, ?array $serverGlobal = null)
     {
-        $this->cache = $cache;
-        $this->concurrency = $concurrency;
-        $this->spinLockSeconds = $spinLockSeconds;
-        $this->intervalSeconds = $intervalSeconds;
-        $this->cachePrefix = $cachePrefix;
-        $this->reverseProxy = $reverseProxy;
         $this->serverGlobal = $serverGlobal ?? $_SERVER;
         $this->key = $this->cachePrefix . '_' . $this->getClientIp();
     }

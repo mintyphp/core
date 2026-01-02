@@ -43,7 +43,7 @@ class TokenTest extends TestCase
         $token = new Token('HS256', 'your-256-bit-secret', 5, 30);
         $tokenStr = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.dyt0CoTl4WoVjAHI9Q_CwSKhl6d_9rhM3NrXuJttkao";
         $claims = $token->getClaims($tokenStr);
-        $this->assertEquals(array('sub' => '1234567890', 'name' => 'John Doe', 'admin' => true), $claims);
+        $this->assertEquals(['sub' => '1234567890', 'name' => 'John Doe', 'admin' => true], $claims);
     }
 
     public function testJwtIoHs384Example(): void
@@ -51,7 +51,7 @@ class TokenTest extends TestCase
         $token = new Token('HS384', 'your-384-bit-secret', 5, 30);
         $tokenStr = "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.n3K7zPIJXnJevaaDZZMF_WdlobKG_XzHHBLE7m3mRdoNGZDDhVFhO7jWtEdbNhn7";
         $claims = $token->getClaims($tokenStr);
-        $this->assertEquals(array('sub' => '1234567890', 'name' => 'John Doe', 'admin' => true), $claims);
+        $this->assertEquals(['sub' => '1234567890', 'name' => 'John Doe', 'admin' => true], $claims);
     }
 
     public function testJwtIoHs512Example(): void
@@ -59,7 +59,7 @@ class TokenTest extends TestCase
         $token = new Token('HS512', 'your-512-bit-secret', 5, 30);
         $tokenStr = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TeElPMEAJP7Oprhi971yOYEKzcvn2_XxkcEzvg8ZTmdyVftF6BQH51J5vDcZVJKviVZu4a6q0xjW7T_AnChtEg";
         $claims = $token->getClaims($tokenStr);
-        $this->assertEquals(array('sub' => '1234567890', 'name' => 'John Doe', 'admin' => true), $claims);
+        $this->assertEquals(['sub' => '1234567890', 'name' => 'John Doe', 'admin' => true], $claims);
     }
 
     public function testJwtIoRs256Example(): void
@@ -72,7 +72,7 @@ class TokenTest extends TestCase
         );
         $tokenStr = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.EkN-DOsnsuRjRO6BxXemmJDm3HbxrbRzXglbN2S4sOkopdU4IsDxTI8jO19W_A4K8ZPJijNLis4EZsHeY559a4DFOd50_OqgHGuERTqYZyuhtF39yxJPAjUESwxk2J5k_4zM3O-vtd1Ghyo4IbqKKSy6J9mTniYJPenn5-HIirE";
         $claims = $token->getClaims($tokenStr);
-        $this->assertEquals(array('sub' => '1234567890', 'name' => 'John Doe', 'admin' => true), $claims);
+        $this->assertEquals(['sub' => '1234567890', 'name' => 'John Doe', 'admin' => true], $claims);
     }
 
     public function testJwtIoRs256ExampleWithRs512Required(): void
@@ -101,7 +101,7 @@ class TokenTest extends TestCase
         );
         $tokenStr = "eyJhbGciOiJSUzM4NCIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.Ffs4IGK8GkxrSxp7I8IcuHy_uUSskg2zBwScCGhg6T1o4hkdZ5ytJNRj04kD8FEnUrnnUiGKgHL0MWrwmgz6Kmi6fxDSKKbiVlESPkUrgBTMaIlOheDbemy19lxUJYqd7A2exNXtCW_UoSs8f3ZdYujNrbZWW8kWgLQuk4oa-0I";
         $claims = $token->getClaims($tokenStr);
-        $this->assertEquals(array('sub' => '1234567890', 'name' => 'John Doe', 'admin' => true), $claims);
+        $this->assertEquals(['sub' => '1234567890', 'name' => 'John Doe', 'admin' => true], $claims);
     }
 
     public function testJwtIoRs512Example(): void
@@ -114,7 +114,7 @@ class TokenTest extends TestCase
         );
         $tokenStr = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.yN0Dw5rVJ75rdJXKpflhwASRr4DHwlgmRY4HVMdotCdyg8fOB2sLRehLY9g9isBnIuOA0aK7qWpj9cc7G8eYmaFdm95_moOJKxCgH0Rn2d2-wygdjBvMrSpkxsKMdbc2tKP0rI3ZYalQ7Q86RagZNZ_JpA2V3j3JPKTQwKFGSTw";
         $claims = $token->getClaims($tokenStr);
-        $this->assertEquals(array('sub' => '1234567890', 'name' => 'John Doe', 'admin' => true), $claims);
+        $this->assertEquals(['sub' => '1234567890', 'name' => 'John Doe', 'admin' => true], $claims);
     }
 
     public function testNoneAlgorithm(): void
@@ -128,7 +128,7 @@ class TokenTest extends TestCase
     public function testTokenGenerationAndVerificationHs256(): void
     {
         $token = new Token('HS256', 'secret', 5, 30);
-        $claims = array('customer_id' => 4, 'user_id' => 2);
+        $claims = ['customer_id' => 4, 'user_id' => 2];
         $tokenStr = $token->getToken($claims);
         $verifiedClaims = $token->getClaims($tokenStr);
         $this->assertNotFalse($verifiedClaims);
@@ -142,7 +142,7 @@ class TokenTest extends TestCase
         $publicKey = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugd\nUWAY9iR3fy4arWNA1KoS8kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQs\nHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5D\no2kQ+X5xK9cipRgEKwIDAQAB\n-----END PUBLIC KEY-----";
 
         $tokenSign = new Token('RS256', $privateKey, 5, 30);
-        $claims = array('customer_id' => 4, 'user_id' => 2);
+        $claims = ['customer_id' => 4, 'user_id' => 2];
         $tokenStr = $tokenSign->getToken($claims);
 
         $tokenVerify = new Token('RS256', $publicKey, 5, 30);
@@ -157,7 +157,6 @@ class TokenTest extends TestCase
         $claims = ['sub' => 'user123', 'name' => 'Test User'];
         $jwt = $this->token->getToken($claims);
 
-        $this->assertIsString($jwt);
         $this->assertStringContainsString('.', $jwt);
 
         // JWT should have 3 parts
@@ -172,7 +171,6 @@ class TokenTest extends TestCase
 
         $verifiedClaims = $this->token->getClaims($jwt);
 
-        $this->assertIsArray($verifiedClaims);
         $this->assertEquals('test-issuer', $verifiedClaims['iss']);
         $this->assertEquals('test-audience', $verifiedClaims['aud']);
     }
@@ -184,7 +182,6 @@ class TokenTest extends TestCase
 
         $verifiedClaims = $this->token->getClaims($jwt);
 
-        $this->assertIsArray($verifiedClaims);
         $this->assertArrayHasKey('iat', $verifiedClaims);
         $this->assertArrayHasKey('exp', $verifiedClaims);
         $this->assertIsInt($verifiedClaims['iat']);
@@ -199,7 +196,6 @@ class TokenTest extends TestCase
 
         $verifiedClaims = $this->token->getClaims($jwt);
 
-        $this->assertIsArray($verifiedClaims);
         $this->assertEquals('user123', $verifiedClaims['sub']);
         $this->assertEquals('Test User', $verifiedClaims['name']);
     }
@@ -267,10 +263,8 @@ class TokenTest extends TestCase
             $claims = ['sub' => 'user123'];
             $jwt = $token->getToken($claims);
 
-            $this->assertIsString($jwt);
 
             $verifiedClaims = $token->getClaims($jwt);
-            $this->assertIsArray($verifiedClaims);
             $this->assertEquals('user123', $verifiedClaims['sub']);
         }
     }
@@ -307,7 +301,6 @@ class TokenTest extends TestCase
 
         $verifiedClaims = $permissiveToken->getClaims($jwt);
 
-        $this->assertIsArray($verifiedClaims);
         $this->assertEquals('custom-audience', $verifiedClaims['aud']);
         $this->assertEquals('custom-issuer', $verifiedClaims['iss']);
     }

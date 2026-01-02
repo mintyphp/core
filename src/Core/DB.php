@@ -26,24 +26,9 @@ class DB
     public static ?string $__socket = null;
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly ?string $host;
-    private readonly ?string $username;
-    private readonly ?string $password;
-    private readonly ?string $database;
-    private readonly ?int $port;
-    private readonly ?string $socket;
-
-    /**
      * Database instance for executing queries.
      */
     private \mysqli $mysqli;
-
-    /**
-     * Debugger instance for logging database operations
-     */
-    private ?Debugger $debugger;
 
     /**
      * Indicates whether the database connection is closed.
@@ -62,16 +47,11 @@ class DB
      * @param \mysqli|null $mysqli Existing mysqli connection
      * @throws \RuntimeException if connection fails
      */
-    public function __construct(?string $host, ?string $username, ?string $password, ?string $database, ?int $port, ?string $socket, ?\mysqli $mysqli = null, ?Debugger $debugger = null)
+    public function __construct(private readonly ?string $host, private readonly ?string $username, private readonly ?string $password, private readonly ?string $database, private readonly ?int $port, private readonly ?string $socket, ?\mysqli $mysqli = null, /**
+     * Debugger instance for logging database operations
+     */
+    private ?Debugger $debugger = null)
     {
-        $this->host = $host;
-        $this->username = $username;
-        $this->password = $password;
-        $this->database = $database;
-        $this->port = $port;
-        $this->socket = $socket;
-        $this->debugger = $debugger;
-
         // Establish the database connection
         mysqli_report(MYSQLI_REPORT_STRICT);
         if ($mysqli === null) {
@@ -281,8 +261,7 @@ class DB
     {
         $result = $this->query($query, ...$params);
         if (!is_array($result)) return [];
-        if (isset($result[0])) return $result[0];
-        return $result;
+        return $result[0] ?? $result;
     }
 
     /**

@@ -32,9 +32,7 @@ class TemplateTest extends TestCase
 
     public function testRenderIfWithNestedPath(): void
     {
-        $this->assertEquals("hello m is 3", self::$template->render('hello {{if:n.m|eq(3)}}m is 3{{endif}}', ['n' => ['m' => 3]], ['eq' => function ($a, $b) {
-            return $a == $b;
-        }]));
+        $this->assertEquals("hello m is 3", self::$template->render('hello {{if:n.m|eq(3)}}m is 3{{endif}}', ['n' => ['m' => 3]], ['eq' => fn($a, $b) => $a == $b]));
     }
 
     public function testRenderIfElse(): void
@@ -44,37 +42,27 @@ class TemplateTest extends TestCase
 
     public function testRenderWithFunctionLiteralArgument(): void
     {
-        $this->assertEquals("hello 1980-05-13", self::$template->render('hello {{name|dateFormat("Y-m-d")}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {
-            return date($format, strtotime($date));
-        }]));
+        $this->assertEquals("hello 1980-05-13", self::$template->render('hello {{name|dateFormat("Y-m-d")}}', ['name' => 'May 13, 1980'], ['dateFormat' => fn(string $date, string $format) => date($format, strtotime($date) ?: null)]));
     }
 
     public function testRenderWithFunctionDataArgument(): void
     {
-        $this->assertEquals("hello 1980-05-13", self::$template->render('hello {{name|dateFormat(format)}}', ['name' => 'May 13, 1980', 'format' => 'Y-m-d'], ['dateFormat' => function ($date, $format) {
-            return date($format, strtotime($date));
-        }]));
+        $this->assertEquals("hello 1980-05-13", self::$template->render('hello {{name|dateFormat(format)}}', ['name' => 'May 13, 1980', 'format' => 'Y-m-d'], ['dateFormat' => fn(string $date, string $format) => date($format, strtotime($date) ?: null)]));
     }
 
     public function testRenderWithFunctionComplexLiteralArgument(): void
     {
-        $this->assertEquals("hello May 13, 1980", self::$template->render('hello {{name|dateFormat("M j, Y")}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {
-            return date($format, strtotime($date));
-        }]));
+        $this->assertEquals("hello May 13, 1980", self::$template->render('hello {{name|dateFormat("M j, Y")}}', ['name' => 'May 13, 1980'], ['dateFormat' => fn(string $date, string $format) => date($format, strtotime($date) ?: null)]));
     }
 
     public function testRenderWithFunctionArgumentWithWhitespace(): void
     {
-        $this->assertEquals("hello May 13, 1980", self::$template->render('hello {{name|dateFormat( "M j, Y")}}', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {
-            return date($format, strtotime($date));
-        }]));
+        $this->assertEquals("hello May 13, 1980", self::$template->render('hello {{name|dateFormat( "M j, Y")}}', ['name' => 'May 13, 1980'], ['dateFormat' => fn(string $date, string $format) => date($format, strtotime($date) ?: null)]));
     }
 
     public function testRenderWithEscapedSpecialCharacters(): void
     {
-        $this->assertEquals("hello \" May ()}}&quot;,|:.13, 1980\"", self::$template->render('hello "{{name|dateFormat(" M ()}}\\",|:.j, Y")}}"', ['name' => 'May 13, 1980'], ['dateFormat' => function ($date, $format) {
-            return date($format, strtotime($date));
-        }]));
+        $this->assertEquals("hello \" May ()}}&quot;,|:.13, 1980\"", self::$template->render('hello "{{name|dateFormat(" M ()}}\\",|:.j, Y")}}"', ['name' => 'May 13, 1980'], ['dateFormat' => fn(string $date, string $format) => date($format, strtotime($date) ?: null)]));
     }
 
     public function testRenderForLoopWithValues(): void
@@ -94,9 +82,7 @@ class TemplateTest extends TestCase
 
     public function testRenderForLoopWithIfElseIf(): void
     {
-        $this->assertEquals("hello one two three", self::$template->render('hello{{for:i:counts}} {{if:i|eq(1)}}one{{elseif:i|eq(2)}}two{{else}}three{{endif}}{{endfor}}', ['counts' => [1, 2, 3]], ['eq' => function ($a, $b) {
-            return $a == $b;
-        }]));
+        $this->assertEquals("hello one two three", self::$template->render('hello{{for:i:counts}} {{if:i|eq(1)}}one{{elseif:i|eq(2)}}two{{else}}three{{endif}}{{endfor}}', ['counts' => [1, 2, 3]], ['eq' => fn($a, $b) => $a == $b]));
     }
 
     public function testEscape(): void

@@ -21,21 +21,6 @@ class Session
     public static string $__sameSite = 'Lax';
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly string $sessionId;
-    private readonly string $sessionName;
-    private readonly string $csrfSessionKey;
-    private readonly bool $enabled;
-    private readonly int $csrfLength;
-    private readonly string $sameSite;
-
-    /**
-     * Debugger instance for logging session operations
-     */
-    private ?Debugger $debugger;
-
-    /**
      * Indicates whether the session has been initialized.
      */
     private bool $started = false;
@@ -57,22 +42,14 @@ class Session
      * @param ?Debugger $debugger Optional Debugger instance for logging
      */
     public function __construct(
-        string $sessionId = '',
-        string $sessionName = 'mintyphp',
-        string $csrfSessionKey = 'csrf_token',
-        bool $enabled = true,
-        int $csrfLength = 16,
-        string $sameSite = 'Lax',
-        ?Debugger $debugger = null
+        private readonly string $sessionId = '',
+        private readonly string $sessionName = 'mintyphp',
+        private readonly string $csrfSessionKey = 'csrf_token',
+        private readonly bool $enabled = true,
+        private readonly int $csrfLength = 16,
+        private readonly string $sameSite = 'Lax',
+        private ?Debugger $debugger = null
     ) {
-        $this->sessionId = $sessionId;
-        $this->sessionName = $sessionName;
-        $this->csrfSessionKey = $csrfSessionKey;
-        $this->enabled = $enabled;
-        $this->csrfLength = $csrfLength;
-        $this->sameSite = $sameSite;
-        $this->debugger = $debugger;
-
         // Initialize session
         $this->start();
         $this->setCsrfToken();

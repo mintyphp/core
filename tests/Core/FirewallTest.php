@@ -49,6 +49,7 @@ class FirewallTest extends TestCase
     private function cleanupCache(): void
     {
         // Delete firewall-related keys
+        /** @var string $ip */
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
         $key = self::$testPrefix . 'fw__' . $ip;
         self::$memcached->delete($key);

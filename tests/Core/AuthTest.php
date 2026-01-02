@@ -63,7 +63,6 @@ class AuthTest extends TestCase
 
     public function testRegister(): void
     {
-        $this->assertNotNull(self::$auth);
         $registered = self::$auth->register('test', 'test');
         $this->assertNotFalse($registered, 'user not registered');
     }
@@ -73,8 +72,6 @@ class AuthTest extends TestCase
      */
     public function testLogin(): void
     {
-        $this->assertNotNull(self::$auth);
-
         // Mock TOTP to return true for verification
         $this->totp->expects($this->once())
             ->method('verify')
@@ -95,8 +92,6 @@ class AuthTest extends TestCase
      */
     public function testLoginTotpFailure(): void
     {
-        $this->assertNotNull(self::$auth);
-
         // Mock TOTP to return false for verification
         $this->totp->expects($this->once())
             ->method('verify')
@@ -109,15 +104,15 @@ class AuthTest extends TestCase
 
     public function testLogout(): void
     {
-        $this->assertNotNull(self::$auth);
-        $_SESSION['user'] = array('id' => 1, 'username' => 'test');
+        $_SESSION['user'] = ['id' => 1, 'username' => 'test'];
 
         // Mock Session to expect regenerate() to be called
         $this->session->expects($this->once())
             ->method('regenerate');
 
         self::$auth->logout();
-        $this->assertFalse(isset($_SESSION['user']), 'user not unset');
+
+        $this->assertNull($_SESSION['user'], 'user not unset');
     }
 
     public static function tearDownAfterClass(): void

@@ -28,21 +28,18 @@ class Analyzer
 	public const FUNCTIONS = ['echo', 'print', 'die', 'exit', 'var_dump', 'eval', '<?='];
 
 	/**
-	 * Router instance for accessing file paths.
-	 * 
-	 * @var Router
-	 */
-	private Router $router;
-
-	/**
 	 * Constructor.
 	 * 
 	 * @param Router $router The router instance to analyze files from.
 	 */
-	public function __construct(Router $router)
-	{
-		$this->router = $router;
-	}
+	public function __construct(
+        /**
+         * Router instance for accessing file paths.
+         */
+        private Router $router
+    )
+    {
+    }
 
 	/**
 	 * Execute the analyzer to check all action and view files.

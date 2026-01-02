@@ -18,13 +18,6 @@ class I18n
     public static string $__defaultLocale = 'en';
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly string $domain;
-    private readonly string $locale;
-    private readonly string $defaultLocale;
-
-    /**
      * Translation strings cache
      * @var array<string, array<string, array<string, string>>>
      */
@@ -118,14 +111,8 @@ class I18n
      * @param string $locale The current locale (e.g., 'en', 'de', 'fr').
      * @param string $defaultLocale The fallback locale.
      */
-    public function __construct(
-        string $domain = 'default',
-        string $locale = '',
-        string $defaultLocale = 'en'
-    ) {
-        $this->domain = $domain;
-        $this->locale = $locale;
-        $this->defaultLocale = $defaultLocale;
+    public function __construct(private readonly string $domain = 'default', private readonly string $locale = '', private readonly string $defaultLocale = 'en')
+    {
     }
 
     /**
@@ -165,7 +152,7 @@ class I18n
         if ($decimalPos === false) {
             $number .= '.';
         }
-        list($whole, $fraction) = explode('.', $number);
+        [$whole, $fraction] = explode('.', $number);
         if ($number < 0) {
             $sign = '-';
             $whole = (string)(-1 * (int)$whole);
@@ -222,7 +209,7 @@ class I18n
         $seconds -= $minutes * 60;
         $formatted = sprintf("%02d:%02d:%02d", $hours, $minutes, $seconds);
         if ($trim) {
-            if (substr($formatted, 0, 3) == '00:') {
+            if (str_starts_with($formatted, '00:')) {
                 $formatted = substr($formatted, 3);
             }
         }

@@ -44,7 +44,6 @@ class DebuggerTest extends TestCase
         $this->debugger->addApiCall(0.125, 'POST', '/api/items', json_encode(['name' => 'item2']) ?: '', [], ['Authorization' => 'Bearer token'], $timing, 200, '', [], 'Created successfully');
         $this->debugger->addApiCall(0.111, 'DELETE', '/api/items/1', json_encode([]) ?: '', [], ['Authorization' => 'Bearer token'], $timing, 200, '', [], 'Deleted successfully');
         $items = $this->debugger->request->apiCalls;
-        $this->assertIsArray($items);
         $this->assertCount(3, $items);
         $this->assertEquals('Deleted successfully', $items[2]->body);
     }
@@ -58,7 +57,6 @@ class DebuggerTest extends TestCase
     public function testDebugReturnsStringWhenEnabled(): void
     {
         $result = $this->debugger->debug('test string');
-        $this->assertIsString($result);
         $this->assertStringContainsString('"test string"', $result);
     }
 
@@ -117,9 +115,9 @@ class DebuggerTest extends TestCase
         $obj2->ref = $obj1;
 
         $result = $this->debugger->debug([$obj1, $obj2]);
-        $this->assertStringContainsString('stdClass', $result);
-        // Should handle circular references without infinite loop
-        $this->assertIsString($result);
+        // Detect circular reference indicators
+        $this->assertStringContainsString(' => stdClass#1 {...}', $result);
+        $this->assertStringContainsString(' => stdClass#2 {...}', $result);
     }
 
     public function testEnd(): void

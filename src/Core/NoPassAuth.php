@@ -32,37 +32,6 @@ class NoPassAuth
     public static string $__baseUrl = '/';
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly string $usersTable;
-    private readonly string $usernameField;
-    private readonly string $passwordField;
-    private readonly string $rememberTokenField;
-    private readonly string $rememberExpiresField;
-    private readonly string $createdField;
-    private readonly string $totpSecretField;
-    private readonly int $tokenValidity;
-    private readonly int $rememberDays;
-    private readonly string $tokenAlgorithm;
-    private readonly string $sessionName;
-    private readonly string $baseUrl;
-
-    /**
-     * Database instance for executing queries.
-     */
-    private DB $db;
-
-    /**
-     * Totp instance for handling TOTP verification.
-     */
-    private Totp $totp;
-
-    /**
-     * Session instance for managing user sessions.
-     */
-    private Session $session;
-
-    /**
      * Constructor for the NoPassAuth class.
      * 
      * @param DB $db Database instance for executing queries.
@@ -81,38 +50,8 @@ class NoPassAuth
      * @param string $sessionName The session name for cookies.
      * @param string $baseUrl The base URL for cookies.
      */
-    public function __construct(
-        DB $db,
-        Totp $totp,
-        Session $session,
-        string $usersTable = 'users',
-        string $usernameField = 'username',
-        string $passwordField = 'password',
-        string $rememberTokenField = 'remember_token',
-        string $rememberExpiresField = 'remember_expires',
-        string $createdField = 'created',
-        string $totpSecretField = 'totp_secret',
-        int $tokenValidity = 300,
-        int $rememberDays = 90,
-        string $tokenAlgorithm = 'HS256',
-        string $sessionName = 'mintyphp',
-        string $baseUrl = '/'
-    ) {
-        $this->db = $db;
-        $this->totp = $totp;
-        $this->session = $session;
-        $this->usersTable = $usersTable;
-        $this->usernameField = $usernameField;
-        $this->passwordField = $passwordField;
-        $this->rememberTokenField = $rememberTokenField;
-        $this->rememberExpiresField = $rememberExpiresField;
-        $this->createdField = $createdField;
-        $this->totpSecretField = $totpSecretField;
-        $this->tokenValidity = $tokenValidity;
-        $this->rememberDays = $rememberDays;
-        $this->tokenAlgorithm = $tokenAlgorithm;
-        $this->sessionName = $sessionName;
-        $this->baseUrl = $baseUrl;
+    public function __construct(private DB $db, private Totp $totp, private Session $session, private readonly string $usersTable = 'users', private readonly string $usernameField = 'username', private readonly string $passwordField = 'password', private readonly string $rememberTokenField = 'remember_token', private readonly string $rememberExpiresField = 'remember_expires', private readonly string $createdField = 'created', private readonly string $totpSecretField = 'totp_secret', private readonly int $tokenValidity = 300, private readonly int $rememberDays = 90, private readonly string $tokenAlgorithm = 'HS256', private readonly string $sessionName = 'mintyphp', private readonly string $baseUrl = '/')
+    {
     }
 
     /**
@@ -237,9 +176,9 @@ class NoPassAuth
         $path = $this->baseUrl;
         $domain = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
         if (!$domain || $domain == 'localhost') {
-            setcookie($name, $value, $expires, $path);
+            setcookie($name, $value, ['expires' => $expires, 'path' => $path]);
         } else {
-            setcookie($name, $value, $expires, $path, $domain, true, true);
+            setcookie($name, $value, ['expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => true, 'httponly' => true]);
         }
     }
 

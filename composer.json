@@ -16,6 +16,7 @@
     "require-dev": {
         "phpunit/phpunit": "*",
         "phpstan/phpstan": "*",
+        "rector/rector": "*",
         "mintyphp/mocking": "*"
     },
     "autoload": {

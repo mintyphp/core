@@ -23,15 +23,6 @@ class Curl
     public static array $__headers = [];
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly bool $cookies;
-    /** @var array<string,mixed> */
-    private readonly array $options;
-    /** @var array<string,string> */
-    private readonly array $headers;
-
-    /**
      * The cURL handle used for requests
      */
     private \CurlHandle $ch;
@@ -44,12 +35,9 @@ class Curl
      * @param bool $cookies Whether to enable cookie handling
      * @param \CurlHandle|null $ch Optional cURL handle to use
      */
-    public function __construct(array $options = [], array $headers = [], bool $cookies = false, \CurlHandle|null $ch = null)
+    public function __construct(private readonly array $options = [], private readonly array $headers = [], private readonly bool $cookies = false, \CurlHandle|null $ch = null)
     {
         $this->ch = $ch ?? curl_init();
-        $this->options = $options;
-        $this->headers = $headers;
-        $this->cookies = $cookies;
     }
 
     /**
@@ -106,7 +94,7 @@ class Curl
      */
     public function navigate(string $method, string $url, $data = '', array $headers = [], array $options = []): array
     {
-        return $this->call($method, $url, $data, $headers, array_merge($options, array('CURLOPT_FOLLOWLOCATION' => true)));
+        return $this->call($method, $url, $data, $headers, array_merge($options, ['CURLOPT_FOLLOWLOCATION' => true]));
     }
 
     /**
@@ -165,10 +153,10 @@ class Curl
             }
         }
 
-        if (strpos($result, "\r\n\r\n") === false) {
-            list($head, $body) = array($result, '');
+        if (!str_contains($result, "\r\n\r\n")) {
+            [$head, $body] = [$result, ''];
         } else {
-            list($head, $body) = explode("\r\n\r\n", $result, 2);
+            [$head, $body] = explode("\r\n\r\n", $result, 2);
             $statusCodes = [100];
             if ($options['CURLOPT_FOLLOWLOCATION'] ?? false) {
                 $statusCodes[] = 301;
@@ -176,7 +164,7 @@ class Curl
             }
             $regex = '/\s+(' . implode('|', $statusCodes) . ')\s+/';
             while (preg_match($regex, explode("\r\n", $head)[0])) {
-                list($head, $body) = explode("\r\n\r\n", $body, 2);
+                [$head, $body] = explode("\r\n\r\n", $body, 2);
             }
         }
 
@@ -185,7 +173,7 @@ class Curl
             if ($i == 0) {
                 continue;
             }
-            list($key, $value) = explode(': ', $header);
+            [$key, $value] = explode(': ', $header);
             $responseHeaders[$key] = $value;
         }
 

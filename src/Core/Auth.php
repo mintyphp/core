@@ -23,30 +23,6 @@ class Auth
     public static string $__totpSecretField = 'totp_secret';
 
     /**
-     * Actual configuration parameters
-     */
-    private readonly string $usersTable;
-    private readonly string $usernameField;
-    private readonly string $passwordField;
-    private readonly string $createdField;
-    private readonly string $totpSecretField;
-
-    /**
-     * Database instance for executing queries.
-     */
-    private DB $db;
-
-    /**
-     * Totp instance for handling TOTP verification.
-     */
-    private Totp $totp;
-
-    /**
-     * Session instance for managing user sessions.
-     */
-    private Session $session;
-
-    /**
      * Constructor for the Auth class.
      * @param DB $db Database instance for executing queries.
      * @param Totp $totp Totp instance for handling TOTP verification.
@@ -57,24 +33,8 @@ class Auth
      * @param string $createdField Name of the created timestamp field.
      * @param string $totpSecretField Name of the TOTP secret field.
      */
-    public function __construct(
-        DB $db,
-        Totp $totp,
-        Session $session,
-        string $usersTable = 'users',
-        string $usernameField = 'username',
-        string $passwordField = 'password',
-        string $createdField = 'created',
-        string $totpSecretField = 'totp_secret'
-    ) {
-        $this->db = $db;
-        $this->totp = $totp;
-        $this->session = $session;
-        $this->usersTable = $usersTable;
-        $this->usernameField = $usernameField;
-        $this->passwordField = $passwordField;
-        $this->createdField = $createdField;
-        $this->totpSecretField = $totpSecretField;
+    public function __construct(private DB $db, private Totp $totp, private Session $session, private readonly string $usersTable = 'users', private readonly string $usernameField = 'username', private readonly string $passwordField = 'password', private readonly string $createdField = 'created', private readonly string $totpSecretField = 'totp_secret')
+    {
     }
 
     /**
