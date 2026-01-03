@@ -116,8 +116,9 @@ class Token
         if ($claimsJson === false) {
             return [];
         }
+        /** @var array<string, mixed>|null $claims */
         $claims = json_decode($claimsJson, true);
-        if ($claims === null || !is_array($claims)) {
+        if (!is_array($claims)) {
             return [];
         }
         foreach ($requirements as $field => $values) {
@@ -160,9 +161,6 @@ class Token
         $leeway = $this->leeway;
         $ttl = $this->ttl;
         $secret = $this->secret;
-        if (!$secret) {
-            return [];
-        }
         $requirements = [];
         $requirements['alg'] = array_filter(array_map('trim', explode(',', $this->algorithms)));
         $requirements['aud'] = array_filter(array_map('trim', explode(',', $this->audiences)));
@@ -198,13 +196,17 @@ class Token
         }
         $hmac = $algorithms[$algorithm];
         $data = "$token[0].$token[1]";
+        $signature = '';
         switch ($algorithm[0]) {
             case 'H':
                 $signature = hash_hmac($hmac, $data, $secret, true);
                 break;
             case 'R':
-                $signature = '';
-                openssl_sign($data, $signature, $secret, $hmac);
+                if (!openssl_sign($data, $signature, $secret, $hmac)) {
+                    return '';
+                }
+                // openssl_sign outputs the string signature via reference
+                /** @var string $signature */
                 break;
             default:
                 return '';
@@ -224,9 +226,6 @@ class Token
         $ttl = $this->ttl;
         $algorithm = $this->algorithm;
         $secret = $this->secret;
-        if (!$secret) {
-            return '';
-        }
         if (!isset($claims['aud']) && $this->audience) {
             $claims['aud'] = $this->audience;
         }

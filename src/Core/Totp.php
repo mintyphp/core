@@ -31,9 +31,7 @@ class Totp
      * @param int $digits Number of digits in the OTP code
      * @param int $secretLength Length of the generated secret in bytes
      */
-    public function __construct(private readonly int $period, private readonly string $algorithm, private readonly int $digits, private readonly int $secretLength)
-    {
-    }
+    public function __construct(private readonly int $period, private readonly string $algorithm, private readonly int $digits, private readonly int $secretLength) {}
 
     /**
      * Decode a Base32 encoded string
@@ -66,7 +64,7 @@ class Totp
             $b .= sprintf("%08b", ord($c));
         }
         foreach (str_split($b, 5) as $c) {
-            $r .= $t[bindec($c)];
+            $r .= $t[(int)bindec($c)] ?? '';
         }
         return ($r);
     }
@@ -106,10 +104,13 @@ class Totp
      */
     private function calculateOtp(string $hash): string
     {
+        // NB: unpack uses 1-based indexing
         // Extract offset from last nibble of hash (0-15)
+        /** @var array{1:int}|false $lastByte */
         $lastByte = unpack('C', substr($hash, -1));
         $offset = ($lastByte ? $lastByte[1] : 0) & 0xF;
         // Extract 4 bytes at offset and clear the sign bit
+        /** @var array{1:int}|false $fourBytes */
         $fourBytes = unpack('N', substr($hash, $offset, 4));
         $code = ($fourBytes ? $fourBytes[1] : 0) & 0x7FFFFFFF;
         // Reduce to desired number of digits

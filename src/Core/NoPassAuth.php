@@ -50,9 +50,7 @@ class NoPassAuth
      * @param string $sessionName The session name for cookies.
      * @param string $baseUrl The base URL for cookies.
      */
-    public function __construct(private DB $db, private Totp $totp, private Session $session, private readonly string $usersTable = 'users', private readonly string $usernameField = 'username', private readonly string $passwordField = 'password', private readonly string $rememberTokenField = 'remember_token', private readonly string $rememberExpiresField = 'remember_expires', private readonly string $createdField = 'created', private readonly string $totpSecretField = 'totp_secret', private readonly int $tokenValidity = 300, private readonly int $rememberDays = 90, private readonly string $tokenAlgorithm = 'HS256', private readonly string $sessionName = 'mintyphp', private readonly string $baseUrl = '/')
-    {
-    }
+    public function __construct(private DB $db, private Totp $totp, private Session $session, private readonly string $usersTable = 'users', private readonly string $usernameField = 'username', private readonly string $passwordField = 'password', private readonly string $rememberTokenField = 'remember_token', private readonly string $rememberExpiresField = 'remember_expires', private readonly string $createdField = 'created', private readonly string $totpSecretField = 'totp_secret', private readonly int $tokenValidity = 300, private readonly int $rememberDays = 90, private readonly string $tokenAlgorithm = 'HS256', private readonly string $sessionName = 'mintyphp', private readonly string $baseUrl = '/') {}
 
     /**
      * Generate a token for the given username.
@@ -110,10 +108,11 @@ class NoPassAuth
      */
     public function remember(): bool
     {
+        /** @var array<string, string> $_COOKIE */
         $name = $this->sessionName . '_remember';
         $value = $_COOKIE[$name] ?? '';
         $parts = explode(':', $value, 2);
-        $username = $parts[0] ?? '';
+        $username = $parts[0];
         $token = $parts[1] ?? '';
 
         $query = sprintf(
@@ -157,6 +156,7 @@ class NoPassAuth
      */
     private function doRemember(string $username): void
     {
+        /** @var array<string, string> $_SERVER */
         $name = $this->sessionName . '_remember';
         $token = base64_encode(random_bytes(24));
         $hash = password_hash($token, PASSWORD_DEFAULT);

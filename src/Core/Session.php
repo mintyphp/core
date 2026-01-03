@@ -176,6 +176,8 @@ class Session
         }
 
         $this->setCsrfToken();
-        echo '<input type="hidden" name="' . $this->csrfSessionKey . '" value="' . $_SESSION[$this->csrfSessionKey] . '"/>';
+        /** @var string $csrfSessionKey */
+        $csrfSessionKey = $_SESSION[$this->csrfSessionKey];
+        echo '<input type="hidden" name="' . $this->csrfSessionKey . '" value="' . $csrfSessionKey . '"/>';
     }
 }

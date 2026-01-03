@@ -13,6 +13,26 @@ class RawValue
 }
 
 /**
+ * Internal class representing a node in the template syntax tree
+ */
+class TreeNode
+{
+    public string $type;
+    public string|false $expression;
+    /** @var array<int,TreeNode> */
+    public array $children;
+    public mixed $value;
+
+    public function __construct(string $type, string|false $expression)
+    {
+        $this->type = $type;
+        $this->expression = $expression;
+        $this->children = [];
+        $this->value = null;
+    }
+}
+
+/**
  * Template engine for MintyPHP
  * 
  * Provides functionality to render templates with variable interpolation,
@@ -28,9 +48,7 @@ class Template
      * Constructor
      * @param string $escape
      */
-    public function __construct(private string $escape)
-    {
-    }
+    public function __construct(private string $escape) {}
 
     /**
      * Escapes a string based on the specified escape type.
@@ -63,25 +81,8 @@ class Template
         $tokens = $this->tokenize($template);
         $tree = $this->createSyntaxTree($tokens);
         // Add built-in 'raw' filter
-        $functions['raw'] = (fn($value) => new RawValue((string)$value));
+        $functions['raw'] = (fn(string $value) => new RawValue($value));
         return $this->renderChildren($tree, $data, $functions);
-    }
-
-    /**
-     * Creates a syntax tree node.
-     *
-     * @param string $type The node type ('root', 'if', 'for', 'var', 'lit', 'else', 'elseif', etc.).
-     * @param string|false $expression The expression associated with the node, or false if none.
-     * @return \stdClass A node object with properties: type, expression, children, and value.
-     */
-    private function createNode(string $type, string|false $expression): \stdClass
-    {
-        $obj = new \stdClass();
-        $obj->type = $type;
-        $obj->expression = $expression;
-        $obj->children = [];
-        $obj->value = null;
-        return $obj;
     }
 
     /**
@@ -170,11 +171,11 @@ class Template
      * the template's control flow (if/else/for blocks) and variable interpolations.
      *
      * @param array<int,string> $tokens Array of tokens from tokenize().
-     * @return \stdClass The root node of the syntax tree.
+     * @return TreeNode The root node of the syntax tree.
      */
-    private function createSyntaxTree(array &$tokens): \stdClass
+    private function createSyntaxTree(array &$tokens): TreeNode
     {
-        $root = $this->createNode('root', false);
+        $root = new TreeNode('root', false);
         $current = $root;
         $stack = [];
         foreach ($tokens as $i => $token) {
@@ -207,17 +208,17 @@ class Template
                     }
                 }
                 if (in_array($type, ['var'])) {
-                    $node = $this->createNode($type, $expression);
+                    $node = new TreeNode($type, $expression);
                     array_push($current->children, $node);
                 }
                 if (in_array($type, ['if', 'for', 'elseif', 'else'])) {
-                    $node = $this->createNode($type, $expression);
+                    $node = new TreeNode($type, $expression);
                     array_push($current->children, $node);
                     array_push($stack, $current);
                     $current = $node;
                 }
             } else {
-                array_push($current->children, $this->createNode('lit', $token));
+                array_push($current->children, new TreeNode('lit', $token));
             }
         }
         return $root;
@@ -229,17 +230,16 @@ class Template
      * Iterates through the children of a node and dispatches to the appropriate
      * render method based on the child's type (if, for, var, lit, else, elseif).
      *
-     * @param \stdClass $node The parent node whose children should be rendered.
+     * @param TreeNode $node The parent node whose children should be rendered.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
      * @return string The concatenated rendered output of all child nodes.
      */
-    private function renderChildren(\stdClass $node, array $data, array $functions): string
+    private function renderChildren(TreeNode $node, array $data, array $functions): string
     {
         $result = '';
         $ifNodes = [];
         foreach ($node->children as $child) {
-            /** @var \stdClass $child */
             switch ($child->type) {
                 case 'if':
                     $result .= $this->renderIfNode($child, $data, $functions);
@@ -276,12 +276,12 @@ class Template
      * Evaluates the condition expression and renders the node's children if truthy.
      * The evaluated value is stored in the node for use by subsequent elseif/else nodes.
      *
-     * @param \stdClass $node The if node to render.
+     * @param TreeNode $node The if node to render.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
      * @return string The rendered output if condition is true, empty string otherwise.
      */
-    private function renderIfNode(\stdClass $node, array $data, array $functions): string
+    private function renderIfNode(TreeNode $node, array $data, array $functions): string
     {
         $parts = $this->explode('|', (string)$node->expression);
         $path = array_shift($parts);
@@ -308,13 +308,13 @@ class Template
      * Only evaluates and renders if no previous if/elseif in the chain was true.
      * Checks the values of preceding if/elseif nodes to determine whether to evaluate.
      *
-     * @param \stdClass $node The elseif node to render.
-     * @param array<int,\stdClass> $ifNodes Array of preceding if/elseif nodes in the chain.
+     * @param TreeNode $node The elseif node to render.
+     * @param array<int,TreeNode> $ifNodes Array of preceding if/elseif nodes in the chain.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
      * @return string The rendered output if condition is true and no previous conditions were true, empty string otherwise.
      */
-    private function renderElseIfNode(\stdClass $node, array $ifNodes, array $data, array $functions): string
+    private function renderElseIfNode(TreeNode $node, array $ifNodes, array $data, array $functions): string
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
             return $this->escape("{{elseif!!could not find matching `if`}}");
@@ -349,13 +349,13 @@ class Template
      *
      * Only renders if no previous if/elseif in the chain was true.
      *
-     * @param \stdClass $node The else node to render.
-     * @param array<int,\stdClass> $ifNodes Array of preceding if/elseif nodes in the chain.
+     * @param TreeNode $node The else node to render.
+     * @param array<int,TreeNode> $ifNodes Array of preceding if/elseif nodes in the chain.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
      * @return string The rendered output if no previous conditions were true, empty string otherwise.
      */
-    private function renderElseNode(\stdClass $node, array $ifNodes, array $data, array $functions): string
+    private function renderElseNode(TreeNode $node, array $ifNodes, array $data, array $functions): string
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
             return $this->escape("{{else!!could not find matching `if`}}");
@@ -379,12 +379,12 @@ class Template
      * - {{for:var:array}} - iterates with values only
      * - {{for:var:key:array}} - iterates with both keys and values
      *
-     * @param \stdClass $node The for node to render.
+     * @param TreeNode $node The for node to render.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
      * @return string The concatenated rendered output for each iteration.
      */
-    private function renderForNode(\stdClass $node, array $data, array $functions): string
+    private function renderForNode(TreeNode $node, array $data, array $functions): string
     {
         $parts = $this->explode('|', (string)$node->expression);
         $path = array_shift($parts);
@@ -423,12 +423,12 @@ class Template
      * Resolves the variable path, applies any filter functions, and escapes the result.
      * Variables can be simple ({{name}}) or use filters ({{name|upper}}).
      *
-     * @param \stdClass $node The var node to render.
+     * @param TreeNode $node The var node to render.
      * @param array<string,mixed> $data The data context for variable lookup.
      * @param array<string,callable> $functions Available custom functions for filters.
      * @return string The rendered and escaped variable value.
      */
-    private function renderVarNode(\stdClass $node, array $data, array $functions): string
+    private function renderVarNode(TreeNode $node, array $data, array $functions): string
     {
         $parts = $this->explode('|', (string)$node->expression);
         $path = array_shift($parts);

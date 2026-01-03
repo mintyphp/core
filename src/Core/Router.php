@@ -60,6 +60,7 @@ class Router
 		?array $serverGlobal = null,
 		private ?Debugger $debugger = null
 	) {
+		/** @var array<string,string> $_SERVER */
 		$this->serverGlobal = $serverGlobal ?? $_SERVER;
 		$this->method = $this->serverGlobal['REQUEST_METHOD'] ?? 'GET';
 		$this->request = $this->serverGlobal['REQUEST_URI'] ?? '/';
@@ -431,6 +432,8 @@ class Router
 			$viewFile = $this->view;
 			$actionFile = $this->action;
 			$templateFile = $this->template;
+			/** @var array<string, mixed> $_GET */
+			/** @var array<string, mixed> $_POST */
 			$this->debugger->setRoute($method, $csrfOk, $request, $url, $dir, $viewFile, $actionFile, $templateFile, $this->parameters, $_GET,  $_POST);
 			$this->debugger->setStatus($status);
 		}
@@ -527,7 +530,7 @@ class Router
 	 */
 	public function getRedirect(): ?string
 	{
-		return (isset($this->redirect) && $this->redirect !== '') ? $this->redirect : null;
+		return ($this->redirect) ? $this->redirect : null;
 	}
 
 	/**
