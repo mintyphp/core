@@ -402,35 +402,35 @@ class TemplateTest extends TestCase
     public function testMultilineForLoopSimple(): void
     {
         $template = "<ul>\n{% for item in items %}\n    <li>{{ item }}</li>\n{% endfor %}\n</ul>";
-        $expected = "<ul>\n\n    <li>apple</li>\n\n    <li>banana</li>\n\n    <li>cherry</li>\n\n</ul>";
+        $expected = "<ul>\n    <li>apple</li>\n    <li>banana</li>\n    <li>cherry</li>\n</ul>";
         $this->assertEquals($expected, self::$template->render($template, ['items' => ['apple', 'banana', 'cherry']]));
     }
 
     public function testMultilineForLoopWithIndentation(): void
     {
         $template = "<div>\n    <ul>\n    {% for user in users %}\n        <li>{{ user }}</li>\n    {% endfor %}\n    </ul>\n</div>";
-        $expected = "<div>\n    <ul>\n    \n        <li>Alice</li>\n    \n        <li>Bob</li>\n    \n    </ul>\n</div>";
+        $expected = "<div>\n    <ul>\n        <li>Alice</li>\n        <li>Bob</li>\n    </ul>\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['users' => ['Alice', 'Bob']]));
     }
 
     public function testMultilineIfWithWhitespace(): void
     {
         $template = "<div>\n    {% if active %}\n        <span>Active</span>\n    {% endif %}\n</div>";
-        $expected = "<div>\n    \n        <span>Active</span>\n    \n</div>";
+        $expected = "<div>\n        <span>Active</span>\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['active' => true]));
     }
 
     public function testMultilineIfElseWithWhitespace(): void
     {
         $template = "<div>\n    {% if active %}\n        <span>Active</span>\n    {% else %}\n        <span>Inactive</span>\n    {% endif %}\n</div>";
-        $expected = "<div>\n    \n        <span>Inactive</span>\n    \n</div>";
+        $expected = "<div>\n        <span>Inactive</span>\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['active' => false]));
     }
 
     public function testMultilineNestedForLoops(): void
     {
         $template = "<table>\n{% for row in rows %}\n    <tr>\n    {% for cell in row %}\n        <td>{{ cell }}</td>\n    {% endfor %}\n    </tr>\n{% endfor %}\n</table>";
-        $expected = "<table>\n\n    <tr>\n    \n        <td>1</td>\n    \n        <td>2</td>\n    \n    </tr>\n\n    <tr>\n    \n        <td>3</td>\n    \n        <td>4</td>\n    \n    </tr>\n\n</table>";
+        $expected = "<table>\n    <tr>\n        <td>1</td>\n        <td>2</td>\n    </tr>\n    <tr>\n        <td>3</td>\n        <td>4</td>\n    </tr>\n</table>";
         $this->assertEquals($expected, self::$template->render($template, ['rows' => [[1, 2], [3, 4]]]));
     }
 
@@ -447,7 +447,7 @@ class TemplateTest extends TestCase
             ]
         ];
 
-        $expected = "<!DOCTYPE html>\n<html>\n<head>\n    <title>My Page</title>\n</head>\n<body>\n    <ul id=\"navigation\">\n    \n        <li><a href=\"/home\">Home</a></li>\n    \n        <li><a href=\"/about\">About</a></li>\n    \n    </ul>\n    <h1>Welcome</h1>\n</body>\n</html>";
+        $expected = "<!DOCTYPE html>\n<html>\n<head>\n    <title>My Page</title>\n</head>\n<body>\n    <ul id=\"navigation\">\n        <li><a href=\"/home\">Home</a></li>\n        <li><a href=\"/about\">About</a></li>\n    </ul>\n    <h1>Welcome</h1>\n</body>\n</html>";
 
         $this->assertEquals($expected, self::$template->render($template, $data));
     }
@@ -476,14 +476,14 @@ class TemplateTest extends TestCase
     public function testMultilineForLoopWithEmptyList(): void
     {
         $template = "<ul>\n{% for item in items %}\n    <li>{{ item }}</li>\n{% endfor %}\n</ul>";
-        $expected = "<ul>\n\n</ul>";
+        $expected = "<ul>\n</ul>";
         $this->assertEquals($expected, self::$template->render($template, ['items' => []]));
     }
 
     public function testMultilineIfWithFalseCondition(): void
     {
         $template = "<div>\n    Content before\n    {% if show %}\n        This should not appear\n    {% endif %}\n    Content after\n</div>";
-        $expected = "<div>\n    Content before\n    \n    Content after\n</div>";
+        $expected = "<div>\n    Content before\n    Content after\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['show' => false]));
     }
 
@@ -497,14 +497,14 @@ class TemplateTest extends TestCase
     public function testMultilineWithMixedContentTypes(): void
     {
         $template = "<p>\n    Text content\n    {{ text }}\n    {% if show %}\n        <strong>{{ emphasis }}</strong>\n    {% endif %}\n    More text\n</p>";
-        $expected = "<p>\n    Text content\n    Hello\n    \n        <strong>Important</strong>\n    \n    More text\n</p>";
+        $expected = "<p>\n    Text content\n    Hello\n        <strong>Important</strong>\n    More text\n</p>";
         $this->assertEquals($expected, self::$template->render($template, ['text' => 'Hello', 'show' => true, 'emphasis' => 'Important']));
     }
 
     public function testMultilineHtmlListWithData(): void
     {
         $template = "<h1>Members</h1>\n<ul>\n{% for user in users %}\n  <li>{{ user.username }}</li>\n{% endfor %}\n</ul>";
-        $expected = "<h1>Members</h1>\n<ul>\n\n  <li>alice</li>\n\n  <li>bob</li>\n\n  <li>charlie</li>\n\n</ul>";
+        $expected = "<h1>Members</h1>\n<ul>\n  <li>alice</li>\n  <li>bob</li>\n  <li>charlie</li>\n</ul>";
         $data = [
             'users' => [
                 ['username' => 'alice'],
@@ -518,7 +518,7 @@ class TemplateTest extends TestCase
     public function testMultilineNestedIfStatements(): void
     {
         $template = "<div>\n{% if outer %}\n    <div class=\"outer\">\n    {% if inner %}\n        <div class=\"inner\">Content</div>\n    {% endif %}\n    </div>\n{% endif %}\n</div>";
-        $expected = "<div>\n\n    <div class=\"outer\">\n    \n        <div class=\"inner\">Content</div>\n    \n    </div>\n\n</div>";
+        $expected = "<div>\n    <div class=\"outer\">\n        <div class=\"inner\">Content</div>\n    </div>\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['outer' => true, 'inner' => true]));
     }
 
@@ -540,7 +540,7 @@ class TemplateTest extends TestCase
     public function testMultilineForLoopWithComplexData(): void
     {
         $template = "<dl>\n{% for item in items %}\n  <dt>{{ item.key }}</dt>\n  <dd>{{ item.value }}</dd>\n{% endfor %}\n</dl>";
-        $expected = "<dl>\n\n  <dt>Name</dt>\n  <dd>John</dd>\n\n  <dt>Age</dt>\n  <dd>30</dd>\n\n</dl>";
+        $expected = "<dl>\n  <dt>Name</dt>\n  <dd>John</dd>\n  <dt>Age</dt>\n  <dd>30</dd>\n</dl>";
         $data = [
             'items' => [
                 ['key' => 'Name', 'value' => 'John'],
