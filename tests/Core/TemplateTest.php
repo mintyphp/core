@@ -182,9 +182,34 @@ class TemplateTest extends TestCase
         $this->assertEquals("2", self::$template->render('{{a / b}}', ['a' => 10, 'b' => 5]));
     }
 
+    public function testExpressionDivisionByZero(): void
+    {
+        $this->assertEquals("{{a / 0!!division by zero}}", self::$template->render('{{a / 0}}', ['a' => 10]));
+    }
+
     public function testExpressionModulo(): void
     {
         $this->assertEquals("1", self::$template->render('{{a % b}}', ['a' => 10, 'b' => 3]));
+    }
+
+    public function testExpressionModuloByZero(): void
+    {
+        $this->assertEquals("{{a % 0!!modulo by zero}}", self::$template->render('{{a % 0}}', ['a' => 10]));
+    }
+
+    public function testExpressionNotEnoughOperandsUnary(): void
+    {
+        $this->assertEquals("{{!!!not enough operands for: !}}", self::$template->render('{{!}}', []));
+    }
+
+    public function testExpressionNotEnoughOperandsBinary(): void
+    {
+        $this->assertEquals("{{5 +!!not enough operands for: +}}", self::$template->render('{{5 +}}', []));
+    }
+
+    public function testExpressionMalformedExpression(): void
+    {
+        $this->assertEquals("{{5 5!!malformed expression}}", self::$template->render('{{5 5}}', []));
     }
 
     // Expression tests - Operator precedence

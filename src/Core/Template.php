@@ -297,14 +297,14 @@ class Expression
                 if ($op === '!') {
                     // Unary operator
                     if (empty($stack)) {
-                        throw new TemplateError("Invalid expression: not enough operands for '!'");
+                        throw new TemplateError("not enough operands for: $op");
                     }
                     $operand = array_pop($stack);
                     $stack[] = !$operand;
                 } else {
                     // Binary operator
                     if (count($stack) < 2) {
-                        throw new TemplateError("Invalid expression: not enough operands for '$op'");
+                        throw new TemplateError("not enough operands for: $op");
                     }
                     /** @var float|int|string $right */
                     $right = array_pop($stack);
@@ -331,11 +331,11 @@ class Expression
                         '*' => (is_numeric($left) ? +$left : 0) * (is_numeric($right) ? +$right : 0),
                         '/' => (is_numeric($right) && $right != 0)
                             ? (is_numeric($left) ? +$left : 0) / +$right
-                            : throw new TemplateError("Invalid expression: division by zero"),
+                            : throw new TemplateError("division by zero"),
                         '%' => (is_numeric($right) && $right != 0)
                             ? (int)(is_numeric($left) ? +$left : 0) % (int)+$right
-                            : throw new TemplateError("Invalid expression: modulo by zero"),
-                        default => throw new TemplateError("Invalid expression: unknown operator: $op"),
+                            : throw new TemplateError("modulo by zero"),
+                        default => throw new TemplateError("unknown operator: $op"),
                     };
 
                     $stack[] = $result;
@@ -344,7 +344,7 @@ class Expression
         }
 
         if (count($stack) !== 1) {
-            throw new TemplateError("Invalid expression: malformed expression");
+            throw new TemplateError("malformed expression");
         }
 
         return array_pop($stack);
