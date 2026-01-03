@@ -493,6 +493,20 @@ class Template
         $literal = '';
 
         while ($i < $len) {
+            // Check for comment {#
+            if ($i < $len - 1 && $template[$i] === '{' && $template[$i + 1] === '#') {
+                // Skip the comment - just find the closing #} and discard everything
+                $i += 2;
+                while ($i < $len - 1) {
+                    if ($template[$i] === '#' && $template[$i + 1] === '}') {
+                        $i += 2;
+                        break;
+                    }
+                    $i++;
+                }
+                continue;
+            }
+
             // Check for control structure {%
             if ($i < $len - 1 && $template[$i] === '{' && $template[$i + 1] === '%') {
                 $tokens[] = $literal;

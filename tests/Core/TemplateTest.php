@@ -497,9 +497,9 @@ class TemplateTest extends TestCase
 
     public function testMultilineCommentLikeStructure(): void
     {
-        // MintyPHP doesn't have comment syntax like Jinja's {# #}, but we can test similar multiline structures
-        $template = "<div>\n    <!-- HTML comment -->\n    {{ content }}\n    <!-- Another comment -->\n</div>";
-        $expected = "<div>\n    <!-- HTML comment -->\n    Data\n    <!-- Another comment -->\n</div>";
+        // Test Jinja-style {# #} comment syntax - comments should be completely removed
+        $template = "<div>\n    {# This is a comment #}\n    {{ content }}\n    {# Another comment #}\n</div>";
+        $expected = "<div>\n    \n    Data\n    \n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['content' => 'Data']));
     }
 
@@ -528,5 +528,62 @@ class TemplateTest extends TestCase
         $template = "<div>\n  Two spaces\n    Four spaces\n\tOne tab\n{{ text }}\n</div>";
         $expected = "<div>\n  Two spaces\n    Four spaces\n\tOne tab\nValue\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['text' => 'Value']));
+    }
+
+    // Comment syntax tests - {# ... #}
+    public function testCommentSimple(): void
+    {
+        $this->assertEquals("hello  world", self::$template->render('hello {# comment #} world', []));
+    }
+
+    public function testCommentWithVariables(): void
+    {
+        $this->assertEquals("hello  test world", self::$template->render('hello {# this is ignored #} {{ text }} world', ['text' => 'test']));
+    }
+
+    public function testCommentMultiline(): void
+    {
+        $template = "Line 1\n{# This is\na multiline\ncomment #}\nLine 2";
+        $expected = "Line 1\n\nLine 2";
+        $this->assertEquals($expected, self::$template->render($template, []));
+    }
+
+    public function testCommentWithControlStructures(): void
+    {
+        $this->assertEquals("result", self::$template->render('{# comment #}{% if true %}result{% endif %}{# another #}', []));
+    }
+
+    public function testCommentMultiple(): void
+    {
+        $this->assertEquals("abc", self::$template->render('a{# one #}b{# two #}c{# three #}', []));
+    }
+
+    public function testCommentWithSpecialChars(): void
+    {
+        $this->assertEquals("text", self::$template->render('{# {{ }} {% %} #}text', []));
+    }
+
+    public function testCommentInTemplate(): void
+    {
+        $template = "{# Header comment #}\n<div>\n    {# Content comment #}\n    {{ content }}\n</div>\n{# Footer comment #}";
+        $expected = "\n<div>\n    \n    Data\n</div>\n";
+        $this->assertEquals($expected, self::$template->render($template, ['content' => 'Data']));
+    }
+
+    public function testCommentBeforeAndAfterVariable(): void
+    {
+        $this->assertEquals("Value", self::$template->render('{# before #}{{ text }}{# after #}', ['text' => 'Value']));
+    }
+
+    public function testCommentInForLoop(): void
+    {
+        $template = "{% for i in items %}{# loop comment #}{{ i }}{% endfor %}";
+        $expected = "123";
+        $this->assertEquals($expected, self::$template->render($template, ['items' => [1, 2, 3]]));
+    }
+
+    public function testCommentEmpty(): void
+    {
+        $this->assertEquals("text", self::$template->render('{##}text', []));
     }
 }
