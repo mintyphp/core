@@ -161,6 +161,40 @@ class TemplateTest extends TestCase
         $this->assertEquals("", self::$template->render('{% if not a %}not true{% endif %}', ['a' => true]));
     }
 
+    public function testExpressionLogicalAndWordBased(): void
+    {
+        $this->assertEquals("both true", self::$template->render('{% if a > 5 and b < 20 %}both true{% endif %}', ['a' => 10, 'b' => 15]));
+        $this->assertEquals("", self::$template->render('{% if a > 5 and b < 20 %}both true{% endif %}', ['a' => 3, 'b' => 15]));
+        $this->assertEquals("", self::$template->render('{% if a > 5 and b < 20 %}both true{% endif %}', ['a' => 10, 'b' => 25]));
+    }
+
+    public function testExpressionLogicalOrWordBased(): void
+    {
+        $this->assertEquals("at least one", self::$template->render('{% if a > 5 or b < 20 %}at least one{% endif %}', ['a' => 10, 'b' => 25]));
+        $this->assertEquals("at least one", self::$template->render('{% if a > 5 or b < 20 %}at least one{% endif %}', ['a' => 3, 'b' => 15]));
+        $this->assertEquals("", self::$template->render('{% if a > 5 or b < 20 %}at least one{% endif %}', ['a' => 3, 'b' => 25]));
+    }
+
+    public function testExpressionLogicalMixedWordAndSymbol(): void
+    {
+        $this->assertEquals("yes", self::$template->render('{% if a > 5 and b < 20 or c == 10 %}yes{% endif %}', ['a' => 10, 'b' => 15, 'c' => 0]));
+        $this->assertEquals("yes", self::$template->render('{% if a > 5 || b < 20 and c == 10 %}yes{% endif %}', ['a' => 10, 'b' => 25, 'c' => 5]));
+    }
+
+    public function testExpressionLogicalNotWithAnd(): void
+    {
+        $this->assertEquals("yes", self::$template->render('{% if not a and b %}yes{% endif %}', ['a' => false, 'b' => true]));
+        $this->assertEquals("", self::$template->render('{% if not a and b %}yes{% endif %}', ['a' => true, 'b' => true]));
+        $this->assertEquals("", self::$template->render('{% if not a and b %}yes{% endif %}', ['a' => false, 'b' => false]));
+    }
+
+    public function testExpressionLogicalNotWithOr(): void
+    {
+        $this->assertEquals("yes", self::$template->render('{% if not a or b %}yes{% endif %}', ['a' => false, 'b' => false]));
+        $this->assertEquals("yes", self::$template->render('{% if not a or b %}yes{% endif %}', ['a' => true, 'b' => true]));
+        $this->assertEquals("", self::$template->render('{% if not a or b %}yes{% endif %}', ['a' => true, 'b' => false]));
+    }
+
     // Expression tests - Arithmetic operators
     public function testExpressionAddition(): void
     {
@@ -550,7 +584,7 @@ class TemplateTest extends TestCase
 
     public function testCommentWithControlStructures(): void
     {
-        $this->assertEquals("result", self::$template->render('{# comment #}{% if true %}result{% endif %}{# another #}', []));
+        $this->assertEquals("result", self::$template->render('{# comment #}{% if true %}result{% endif %}{# another #}', ['true' => true]));
     }
 
     public function testCommentMultiple(): void
