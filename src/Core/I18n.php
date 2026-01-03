@@ -111,9 +111,7 @@ class I18n
      * @param string $locale The current locale (e.g., 'en', 'de', 'fr').
      * @param string $defaultLocale The fallback locale.
      */
-    public function __construct(private readonly string $domain = 'default', private readonly string $locale = '', private readonly string $defaultLocale = 'en')
-    {
-    }
+    public function __construct(private readonly string $domain = 'default', private readonly string $locale = '', private readonly string $defaultLocale = 'en') {}
 
     /**
      * Format a price with currency symbol.
@@ -160,7 +158,7 @@ class I18n
             $sign = '';
         }
         $format = $formats[$this->locale] ?? $formats[$this->defaultLocale];
-        if (!is_array($format) || !isset($format['thousandSeparator']) || !isset($format['decimalSeparator'])) {
+        if (!isset($format['thousandSeparator']) || !isset($format['decimalSeparator'])) {
             $format = ['thousandSeparator' => ',', 'decimalSeparator' => '.'];
         }
         /** @var string $thousandSep */
@@ -274,7 +272,7 @@ class I18n
     {
         $weekDays = $this->formats['weekDays'];
         $localeWeekDays = $weekDays[$this->locale] ?? $weekDays[$this->defaultLocale];
-        if (!is_array($localeWeekDays) || !isset($localeWeekDays[$dayOfWeek])) {
+        if (!isset($localeWeekDays[$dayOfWeek])) {
             return '';
         }
         return $localeWeekDays[$dayOfWeek];
@@ -290,7 +288,7 @@ class I18n
     {
         $monthNames = $this->formats['monthNames'];
         $localeMonthNames = $monthNames[$this->locale] ?? $monthNames[$this->defaultLocale];
-        if (!is_array($localeMonthNames) || !isset($localeMonthNames[$monthOfYear - 1])) {
+        if (!isset($localeMonthNames[$monthOfYear - 1])) {
             return '';
         }
         return $localeMonthNames[$monthOfYear - 1];
@@ -307,7 +305,7 @@ class I18n
     {
         $formats = $this->formats['datetime'];
         $format = $formats[$this->locale] ?? $formats[$this->defaultLocale];
-        if (!is_array($format) || !isset($format[$type])) {
+        if (!isset($format[$type])) {
             return '';
         }
         /** @var string $dateFormat */
@@ -335,13 +333,10 @@ class I18n
         }
         $formats = $this->formats['datetime'];
         $dateFormat = $formats['en']['date'] ?? 'm/d/Y';
-        if (!is_string($dateFormat) || strlen($dateFormat) < 2) {
+        if (strlen($dateFormat) < 2) {
             $dateFormat = 'm/d/Y';
         }
         $sep = $dateFormat[1];
-        if ($sep === '') {
-            $sep = '/';
-        }
         $timestamp = strtotime($str);
         if ($timestamp === false) {
             return '';
@@ -382,6 +377,7 @@ class I18n
             if (file_exists($filename)) {
                 $content = file_get_contents($filename);
                 if ($content !== false) {
+                    /** @var array<string, string>|null $decoded */
                     $decoded = json_decode($content, true);
                     if (is_array($decoded)) {
                         $this->strings[$this->domain][$this->locale] = $decoded;

@@ -14,7 +14,11 @@ class Network
      */
     public function isLocalIP(string $ipAddress): bool
     {
-        preg_match_all('|inet6? ([^/]+)/|', `ip a`, $matches);
+        $output = shell_exec('ip a');
+        if (!$output) {
+            return false;
+        }
+        preg_match_all('|inet6? ([^/]+)/|', $output, $matches);
         $ipAddresses = $matches[1];
         return in_array($ipAddress, $ipAddresses);
     }
