@@ -37,11 +37,6 @@ class ExpressionToken
         return new self('identifier', $value);
     }
 
-    public static function boolean(string $value): self
-    {
-        return new self('boolean', $value);
-    }
-
     public static function operator(string $value): self
     {
         return new self('operator', $value);
@@ -54,7 +49,7 @@ class ExpressionToken
 
     public function isOperand(): bool
     {
-        return in_array($this->type, ['number', 'string', 'identifier', 'boolean']);
+        return in_array($this->type, ['number', 'string', 'identifier']);
     }
 
     public function isOperator(): bool
@@ -129,7 +124,7 @@ class Expression
                 continue;
             }
 
-            // Handle word-based operators (and, or, not) and boolean literals (true, false)
+            // Handle word-based operators (and, or, not)
             if (ctype_alpha($char)) {
                 $word = '';
                 $start = $i;
@@ -141,12 +136,7 @@ class Expression
                     $tokens[] = ExpressionToken::operator($word);
                     continue;
                 }
-                // Check for boolean literals
-                if ($word === 'true' || $word === 'false') {
-                    $tokens[] = ExpressionToken::boolean($word);
-                    continue;
-                }
-                // Not an operator or boolean, reset and handle as identifier
+                // Not an operator, reset and handle as identifier
                 $i = $start;
             }
 
@@ -316,8 +306,6 @@ class Expression
                         (float)$token->value : (int)$token->value;
                 } elseif ($token->type === 'string') {
                     $stack[] = $token->value;
-                } elseif ($token->type === 'boolean') {
-                    $stack[] = $token->value === 'true';
                 } elseif ($token->type === 'identifier') {
                     $stack[] = $resolvePath($token->value, $data);
                 }
