@@ -13,17 +13,377 @@ class RawValue
 }
 
 /**
+ * Internal class representing a token in an expression
+ */
+class ExpressionToken
+{
+    public function __construct(
+        public string $type,
+        public string $value
+    ) {}
+
+    public static function number(string $value): self
+    {
+        return new self('number', $value);
+    }
+
+    public static function string(string $value): self
+    {
+        return new self('string', $value);
+    }
+
+    public static function identifier(string $value): self
+    {
+        return new self('identifier', $value);
+    }
+
+    public static function operator(string $value): self
+    {
+        return new self('operator', $value);
+    }
+
+    public static function parenthesis(string $value): self
+    {
+        return new self('parenthesis', $value);
+    }
+
+    public function isOperand(): bool
+    {
+        return in_array($this->type, ['number', 'string', 'identifier']);
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->type === 'operator';
+    }
+
+    public function isParenthesis(): bool
+    {
+        return $this->type === 'parenthesis';
+    }
+}
+
+/**
+ * Internal class representing an expression with operators
+ */
+class Expression
+{
+    private const OPERATORS = [
+        '||' => ['precedence' => 1, 'associativity' => 'left'],
+        '&&' => ['precedence' => 2, 'associativity' => 'left'],
+        '==' => ['precedence' => 3, 'associativity' => 'left'],
+        '!=' => ['precedence' => 3, 'associativity' => 'left'],
+        '<' => ['precedence' => 4, 'associativity' => 'left'],
+        '>' => ['precedence' => 4, 'associativity' => 'left'],
+        '<=' => ['precedence' => 4, 'associativity' => 'left'],
+        '>=' => ['precedence' => 4, 'associativity' => 'left'],
+        '+' => ['precedence' => 5, 'associativity' => 'left'],
+        '-' => ['precedence' => 5, 'associativity' => 'left'],
+        '*' => ['precedence' => 6, 'associativity' => 'left'],
+        '/' => ['precedence' => 6, 'associativity' => 'left'],
+        '%' => ['precedence' => 6, 'associativity' => 'left'],
+        '!' => ['precedence' => 7, 'associativity' => 'right'],
+    ];
+
+    /** @var array<int,ExpressionToken> */
+    private array $tokens;
+
+    public function __construct(string $expression)
+    {
+        $this->tokens = $this->tokenize($expression);
+    }
+
+    /**
+     * Tokenizes an expression into operators, operands, and parentheses
+     * 
+     * @param string $expression
+     * @return array<int,ExpressionToken>
+     */
+    private function tokenize(string $expression): array
+    {
+        $tokens = [];
+        $expression = trim($expression);
+        $i = 0;
+        $len = strlen($expression);
+
+        while ($i < $len) {
+            $char = $expression[$i];
+
+            // Skip whitespace
+            if (ctype_space($char)) {
+                $i++;
+                continue;
+            }
+
+            // Handle parentheses
+            if ($char === '(' || $char === ')') {
+                $tokens[] = ExpressionToken::parenthesis($char);
+                $i++;
+                continue;
+            }
+
+            // Handle two-character operators
+            if ($i < $len - 1) {
+                $twoChar = substr($expression, $i, 2);
+                if (isset(self::OPERATORS[$twoChar])) {
+                    $tokens[] = ExpressionToken::operator($twoChar);
+                    $i += 2;
+                    continue;
+                }
+            }
+
+            // Handle single-character operators
+            if (isset(self::OPERATORS[$char])) {
+                $tokens[] = ExpressionToken::operator($char);
+                $i++;
+                continue;
+            }
+
+            // Handle numbers
+            if (ctype_digit($char) || ($char === '.' && $i < $len - 1 && ctype_digit($expression[$i + 1]))) {
+                $num = '';
+                while ($i < $len && (ctype_digit($expression[$i]) || $expression[$i] === '.')) {
+                    $num .= $expression[$i];
+                    $i++;
+                }
+                $tokens[] = ExpressionToken::number($num);
+                continue;
+            }
+
+            // Handle string literals
+            if ($char === '"') {
+                $str = '';
+                $i++; // Skip opening quote
+                $escaped = false;
+                while ($i < $len) {
+                    if ($escaped) {
+                        $str .= $expression[$i];
+                        $escaped = false;
+                    } elseif ($expression[$i] === '\\') {
+                        $escaped = true;
+                    } elseif ($expression[$i] === '"') {
+                        $i++; // Skip closing quote
+                        break;
+                    } else {
+                        $str .= $expression[$i];
+                    }
+                    $i++;
+                }
+                $tokens[] = ExpressionToken::string($str);
+                continue;
+            }
+
+            // Handle identifiers/paths (with dots for nested access)
+            if (ctype_alpha($char) || $char === '_') {
+                $ident = '';
+                while ($i < $len && (ctype_alnum($expression[$i]) || $expression[$i] === '_' || $expression[$i] === '.')) {
+                    $ident .= $expression[$i];
+                    $i++;
+                }
+                $tokens[] = ExpressionToken::identifier($ident);
+                continue;
+            }
+
+            // Unknown character, skip it
+            $i++;
+        }
+
+        return $tokens;
+    }
+
+    /**
+     * Evaluates the expression with given data context
+     * 
+     * @param array<string,mixed> $data
+     * @param callable $resolvePath
+     * @return mixed
+     */
+    public function evaluate(array $data, callable $resolvePath): mixed
+    {
+        $rpn = $this->toReversePolishNotation();
+        return $this->evaluateRPN($rpn, $data, $resolvePath);
+    }
+
+    /**
+     * Converts infix notation to Reverse Polish Notation using Shunting Yard algorithm
+     * 
+     * @return array<int,ExpressionToken>
+     */
+    private function toReversePolishNotation(): array
+    {
+        $output = [];
+        $operators = [];
+
+        foreach ($this->tokens as $token) {
+            if ($token->isOperand()) {
+                // Operand (number, string, identifier)
+                $output[] = $token;
+            } elseif ($token->isParenthesis() && $token->value === '(') {
+                $operators[] = $token;
+            } elseif ($token->isParenthesis() && $token->value === ')') {
+                // Pop operators until we find the matching '('
+                while (!empty($operators)) {
+                    $top = end($operators);
+                    if ($top->isParenthesis() && $top->value === '(') {
+                        break;
+                    }
+                    $output[] = array_pop($operators);
+                }
+                if (!empty($operators)) {
+                    array_pop($operators); // Remove the '('
+                }
+            } elseif ($token->isOperator()) {
+                // Operator
+                $o1 = $token->value;
+                while (!empty($operators)) {
+                    $top = end($operators);
+                    if ($top->isParenthesis()) {
+                        break;
+                    }
+                    if (!$top->isOperator()) {
+                        break;
+                    }
+                    $o2 = $top->value;
+                    $o1Prec = self::OPERATORS[$o1]['precedence'];
+                    $o2Prec = self::OPERATORS[$o2]['precedence'];
+                    $o1Assoc = self::OPERATORS[$o1]['associativity'];
+
+                    if (($o1Assoc === 'left' && $o1Prec <= $o2Prec) ||
+                        ($o1Assoc === 'right' && $o1Prec < $o2Prec)
+                    ) {
+                        $output[] = array_pop($operators);
+                    } else {
+                        break;
+                    }
+                }
+                $operators[] = $token;
+            }
+        }
+
+        // Pop remaining operators
+        while (!empty($operators)) {
+            $output[] = array_pop($operators);
+        }
+
+        return $output;
+    }
+
+    /**
+     * Evaluates an expression in Reverse Polish Notation
+     * 
+     * @param array<int,ExpressionToken> $rpn
+     * @param array<string,mixed> $data
+     * @param callable $resolvePath
+     * @return mixed
+     */
+    private function evaluateRPN(array $rpn, array $data, callable $resolvePath): mixed
+    {
+        $stack = [];
+
+        foreach ($rpn as $token) {
+            if ($token->isOperand()) {
+                // Operand
+                if ($token->type === 'number') {
+                    $stack[] = strpos($token->value, '.') !== false ?
+                        (float)$token->value : (int)$token->value;
+                } elseif ($token->type === 'string') {
+                    $stack[] = $token->value;
+                } elseif ($token->type === 'identifier') {
+                    $stack[] = $resolvePath($token->value, $data);
+                }
+            } elseif ($token->isOperator()) {
+                // Operator
+                $op = $token->value;
+                if ($op === '!') {
+                    // Unary operator
+                    if (empty($stack)) {
+                        throw new TemplateError("Invalid expression: not enough operands for '!'");
+                    }
+                    $operand = array_pop($stack);
+                    $stack[] = !$operand;
+                } else {
+                    // Binary operator
+                    if (count($stack) < 2) {
+                        throw new TemplateError("Invalid expression: not enough operands for '$op'");
+                    }
+                    /** @var float|int|string $right */
+                    $right = array_pop($stack);
+                    /** @var float|int|string $left */
+                    $left = array_pop($stack);
+
+                    // Check for logical, numeric or string operations and cast accordingly
+                    $result = match ($op) {
+                        // Logical operators - no casting needed, PHP handles truthiness
+                        '||' => $left || $right,
+                        '&&' => $left && $right,
+                        // Comparison operators - no casting needed, PHP type juggling handles it
+                        '==' => $left == $right,
+                        '!=' => $left != $right,
+                        '<' => $left < $right,
+                        '>' => $left > $right,
+                        '<=' => $left <= $right,
+                        '>=' => $left >= $right,
+                        // Arithmetic operators - cast to numeric types
+                        '+' => (!is_numeric($left) || !is_numeric($right))
+                            ? ((string)$left . (string)$right)  // String concatenation
+                            : +$left + +$right,  // Numeric addition
+                        '-' => (is_numeric($left) ? +$left : 0) - (is_numeric($right) ? +$right : 0),
+                        '*' => (is_numeric($left) ? +$left : 0) * (is_numeric($right) ? +$right : 0),
+                        '/' => (is_numeric($right) && $right != 0)
+                            ? (is_numeric($left) ? +$left : 0) / +$right
+                            : throw new TemplateError("Invalid expression: division by zero"),
+                        '%' => (is_numeric($right) && $right != 0)
+                            ? (int)(is_numeric($left) ? +$left : 0) % (int)+$right
+                            : throw new TemplateError("Invalid expression: modulo by zero"),
+                        default => throw new TemplateError("Invalid expression: unknown operator: $op"),
+                    };
+
+                    $stack[] = $result;
+                }
+            }
+        }
+
+        if (count($stack) !== 1) {
+            throw new TemplateError("Invalid expression: malformed expression");
+        }
+
+        return array_pop($stack);
+    }
+
+    /**
+     * Gets the original expression string for filters
+     * 
+     * @return string
+     */
+    public function getFilterExpression(): string
+    {
+        // For now, if expression contains operators, return empty to skip filters
+        // In the future, we could separate expression and filters differently
+        foreach ($this->tokens as $token) {
+            if ($token->isOperator()) {
+                return ''; // Has operators, no filter path
+            }
+        }
+        // Simple identifier, return it
+        if (count($this->tokens) === 1 && $this->tokens[0]->type === 'identifier') {
+            return $this->tokens[0]->value;
+        }
+        return '';
+    }
+}
+
+/**
  * Internal class representing a node in the template syntax tree
  */
 class TreeNode
 {
     public string $type;
-    public string|false $expression;
+    public Expression|string|null $expression;
     /** @var array<int,TreeNode> */
     public array $children;
     public mixed $value;
 
-    public function __construct(string $type, string|false $expression)
+    public function __construct(string $type, Expression|string|null $expression)
     {
         $this->type = $type;
         $this->expression = $expression;
@@ -114,10 +474,11 @@ class Template
     }
 
     /**
-     * Splits a string by a separator, respecting quoted strings.
+     * Splits a string by a separator, respecting quoted strings and || operators.
      *
      * Similar to PHP's explode() but handles quoted strings properly, ensuring that
      * separators inside double-quoted strings are not treated as delimiters.
+     * Also handles || operators when separator is |.
      *
      * @param string $separator The boundary string to split by.
      * @param string $str The input string to split.
@@ -138,6 +499,19 @@ class Template
                 if ($c == $quote) {
                     $quoted = true;
                 } elseif (substr($str, $i, strlen($separator)) == $separator) {
+                    // Special handling for | separator: skip if it's part of ||
+                    if ($separator === '|' && $i > 0 && $str[$i - 1] === '|') {
+                        // Previous char was |, this is part of ||, include it
+                        $token .= $c;
+                        $i++;
+                        continue;
+                    }
+                    if ($separator === '|' && $i < strlen($str) - 1 && $str[$i + 1] === '|') {
+                        // Next char is |, this is part of ||, include both
+                        $token .= '||';
+                        $i++;
+                        continue;
+                    }
                     $tokens[] = $token;
                     if (count($tokens) == $count - 1) {
                         $token = substr($str, $i + strlen($separator));
@@ -175,20 +549,20 @@ class Template
      */
     private function createSyntaxTree(array &$tokens): TreeNode
     {
-        $root = new TreeNode('root', false);
+        $root = new TreeNode('root', null);
         $current = $root;
         $stack = [];
         foreach ($tokens as $i => $token) {
             if ($i % 2 == 1) {
                 if ($token == 'endif') {
                     $type = 'endif';
-                    $expression = false;
+                    $expression = null;
                 } elseif ($token == 'endfor') {
                     $type = 'endfor';
-                    $expression = false;
+                    $expression = null;
                 } elseif ($token == 'else') {
                     $type = 'else';
-                    $expression = false;
+                    $expression = null;
                 } elseif (str_starts_with($token, 'elseif:')) {
                     $type = 'elseif';
                     $expression = substr($token, 7);
@@ -262,7 +636,9 @@ class Template
                     $ifNodes = [];
                     break;
                 case 'lit':
-                    $result .= $child->expression;
+                    if (is_string($child->expression)) {
+                        $result .= $child->expression;
+                    }
                     $ifNodes = [];
                     break;
             }
@@ -283,16 +659,26 @@ class Template
      */
     private function renderIfNode(TreeNode $node, array $data, array $functions): string
     {
-        $parts = $this->explode('|', (string)$node->expression);
-        $path = array_shift($parts);
-        if ($path === null) {
-            return $this->escape('{{if:' . $node->expression . '!!' . "invalid expression" . '}}');
+        if ($node->expression === null || !is_string($node->expression)) {
+            return $this->escape('{{if:!!' . "invalid expression" . '}}');
         }
+
+        $expressionStr = $node->expression;
+        $parts = $this->explode('|', $expressionStr);
+        $exprPart = array_shift($parts);
+        if ($exprPart === null) {
+            return $this->escape('{{if:' . $expressionStr . '!!' . "invalid expression" . '}}');
+        }
+
         try {
-            $value = $this->resolvePath($path, $data);
+            $expr = new Expression($exprPart);
+            $value = $expr->evaluate($data, function (string $path, array $data) {
+                /** @var array<string,mixed> $data */
+                return $this->resolvePath($path, $data);
+            });
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape('{{if:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{{if:' . $expressionStr . '!!' . $e->getMessage() . '}}');
         }
         $result = '';
         if ($value) {
@@ -325,16 +711,25 @@ class Template
             $value = $value || $ifNodes[$i]->value;
         }
         if (!$value) {
-            $parts = $this->explode('|', (string)$node->expression);
-            $path = array_shift($parts);
-            if ($path === null) {
-                return $this->escape('{{elseif:' . $node->expression . '!!' . "invalid expression" . '}}');
+            if ($node->expression === null || !is_string($node->expression)) {
+                return $this->escape('{{elseif:!!' . "invalid expression" . '}}');
+            }
+
+            $expressionStr = $node->expression;
+            $parts = $this->explode('|', $expressionStr);
+            $exprPart = array_shift($parts);
+            if ($exprPart === null) {
+                return $this->escape('{{elseif:' . $expressionStr . '!!' . "invalid expression" . '}}');
             }
             try {
-                $value = $this->resolvePath($path, $data);
+                $expr = new Expression($exprPart);
+                $value = $expr->evaluate($data, function (string $path, array $data) {
+                    /** @var array<string,mixed> $data */
+                    return $this->resolvePath($path, $data);
+                });
                 $value = $this->applyFunctions($value, $parts, $functions, $data);
             } catch (\Throwable $e) {
-                return $this->escape('{{elseif:' . $node->expression . '!!' . $e->getMessage() . '}}');
+                return $this->escape('{{elseif:' . $expressionStr . '!!' . $e->getMessage() . '}}');
             }
             if ($value) {
                 $result .= $this->renderChildren($node, $data, $functions);
@@ -386,10 +781,15 @@ class Template
      */
     private function renderForNode(TreeNode $node, array $data, array $functions): string
     {
-        $parts = $this->explode('|', (string)$node->expression);
+        if ($node->expression === null || !is_string($node->expression)) {
+            return $this->escape('{{for:!!' . "invalid expression" . '}}');
+        }
+
+        $expressionStr = $node->expression;
+        $parts = $this->explode('|', $expressionStr);
         $path = array_shift($parts);
         if ($path === null) {
-            return $this->escape('{{for:' . $node->expression . '!!' . "invalid expression" . '}}');
+            return $this->escape('{{for:' . $expressionStr . '!!' . "invalid expression" . '}}');
         }
         $path = $this->explode(':', $path, 3);
         if (count($path) == 2) {
@@ -398,16 +798,16 @@ class Template
         } elseif (count($path) == 3) {
             [$var, $key, $path] = $path;
         } else {
-            return $this->escape('{{for:' . $node->expression . '!!' . "for must have `for:var:array` format" . '}}');
+            return $this->escape('{{for:' . $expressionStr . '!!' . "for must have `for:var:array` format" . '}}');
         }
         try {
             $value = $this->resolvePath($path, $data);
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape('{{for:' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{{for:' . $expressionStr . '!!' . $e->getMessage() . '}}');
         }
         if (!is_array($value)) {
-            return $this->escape('{{for:' . $node->expression . '!!' . "expression must evaluate to an array" . '}}');
+            return $this->escape('{{for:' . $expressionStr . '!!' . "expression must evaluate to an array" . '}}');
         }
         $result = '';
         foreach ($value as $k => $v) {
@@ -430,16 +830,25 @@ class Template
      */
     private function renderVarNode(TreeNode $node, array $data, array $functions): string
     {
-        $parts = $this->explode('|', (string)$node->expression);
-        $path = array_shift($parts);
-        if ($path === null) {
-            return $this->escape('{{' . $node->expression . '!!' . "invalid expression" . '}}');
+        if ($node->expression === null || !is_string($node->expression)) {
+            return $this->escape('{{!!' . "invalid expression" . '}}');
+        }
+
+        $expressionStr = $node->expression;
+        $parts = $this->explode('|', $expressionStr);
+        $exprPart = array_shift($parts);
+        if ($exprPart === null) {
+            return $this->escape('{{' . $expressionStr . '!!' . "invalid expression" . '}}');
         }
         try {
-            $value = $this->resolvePath($path, $data);
+            $expr = new Expression($exprPart);
+            $value = $expr->evaluate($data, function (string $path, array $data) {
+                /** @var array<string,mixed> $data */
+                return $this->resolvePath($path, $data);
+            });
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape('{{' . $node->expression . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{{' . $expressionStr . '!!' . $e->getMessage() . '}}');
         }
         if ($value instanceof RawValue) {
             return $this->escape($value);
