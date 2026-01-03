@@ -37,6 +37,11 @@ class ExpressionToken
         return new self('identifier', $value);
     }
 
+    public static function boolean(string $value): self
+    {
+        return new self('boolean', $value);
+    }
+
     public static function operator(string $value): self
     {
         return new self('operator', $value);
@@ -49,7 +54,7 @@ class ExpressionToken
 
     public function isOperand(): bool
     {
-        return in_array($this->type, ['number', 'string', 'identifier']);
+        return in_array($this->type, ['number', 'string', 'identifier', 'boolean']);
     }
 
     public function isOperator(): bool
@@ -69,7 +74,9 @@ class ExpressionToken
 class Expression
 {
     private const OPERATORS = [
+        'or' => ['precedence' => 1, 'associativity' => 'left'],
         '||' => ['precedence' => 1, 'associativity' => 'left'],
+        'and' => ['precedence' => 2, 'associativity' => 'left'],
         '&&' => ['precedence' => 2, 'associativity' => 'left'],
         '==' => ['precedence' => 3, 'associativity' => 'left'],
         '!=' => ['precedence' => 3, 'associativity' => 'left'],
@@ -82,7 +89,7 @@ class Expression
         '*' => ['precedence' => 6, 'associativity' => 'left'],
         '/' => ['precedence' => 6, 'associativity' => 'left'],
         '%' => ['precedence' => 6, 'associativity' => 'left'],
-        '!' => ['precedence' => 7, 'associativity' => 'right'],
+        'not' => ['precedence' => 7, 'associativity' => 'right'],
     ];
 
     /** @var array<int,ExpressionToken> */
@@ -120,6 +127,27 @@ class Expression
                 $tokens[] = ExpressionToken::parenthesis($char);
                 $i++;
                 continue;
+            }
+
+            // Handle word-based operators (and, or, not) and boolean literals (true, false)
+            if (ctype_alpha($char)) {
+                $word = '';
+                $start = $i;
+                while ($i < $len && ctype_alpha($expression[$i])) {
+                    $word .= $expression[$i];
+                    $i++;
+                }
+                if (isset(self::OPERATORS[$word])) {
+                    $tokens[] = ExpressionToken::operator($word);
+                    continue;
+                }
+                // Check for boolean literals
+                if ($word === 'true' || $word === 'false') {
+                    $tokens[] = ExpressionToken::boolean($word);
+                    continue;
+                }
+                // Not an operator or boolean, reset and handle as identifier
+                $i = $start;
             }
 
             // Handle two-character operators
@@ -288,23 +316,25 @@ class Expression
                         (float)$token->value : (int)$token->value;
                 } elseif ($token->type === 'string') {
                     $stack[] = $token->value;
+                } elseif ($token->type === 'boolean') {
+                    $stack[] = $token->value === 'true';
                 } elseif ($token->type === 'identifier') {
                     $stack[] = $resolvePath($token->value, $data);
                 }
             } elseif ($token->isOperator()) {
                 // Operator
                 $op = $token->value;
-                if ($op === '!') {
+                if ($op === 'not') {
                     // Unary operator
                     if (empty($stack)) {
-                        throw new TemplateError("not enough operands for: $op");
+                        throw new TemplateError("not enough operands for 'not'");
                     }
                     $operand = array_pop($stack);
                     $stack[] = !$operand;
                 } else {
                     // Binary operator
                     if (count($stack) < 2) {
-                        throw new TemplateError("not enough operands for: $op");
+                        throw new TemplateError("not enough operands for '$op'");
                     }
                     /** @var float|int|string $right */
                     $right = array_pop($stack);
@@ -314,8 +344,8 @@ class Expression
                     // Check for logical, numeric or string operations and cast accordingly
                     $result = match ($op) {
                         // Logical operators - no casting needed, PHP handles truthiness
-                        '||' => $left || $right,
-                        '&&' => $left && $right,
+                        'or', '||' => $left || $right,
+                        'and', '&&' => $left && $right,
                         // Comparison operators - no casting needed, PHP type juggling handles it
                         '==' => $left == $right,
                         '!=' => $left != $right,
@@ -448,42 +478,94 @@ class Template
     /**
      * Tokenizes a template string by splitting it into literal text and expressions.
      *
-     * Expressions are delimited by {{ and }}. The resulting array alternates between
-     * literal text (even indices) and expressions (odd indices).
+     * Expressions are delimited by {{ }} for variables and {% %} for control structures.
+     * The resulting array alternates between literal text (even indices) and expressions (odd indices).
+     * Control structure tokens are prefixed with '@' to distinguish them.
      *
      * @param string $template The template string to tokenize.
      * @return array<int,string> Array of tokens alternating between literals and expressions.
      */
     private function tokenize(string $template): array
     {
-        $parts = ['', $template];
         $tokens = [];
-        while (true) {
-            $parts = explode('{{', $parts[1], 2);
-            $tokens[] = $parts[0];
-            if (count($parts) != 2) {
-                break;
+        $i = 0;
+        $len = strlen($template);
+        $literal = '';
+
+        while ($i < $len) {
+            // Check for control structure {%
+            if ($i < $len - 1 && $template[$i] === '{' && $template[$i + 1] === '%') {
+                $tokens[] = $literal;
+                $literal = '';
+                $i += 2;
+                $expr = '';
+                $quoted = false;
+                $escaped = false;
+                while ($i < $len - 1) {
+                    $char = $template[$i];
+                    if (!$escaped) {
+                        if ($char === '"') {
+                            $quoted = !$quoted;
+                        } elseif ($char === '\\') {
+                            $escaped = true;
+                        } elseif (!$quoted && $char === '%' && $template[$i + 1] === '}') {
+                            $tokens[] = '@' . trim($expr);
+                            $i += 2;
+                            break;
+                        }
+                    } else {
+                        $escaped = false;
+                    }
+                    $expr .= $char;
+                    $i++;
+                }
+                continue;
             }
-            $parts = $this->explode('}}', $parts[1], 2);
-            $tokens[] = $parts[0];
-            if (count($parts) != 2) {
-                break;
+
+            // Check for variable {{
+            if ($i < $len - 1 && $template[$i] === '{' && $template[$i + 1] === '{') {
+                $tokens[] = $literal;
+                $literal = '';
+                $i += 2;
+                $expr = '';
+                $quoted = false;
+                $escaped = false;
+                while ($i < $len - 1) {
+                    $char = $template[$i];
+                    if (!$escaped) {
+                        if ($char === '"') {
+                            $quoted = !$quoted;
+                        } elseif ($char === '\\') {
+                            $escaped = true;
+                        } elseif (!$quoted && $char === '}' && $template[$i + 1] === '}') {
+                            $tokens[] = trim($expr);
+                            $i += 2;
+                            break;
+                        }
+                    } else {
+                        $escaped = false;
+                    }
+                    $expr .= $char;
+                    $i++;
+                }
+                continue;
             }
+
+            // Regular character
+            $literal .= $template[$i];
+            $i++;
         }
+
+        $tokens[] = $literal;
         return $tokens;
     }
 
     /**
-     * Splits a string by a separator, respecting quoted strings and || operators.
-     *
-     * Similar to PHP's explode() but handles quoted strings properly, ensuring that
-     * separators inside double-quoted strings are not treated as delimiters.
-     * Also handles || operators when separator is |.
-     *
-     * @param string $separator The boundary string to split by.
-     * @param string $str The input string to split.
-     * @param int $count Maximum number of elements to return. -1 means no limit.
-     * @return array<int,string> Array of string segments.
+     * Explodes a string by a separator, respecting quoted substrings.
+     * @param string $separator The separator string.
+     * @param string $str The string to explode.
+     * @param int $count Maximum number of elements to return (default -1 for no limit).
+     * @return array<int,string> The exploded array of strings.
      */
     private function explode(string $separator, string $str, int $count = -1): array
     {
@@ -499,17 +581,11 @@ class Template
                 if ($c == $quote) {
                     $quoted = true;
                 } elseif (substr($str, $i, strlen($separator)) == $separator) {
-                    // Special handling for | separator: skip if it's part of ||
-                    if ($separator === '|' && $i > 0 && $str[$i - 1] === '|') {
-                        // Previous char was |, this is part of ||, include it
-                        $token .= $c;
-                        $i++;
-                        continue;
-                    }
-                    if ($separator === '|' && $i < strlen($str) - 1 && $str[$i + 1] === '|') {
-                        // Next char is |, this is part of ||, include both
+                    // Special handling for | separator: check if it's part of || operator
+                    if ($separator == '|' && $i + 1 < strlen($str) && $str[$i + 1] == '|') {
+                        // This is part of || operator, don't split, add both characters
                         $token .= '||';
-                        $i++;
+                        $i++; // Skip the next |
                         continue;
                     }
                     $tokens[] = $token;
@@ -554,6 +630,12 @@ class Template
         $stack = [];
         foreach ($tokens as $i => $token) {
             if ($i % 2 == 1) {
+                // Control structures are prefixed with @
+                $isControl = str_starts_with($token, '@');
+                if ($isControl) {
+                    $token = substr($token, 1); // Remove @ prefix
+                }
+
                 if ($token == 'endif') {
                     $type = 'endif';
                     $expression = null;
@@ -563,15 +645,15 @@ class Template
                 } elseif ($token == 'else') {
                     $type = 'else';
                     $expression = null;
-                } elseif (str_starts_with($token, 'elseif:')) {
+                } elseif (str_starts_with($token, 'elseif ')) {
                     $type = 'elseif';
-                    $expression = substr($token, 7);
-                } elseif (str_starts_with($token, 'if:')) {
+                    $expression = trim(substr($token, 7));
+                } elseif (str_starts_with($token, 'if ')) {
                     $type = 'if';
-                    $expression = substr($token, 3);
-                } elseif (str_starts_with($token, 'for:')) {
+                    $expression = trim(substr($token, 3));
+                } elseif (str_starts_with($token, 'for ')) {
                     $type = 'for';
-                    $expression = substr($token, 4);
+                    $expression = trim(substr($token, 4));
                 } else {
                     $type = 'var';
                     $expression = $token;
@@ -660,14 +742,14 @@ class Template
     private function renderIfNode(TreeNode $node, array $data, array $functions): string
     {
         if ($node->expression === null || !is_string($node->expression)) {
-            return $this->escape('{{if:!!' . "invalid expression" . '}}');
+            return $this->escape('{% if !!invalid expression %}');
         }
 
         $expressionStr = $node->expression;
         $parts = $this->explode('|', $expressionStr);
         $exprPart = array_shift($parts);
         if ($exprPart === null) {
-            return $this->escape('{{if:' . $expressionStr . '!!' . "invalid expression" . '}}');
+            return $this->escape('{% if ' . $expressionStr . '!!invalid expression %}');
         }
 
         try {
@@ -678,7 +760,7 @@ class Template
             });
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape('{{if:' . $expressionStr . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{% if ' . $expressionStr . '!!' . $e->getMessage() . ' %}');
         }
         $result = '';
         if ($value) {
@@ -703,7 +785,7 @@ class Template
     private function renderElseIfNode(TreeNode $node, array $ifNodes, array $data, array $functions): string
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
-            return $this->escape("{{elseif!!could not find matching `if`}}");
+            return $this->escape("{% elseif !!could not find matching `if` %}");
         }
         $result = '';
         $value = false;
@@ -712,14 +794,14 @@ class Template
         }
         if (!$value) {
             if ($node->expression === null || !is_string($node->expression)) {
-                return $this->escape('{{elseif:!!' . "invalid expression" . '}}');
+                return $this->escape('{% elseif !!invalid expression %}');
             }
 
             $expressionStr = $node->expression;
             $parts = $this->explode('|', $expressionStr);
             $exprPart = array_shift($parts);
             if ($exprPart === null) {
-                return $this->escape('{{elseif:' . $expressionStr . '!!' . "invalid expression" . '}}');
+                return $this->escape('{% elseif ' . $expressionStr . '!!invalid expression %}');
             }
             try {
                 $expr = new Expression($exprPart);
@@ -729,7 +811,7 @@ class Template
                 });
                 $value = $this->applyFunctions($value, $parts, $functions, $data);
             } catch (\Throwable $e) {
-                return $this->escape('{{elseif:' . $expressionStr . '!!' . $e->getMessage() . '}}');
+                return $this->escape('{% elseif ' . $expressionStr . '!!' . $e->getMessage() . ' %}');
             }
             if ($value) {
                 $result .= $this->renderChildren($node, $data, $functions);
@@ -753,7 +835,7 @@ class Template
     private function renderElseNode(TreeNode $node, array $ifNodes, array $data, array $functions): string
     {
         if (count($ifNodes) < 1 || $ifNodes[0]->type != 'if') {
-            return $this->escape("{{else!!could not find matching `if`}}");
+            return $this->escape("{% else !!could not find matching `if` %}");
         }
         $result = '';
         $value = false;
@@ -771,8 +853,8 @@ class Template
      *
      * Iterates over an array and renders the node's children for each element.
      * Supports two formats:
-     * - {{for:var:array}} - iterates with values only
-     * - {{for:var:key:array}} - iterates with both keys and values
+     * - {% for item in array %} - iterates with values only
+     * - {% for key, value in array %} - iterates with both keys and values
      *
      * @param TreeNode $node The for node to render.
      * @param array<string,mixed> $data The data context for evaluation.
@@ -782,36 +864,46 @@ class Template
     private function renderForNode(TreeNode $node, array $data, array $functions): string
     {
         if ($node->expression === null || !is_string($node->expression)) {
-            return $this->escape('{{for:!!' . "invalid expression" . '}}');
+            return $this->escape('{% for !!invalid expression %}');
         }
 
         $expressionStr = $node->expression;
-        $parts = $this->explode('|', $expressionStr);
+
+        // Parse "for key, value in array" or "for value in array"
+        if (!preg_match('/^([a-zA-Z_][a-zA-Z0-9_]*(?:\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*)?)\s+in\s+(.+)$/', $expressionStr, $matches)) {
+            return $this->escape('{% for ' . $expressionStr . '!!invalid syntax, expected "item in array" or "key, value in array" %}');
+        }
+
+        $vars = $matches[1];
+        $arrayExpr = $matches[2];
+
+        // Check if we have "key, value" or just "value"
+        if (str_contains($vars, ',')) {
+            [$key, $var] = array_map('trim', explode(',', $vars, 2));
+        } else {
+            $var = trim($vars);
+            $key = false;
+        }
+
+        // Parse filters from array expression
+        $parts = $this->explode('|', $arrayExpr);
         $path = array_shift($parts);
         if ($path === null) {
-            return $this->escape('{{for:' . $expressionStr . '!!' . "invalid expression" . '}}');
+            return $this->escape('{% for ' . $expressionStr . '!!invalid expression %}');
         }
-        $path = $this->explode(':', $path, 3);
-        if (count($path) == 2) {
-            [$var, $path] = $path;
-            $key = false;
-        } elseif (count($path) == 3) {
-            [$var, $key, $path] = $path;
-        } else {
-            return $this->escape('{{for:' . $expressionStr . '!!' . "for must have `for:var:array` format" . '}}');
-        }
+
         try {
-            $value = $this->resolvePath($path, $data);
+            $value = $this->resolvePath(trim($path), $data);
             $value = $this->applyFunctions($value, $parts, $functions, $data);
         } catch (\Throwable $e) {
-            return $this->escape('{{for:' . $expressionStr . '!!' . $e->getMessage() . '}}');
+            return $this->escape('{% for ' . $expressionStr . '!!' . $e->getMessage() . ' %}');
         }
         if (!is_array($value)) {
-            return $this->escape('{{for:' . $expressionStr . '!!' . "expression must evaluate to an array" . '}}');
+            return $this->escape('{% for ' . $expressionStr . '!!expression must evaluate to an array %}');
         }
         $result = '';
         foreach ($value as $k => $v) {
-            $data = array_merge($data, $key ? [$var => $v, $key => $k] : [$var => $v]);
+            $data = array_merge($data, $key ? [$key => $k, $var => $v] : [$var => $v]);
             $result .= $this->renderChildren($node, $data, $functions);
         }
         return $result;
