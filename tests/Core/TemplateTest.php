@@ -620,4 +620,89 @@ class TemplateTest extends TestCase
     {
         $this->assertEquals("text", self::$template->render('{##}text', []));
     }
+
+    // Newlines in expressions tests
+    public function testExpressionWithNewlineInVariable(): void
+    {
+        $template = "{{ a\n+ b }}";
+        $this->assertEquals("15", self::$template->render($template, ['a' => 10, 'b' => 5]));
+    }
+
+    public function testExpressionWithMultipleNewlinesInVariable(): void
+    {
+        $template = "{{ a\n+\nb\n*\nc }}";
+        $this->assertEquals("14", self::$template->render($template, ['a' => 2, 'b' => 3, 'c' => 4]));
+    }
+
+    public function testExpressionWithNewlineInIfCondition(): void
+    {
+        $template = "{% if a\n>\n5 %}yes{% endif %}";
+        $this->assertEquals("yes", self::$template->render($template, ['a' => 10]));
+    }
+
+    public function testExpressionWithNewlineInComplexCondition(): void
+    {
+        $template = "{% if a\n>\n5\n&&\nb\n<\n20 %}match{% endif %}";
+        $this->assertEquals("match", self::$template->render($template, ['a' => 10, 'b' => 15]));
+    }
+
+    public function testExpressionWithNewlineInParentheses(): void
+    {
+        $template = "{{ (\na\n+\nb\n)\n*\nc }}";
+        $this->assertEquals("18", self::$template->render($template, ['a' => 2, 'b' => 4, 'c' => 3]));
+    }
+
+    public function testExpressionWithNewlineInComparison(): void
+    {
+        $template = "{% if a\n==\n5 %}equal{% endif %}";
+        $this->assertEquals("equal", self::$template->render($template, ['a' => 5]));
+    }
+
+    public function testExpressionWithNewlineInLogicalOperators(): void
+    {
+        $template = "{% if a\nand\nb\nor\nc %}yes{% endif %}";
+        $this->assertEquals("yes", self::$template->render($template, ['a' => false, 'b' => false, 'c' => true]));
+    }
+
+    public function testExpressionWithNewlineInForLoop(): void
+    {
+        $template = "{% for i\nin\nitems %}{{ i }}{% endfor %}";
+        $this->assertEquals("123", self::$template->render($template, ['items' => [1, 2, 3]]));
+    }
+
+    public function testExpressionWithNewlineInStringConcatenationAndInString(): void
+    {
+        $template = "{{ first\n+\n\"\n\"\n+\nsecond }}";
+        $this->assertEquals("hello\nworld", self::$template->render($template, ['first' => 'hello', 'second' => 'world']));
+    }
+
+    public function testExpressionWithNewlineBeforeFilter(): void
+    {
+        $template = "{{ name\n|capitalize }}";
+        $this->assertEquals("World", self::$template->render($template, ['name' => 'world'], ['capitalize' => 'ucfirst']));
+    }
+
+    public function testExpressionWithNewlineInFilterArguments(): void
+    {
+        $template = "{{ name\n|dateFormat(\n\"Y-m-d\"\n) }}";
+        $this->assertEquals("1980-05-13", self::$template->render($template, ['name' => 'May 13, 1980'], ['dateFormat' => fn(string $date, string $format) => date($format, strtotime($date) ?: null)]));
+    }
+
+    public function testExpressionWithCarriageReturnNewline(): void
+    {
+        $template = "{{ a\r\n+\r\nb }}";
+        $this->assertEquals("15", self::$template->render($template, ['a' => 10, 'b' => 5]));
+    }
+
+    public function testExpressionWithMixedWhitespaceAndNewlines(): void
+    {
+        $template = "{{ a  \n  +  \n  b  \n  *  \n  c }}";
+        $this->assertEquals("14", self::$template->render($template, ['a' => 2, 'b' => 3, 'c' => 4]));
+    }
+
+    public function testExpressionWithNewlineInElseIfCondition(): void
+    {
+        $template = "{% if a\n>\n10 %}first{% elseif a\n>\n5 %}second{% else %}third{% endif %}";
+        $this->assertEquals("second", self::$template->render($template, ['a' => 7]));
+    }
 }
