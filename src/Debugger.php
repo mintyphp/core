@@ -103,14 +103,14 @@ class Debugger
      * @param string $data The data sent with the request
      * @param array<string,mixed> $options The options used for the request
      * @param array<string,string> $headers The headers sent with the request
-     * @param ApiCallTiming $timing The timing information for the call
+     * @param \MintyPHP\Core\Debugger\ApiCallTiming $timing The timing information for the call
      * @param int $status The HTTP status code returned
      * @param string $effectiveUrl The effective URL after redirects
      * @param array<string,string> $responseHeaders The response headers received
      * @param string $body The response body received
      * @return void
      */
-    public static function addApiCall(float $duration, string $method, string $url, string $data, array $options, array $headers, ApiCallTiming $timing, int $status, string $effectiveUrl, array $responseHeaders, string $body): void
+    public static function addApiCall(float $duration, string $method, string $url, string $data, array $options, array $headers, \MintyPHP\Core\Debugger\ApiCallTiming $timing, int $status, string $effectiveUrl, array $responseHeaders, string $body): void
     {
         $instance = self::getInstance();
         $instance->addApiCall($duration, $method, $url, $data, $options, $headers, $timing, $status, $effectiveUrl, $responseHeaders, $body);
