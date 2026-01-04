@@ -17,9 +17,19 @@ Templates are HTML-safe by default with automatic escaping.
 
 <variable>        ::= "{{" <ws>? <expression> <filter-chain>? <ws>? "}}"
 
-<control>         ::= <if-block> | <for-block>
+<control>         ::= <if-block> | <for-block> | <block> | <extends> | <include>
 
 <comment>         ::= "{#" <any-text> "#}"
+
+<extends>         ::= "{%" <ws>? "extends" <ws> <string> <ws>? "%}"
+
+<include>         ::= "{%" <ws>? "include" <ws> <string> <ws>? "%}"
+
+<block>           ::= <block-tag> <content>* <endblock-tag>
+
+<block-tag>       ::= "{%" <ws>? "block" <ws> <identifier> <ws>? "%}"
+
+<endblock-tag>    ::= "{%" <ws>? "endblock" <ws>? "%}"
 
 <if-block>        ::= <if-tag> <content>* <elseif-tag>* <else-tag>? <endif-tag>
 
@@ -43,7 +53,11 @@ Templates are HTML-safe by default with automatic escaping.
 
 <logical-or>      ::= <logical-and> (("or" | "||") <logical-and>)*
 
-<logical-and>     ::= <equality> (("and" | "&&") <equality>)*
+<logical-and>     ::= <test-expr> (("and" | "&&") <test-expr>)*
+
+<test-expr>       ::= <equality> (("is" "not"?) <test>)?
+
+<test>            ::= <identifier> ("(" <filter-args> ")")?
 
 <equality>        ::= <comparison> (("==" | "!=") <comparison>)*
 
@@ -117,9 +131,13 @@ Templates are HTML-safe by default with automatic escaping.
 
 - **Variable interpolation** with `{{ }}` syntax
 - **Control structures** with `{% %}` syntax (if/elseif/else, for loops)
+- **Template inheritance** with `{% extends %}` and `{% block %}`
+- **Template inclusion** with `{% include %}`
 - **Comments** with `{# #}` syntax
 - **Expression evaluation** with full operator support
 - **Filters** with pipe syntax `|`
+- **Builtin filters** for common transformations
+- **Tests** with `is` keyword for value checking
 - **Nested data access** with dot notation
 - **HTML escaping** by default
 - **Raw output** with `raw` filter
@@ -984,6 +1002,364 @@ Templates are HTML-safe by default with automatic escaping.
 
 ---
 
+## Template Inheritance
+
+MintyPHP's template engine supports template inheritance through `{% extends %}` and `{% block %}` directives,
+allowing you to create reusable base templates.
+
+### Example: Base Template
+
+**base.html:**
+
+```html
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{% block title %}Default Title{% endblock %}</title>
+        {% block head %}{% endblock %}
+    </head>
+    <body>
+        <header>
+            <h1>My Website</h1>
+        </header>
+        <main>
+            {% block content %}
+            <p>Default content</p>
+            {% endblock %}
+        </main>
+        <footer>
+            <p>&copy; 2026 My Website</p>
+        </footer>
+    </body>
+</html>
+```
+
+### Example: Child Template
+
+**page.html:**
+
+```html
+{% extends "base.html" %}
+
+{% block title %}Welcome Page{% endblock %}
+
+{% block head %}
+<style>
+    .highlight { color: blue; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Welcome!</h2>
+<p class="highlight">This replaces the default content.</p>
+{% endblock %}
+```
+
+**Notes:**
+- `{% extends %}` must be the first non-whitespace element in the child template
+- Blocks defined in the child completely replace blocks in the parent
+- Blocks not overridden use the parent's default content
+- Template inheritance requires a template loader function
+
+---
+
+## Template Inclusion
+
+Use `{% include %}` to insert another template at a specific point.
+
+### Example: Including Templates
+
+**header.html:**
+
+```html
+<header>
+    <h1>{{ site_name }}</h1>
+</header>
+```
+
+**main.html:**
+
+```html
+{% include "header.html" %}
+<main>
+    <p>{{ content }}</p>
+</main>
+```
+
+**Notes:**
+- Included templates share the same data context as the parent
+- Requires a template loader function to be configured
+
+---
+
+## Builtin Filters
+
+MintyPHP includes comprehensive builtin filters for common transformations.
+
+### String Filters
+
+#### `lower`
+Convert to lowercase.
+```
+{{ "HELLO"|lower }} → hello
+```
+
+#### `upper`
+Convert to uppercase.
+```
+{{ "hello"|upper }} → HELLO
+```
+
+#### `capitalize`
+Capitalize first character.
+```
+{{ "hello world"|capitalize }} → Hello world
+```
+
+#### `title`
+Title case (capitalize each word).
+```
+{{ "hello world"|title }} → Hello World
+```
+
+#### `trim`
+Remove leading/trailing whitespace.
+```
+{{ "  hello  "|trim }} → hello
+```
+
+#### `truncate(length, end)`
+Truncate string to length (default 255, default end "...").
+```
+{{ "Hello World"|truncate(8) }} → Hello...
+{{ "Hello World"|truncate(8, ">>") }} → Hello W>>
+```
+
+#### `replace(old, new, count)`
+Replace substring occurrences.
+```
+{{ "Hello World"|replace("Hello", "Goodbye") }} → Goodbye World
+{{ "aaaaargh"|replace("a", "d'oh, ", 2) }} → d'oh, d'oh, aaargh
+```
+
+#### `split(separator)`
+Split string into array.
+```
+{{ "1,2,3"|split(",")|join("|") }} → 1|2|3
+{{ "123"|split()|join("|") }} → 1|2|3
+```
+
+#### `urlencode`
+URL-encode a string.
+```
+{{ "hello world"|urlencode }} → hello+world
+```
+
+#### `reverse`
+Reverse string or array.
+```
+{{ "hello"|reverse }} → olleh
+{{ [1,2,3]|reverse|join(",") }} → 3,2,1
+```
+
+### Numeric Filters
+
+#### `abs`
+Absolute value.
+```
+{{ -42|abs }} → 42
+```
+
+#### `round(precision, method)`
+Round number (default precision=0, method="common").
+Available methods: common, ceil, floor, down, even/banker, odd, awayzero, tozero.
+```
+{{ 42.55|round }} → 43
+{{ 42.55|round(1, "floor") }} → 42.5
+{{ 2.5|round(0, "even") }} → 2
+```
+
+#### `sprintf(format)`
+Format with sprintf.
+```
+{{ 3.14159|sprintf("%.2f") }} → 3.14
+{{ 42|sprintf("%05d") }} → 00042
+```
+
+#### `filesizeformat(binary)`
+Format bytes as human-readable size.
+```
+{{ 13000|filesizeformat }} → 13.0 kB
+{{ 1024|filesizeformat(true) }} → 1.0 KiB
+{{ 1500000|filesizeformat }} → 1.5 MB
+```
+
+### Array/Collection Filters
+
+#### `length` / `count`
+Get count of items or string length.
+```
+{{ [1,2,3]|length }} → 3
+{{ "hello"|length }} → 5
+```
+
+#### `first(n)`
+Get first item or first n items.
+```
+{{ [1,2,3,4]|first }} → 1
+{{ [1,2,3,4]|first(2) }} → [1,2]
+```
+
+#### `last(n)`
+Get last item or last n items.
+```
+{{ [1,2,3,4]|last }} → 4
+{{ [1,2,3,4]|last(2) }} → [3,4]
+```
+
+#### `join(separator, attribute)`
+Join array elements with separator.
+```
+{{ [1,2,3]|join("|") }} → 1|2|3
+{{ users|join(", ", "username") }} → alice, bob, charlie
+```
+
+#### `sum(attribute)`
+Sum numeric values in array.
+```
+{{ [1,2,3]|sum }} → 6
+{{ items|sum("price") }} → 150.50
+```
+
+### Utility Filters
+
+#### `default(value, boolean)`
+Return default if value is null (or falsy with boolean=true).
+```
+{{ missing_var|default("N/A") }} → N/A
+{{ ""|default("empty", true) }} → empty
+{{ 0|default("zero", true) }} → zero
+```
+
+#### `attr(name)`
+Get attribute by name.
+```
+{{ user|attr("email") }} → user@example.com
+```
+
+#### `debug` / `d`
+Pretty-print value as JSON for debugging.
+```
+{{ user|debug }} → <pre>{"name":"Alice","email":"alice@example.com"}</pre>
+```
+
+#### `raw`
+Output unescaped HTML (builtin).
+```
+{{ "<strong>Bold</strong>"|raw }} → <strong>Bold</strong>
+```
+
+---
+
+## Builtin Tests
+
+Tests allow you to check properties of values using the `is` keyword in expressions.
+
+### Syntax
+
+```
+{% if variable is testname %}
+{% if variable is not testname %}
+{% if variable is testname(arg) %}
+```
+
+### Available Tests
+
+#### `defined`
+Check if variable is defined (not null).
+```
+{% if user is defined %}
+    User exists: {{ user }}
+{% endif %}
+```
+
+#### `undefined`
+Check if variable is undefined (null).
+```
+{% if missing is undefined %}
+    Variable not defined
+{% endif %}
+```
+
+#### `null`
+Check if value is null.
+```
+{% if value is null %}
+    Value is null
+{% endif %}
+```
+
+#### `even`
+Check if number is even.
+```
+{% if count is even %}
+    Count is even
+{% endif %}
+```
+
+#### `odd`
+Check if number is odd.
+```
+{% if count is odd %}
+    Count is odd
+{% endif %}
+```
+
+#### `divisibleby(n)`
+Check if number is divisible by n.
+```
+{% if total is divisibleby(3) %}
+    Divisible by 3
+{% endif %}
+```
+
+#### `number`
+Check if value is numeric.
+```
+{% if value is number %}
+    {{ value }} is a number
+{% endif %}
+```
+
+#### `string`
+Check if value is a string.
+```
+{% if name is string %}
+    {{ name }} is a string
+{% endif %}
+```
+
+#### `iterable`
+Check if value can be iterated.
+```
+{% if items is iterable %}
+    {% for item in items %}
+        {{ item }}
+    {% endfor %}
+{% endif %}
+```
+
+### Test Negation
+
+Use `is not` to negate tests:
+```
+{% if value is not null %}
+    Value exists
+{% endif %}
+```
+
+---
+
 ## Custom Filters
 
 Filters can be provided as custom functions when rendering templates. The `raw`
@@ -1017,8 +1393,32 @@ $html = $template->render(
 - All output is **HTML-escaped by default** for security
 - Use the `raw` filter to output unescaped HTML: `{{ content|raw }}`
 - Whitespace in templates is generally preserved
-- Lines containing only whitespace and a `{% %}` tag are removed
+- Lines containing only whitespace and a `{% %}` tag or `{# #}` comment are removed
 - Expressions support parentheses for grouping: `{{ (a + b) * c }}`
 - Paths use dot notation for nested access: `{{ user.profile.name }}`
 - For loops can iterate with values only or with key-value pairs
 - Comments are completely removed from output and don't affect whitespace
+- Builtin filters are available automatically without configuration
+- Tests use the `is` keyword: `{% if value is defined %}`
+
+### Template Inheritance Notes
+
+- The `{% extends %}` directive must be the first non-whitespace element in a child template
+- Template inheritance and `{% include %}` require a template loader function to be configured
+- Child block content completely replaces parent block content
+- Blocks not overridden in the child will use the parent's default content
+- Blocks can be nested, and each can be independently overridden
+- Variables, expressions, and all other template features work inside blocks
+
+### Configuration Example
+
+```php
+// Configure template loader for extends/include support
+$templateLoader = function(string $name): ?string {
+    $path = __DIR__ . '/templates/' . $name;
+    return file_exists($path) ? file_get_contents($path) : null;
+};
+
+$template = new Template('html', $templateLoader);
+$result = $template->render($templateContent, $data);
+```

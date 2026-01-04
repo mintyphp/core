@@ -75,6 +75,7 @@ class Expression
         '&&' => ['precedence' => 2, 'associativity' => 'left'],
         '==' => ['precedence' => 3, 'associativity' => 'left'],
         '!=' => ['precedence' => 3, 'associativity' => 'left'],
+        'is' => ['precedence' => 3, 'associativity' => 'left'],
         '<' => ['precedence' => 4, 'associativity' => 'left'],
         '>' => ['precedence' => 4, 'associativity' => 'left'],
         '<=' => ['precedence' => 4, 'associativity' => 'left'],
@@ -192,12 +193,39 @@ class Expression
             }
 
             // Handle identifiers/paths (with dots for nested access)
+            // Also handle function-like constructs for tests: divisibleby(3)
             if (ctype_alpha($char) || $char === '_') {
                 $ident = '';
                 while ($i < $len && (ctype_alnum($expression[$i]) || $expression[$i] === '_' || $expression[$i] === '.')) {
                     $ident .= $expression[$i];
                     $i++;
                 }
+                
+                // Check if followed by '(' for function-like test (e.g., divisibleby(3))
+                // But only in the context of 'is' operator
+                $j = $i;
+                while ($j < $len && ctype_space($expression[$j])) {
+                    $j++;
+                }
+                if ($j < $len && $expression[$j] === '(') {
+                    // This could be a test function, include the parentheses and content
+                    $parenDepth = 0;
+                    while ($j < $len) {
+                        $ident .= $expression[$j];
+                        if ($expression[$j] === '(') {
+                            $parenDepth++;
+                        } elseif ($expression[$j] === ')') {
+                            $parenDepth--;
+                            if ($parenDepth === 0) {
+                                $j++;
+                                break;
+                            }
+                        }
+                        $j++;
+                    }
+                    $i = $j;
+                }
+                
                 $tokens[] = ExpressionToken::identifier($ident);
                 continue;
             }
@@ -298,7 +326,7 @@ class Expression
     {
         $stack = [];
 
-        foreach ($rpn as $token) {
+        foreach ($rpn as $idx => $token) {
             if ($token->isOperand()) {
                 // Operand
                 if ($token->type === 'number') {
@@ -307,7 +335,51 @@ class Expression
                 } elseif ($token->type === 'string') {
                     $stack[] = $token->value;
                 } elseif ($token->type === 'identifier') {
-                    $stack[] = $resolvePath($token->value, $data);
+                    // Check if this identifier will be used with 'is' operator
+                    // It could be either left or right operand
+                    $isForTest = false;
+                    $isLeftOperandOfIs = false;
+                    $nextIdx = $idx + 1;
+                    
+                    // Check if directly followed by 'is' (this is left operand)
+                    // In RPN: left, right, is
+                    // So we need to check: is the token at idx+2 an 'is' operator?
+                    // Actually we need to skip one more token (the right operand)
+                    if ($idx + 2 < count($rpn)) {
+                        $skipIdx = $idx + 1;
+                        // Skip potential 'not' operators
+                        while ($skipIdx < count($rpn) && $rpn[$skipIdx]->isOperator() && $rpn[$skipIdx]->value === 'not') {
+                            $skipIdx++;
+                        }
+                        // Check if after skipping we have 'is'
+                        if ($skipIdx + 1 < count($rpn) && $rpn[$skipIdx + 1]->isOperator() && $rpn[$skipIdx + 1]->value === 'is') {
+                            $isLeftOperandOfIs = true;
+                        }
+                    }
+                    
+                    // Check if it's the right operand (test name)
+                    // Skip 'not' operators
+                    while ($nextIdx < count($rpn) && $rpn[$nextIdx]->isOperator() && $rpn[$nextIdx]->value === 'not') {
+                        $nextIdx++;
+                    }
+                    if ($nextIdx < count($rpn) && $rpn[$nextIdx]->isOperator() && $rpn[$nextIdx]->value === 'is') {
+                        $isForTest = true;
+                    }
+                    
+                    if ($isForTest) {
+                        // Keep as identifier string for test name, don't resolve
+                        $stack[] = ['__test_identifier' => $token->value];
+                    } elseif ($isLeftOperandOfIs) {
+                        // This is the left operand of 'is', resolve but catch errors
+                        try {
+                            $stack[] = $resolvePath($token->value, $data);
+                        } catch (\Throwable $e) {
+                            // For 'is defined' / 'is undefined' tests, undefined variables should be null
+                            $stack[] = null;
+                        }
+                    } else {
+                        $stack[] = $resolvePath($token->value, $data);
+                    }
                 }
             } elseif ($token->isOperator()) {
                 // Operator
@@ -318,7 +390,21 @@ class Expression
                         throw new TemplateError("not enough operands for 'not'");
                     }
                     $operand = array_pop($stack);
-                    $stack[] = !$operand;
+                    
+                    // Check if next operator is 'is' - if so, modify the identifier
+                    if ($idx + 1 < count($rpn) && $rpn[$idx + 1]->isOperator() && $rpn[$idx + 1]->value === 'is') {
+                        // This 'not' is part of "is not X" construct
+                        if (is_array($operand) && isset($operand['__test_identifier'])) {
+                            // Prepend 'not.' to the test identifier
+                            $stack[] = ['__test_identifier' => 'not.' . $operand['__test_identifier']];
+                        } else {
+                            // Normal not operation
+                            $stack[] = !$operand;
+                        }
+                    } else {
+                        // Normal not operation
+                        $stack[] = !$operand;
+                    }
                 } else {
                     // Binary operator
                     if (count($stack) < 2) {
@@ -328,6 +414,18 @@ class Expression
                     $right = array_pop($stack);
                     /** @var float|int|string $left */
                     $left = array_pop($stack);
+
+                    // Special handling for 'is' operator with tests
+                    if ($op === 'is') {
+                        // Extract test name from marker if present
+                        $testName = $right;
+                        if (is_array($right) && isset($right['__test_identifier'])) {
+                            $testName = $right['__test_identifier'];
+                        }
+                        $result = $this->applyTest($left, $testName, $data, $resolvePath);
+                        $stack[] = $result;
+                        continue;
+                    }
 
                     // Check for logical, numeric or string operations and cast accordingly
                     $result = match ($op) {
@@ -366,6 +464,61 @@ class Expression
         }
 
         return array_pop($stack);
+    }
+
+    /**
+     * Applies a test to a value (for `is` operator)
+     *
+     * @param mixed $value The value to test
+     * @param mixed $testSpec The test specification (identifier like "even", "not.defined", or "divisibleby(3)")
+     * @param array<string,mixed> $data Data context
+     * @param callable $resolvePath Path resolver function
+     * @return bool|int The test result (true/false or 1/0)
+     */
+    private function applyTest(mixed $value, mixed $testSpec, array $data, callable $resolvePath): bool|int
+    {
+        $isNegated = false;
+        $testName = '';
+
+        if (is_string($testSpec)) {
+            // Check if it starts with "not."
+            if (str_starts_with($testSpec, 'not.')) {
+                $isNegated = true;
+                $testName = substr($testSpec, 4);
+            } else {
+                $testName = $testSpec;
+            }
+        } else {
+            // testSpec was resolved, shouldn't happen in normal cases
+            $testName = (string)$testSpec;
+        }
+
+        // Handle "divisibleby(n)" test first (before the match)
+        if (str_starts_with($testName, 'divisibleby(') && str_ends_with($testName, ')')) {
+            $n = substr($testName, 12, -1);
+            if (is_numeric($n) && is_numeric($value)) {
+                $n = (int)$n;
+                $result = $n !== 0 && (int)$value % $n === 0;
+            } else {
+                $result = false;
+            }
+            return $isNegated ? !$result : $result;
+        }
+
+        // Apply the test
+        $result = match ($testName) {
+            'defined' => $value !== null,
+            'undefined' => $value === null,
+            'null' => $value === null,
+            'even' => is_numeric($value) && (int)$value % 2 === 0,
+            'odd' => is_numeric($value) && (int)$value % 2 !== 0,
+            'number' => is_numeric($value),
+            'string' => is_string($value),
+            'iterable' => is_array($value) || is_string($value) || $value instanceof \Traversable,
+            default => throw new TemplateError("unknown test: $testName"),
+        };
+
+        return $isNegated ? !$result : $result;
     }
 
     /**
@@ -422,11 +575,18 @@ class Template
     // Default static configuration
     public static string $__escape = 'html';
 
+    /** @var callable|null */
+    private $templateLoader = null;
+
     /**
      * Constructor
      * @param string $escape
+     * @param callable|null $templateLoader Function to load templates by name for extends/include
      */
-    public function __construct(private string $escape) {}
+    public function __construct(private string $escape, ?callable $templateLoader = null)
+    {
+        $this->templateLoader = $templateLoader;
+    }
 
     /**
      * Escapes a string based on the specified escape type.
@@ -458,9 +618,172 @@ class Template
     {
         $tokens = $this->tokenize($template);
         $tree = $this->createSyntaxTree($tokens);
-        // Add built-in 'raw' filter
-        $functions['raw'] = (fn(string $value) => new RawValue($value));
+        // Add built-in filters
+        $functions = array_merge($this->getBuiltinFilters(), $functions);
         return $this->renderChildren($tree, $data, $functions);
+    }
+
+    /**
+     * Returns all builtin filter functions
+     *
+     * @return array<string,callable>
+     */
+    private function getBuiltinFilters(): array
+    {
+        return [
+            // Output control
+            'raw' => function (mixed $value) {
+                if ($value instanceof RawValue) {
+                    return $value; // Already raw
+                }
+                return new RawValue((string)$value);
+            },
+            'debug' => fn(mixed $value) => new RawValue('<pre>' . (json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '') . '</pre>'),
+            'd' => fn(mixed $value) => $value, // Just returns the value as-is
+
+            // String filters
+            'lower' => fn(string $str) => strtolower($str),
+            'upper' => fn(string $str) => strtoupper($str),
+            'capitalize' => fn(string $str) => ucfirst($str),
+            'title' => fn(string $str) => ucwords($str),
+            'trim' => fn(string $str) => trim($str),
+            'truncate' => function (string $str, int $length = 255, string $end = '...') {
+                if (strlen($str) <= $length) {
+                    return $str;
+                }
+                return substr($str, 0, $length - strlen($end)) . $end;
+            },
+            'replace' => function (string $str, string $old, string $new, ?int $count = null) {
+                if ($count === null) {
+                    return str_replace($old, $new, $str);
+                }
+                if (!$old) {
+                    return $str;
+                }
+                $parts = explode($old, $str);
+                if (count($parts) <= $count) {
+                    return implode($new, $parts);
+                }
+                $result = implode($new, array_slice($parts, 0, $count + 1));
+                $result .= $old . implode($old, array_slice($parts, $count + 1));
+                return $result;
+            },
+            'split' => function (string $str, string $sep = '') {
+                if ($sep === '') {
+                    return str_split($str);
+                }
+                return explode($sep, $str);
+            },
+            'urlencode' => fn(string $str) => urlencode($str),
+            'reverse' => function (mixed $value) {
+                if (is_string($value)) {
+                    return strrev($value);
+                }
+                if (is_array($value)) {
+                    return array_reverse($value);
+                }
+                return $value;
+            },
+
+            // Numeric filters
+            'abs' => fn(float|int $num) => abs($num),
+            'round' => function (float|int $num, int $precision = 0, string $method = 'common') {
+                return match ($method) {
+                    'ceil' => ceil($num * pow(10, $precision)) / pow(10, $precision),
+                    'floor' => floor($num * pow(10, $precision)) / pow(10, $precision),
+                    'down' => $num >= 0 ? floor($num * pow(10, $precision)) / pow(10, $precision) : ceil($num * pow(10, $precision)) / pow(10, $precision),
+                    'even', 'banker' => round($num, $precision, PHP_ROUND_HALF_EVEN),
+                    'odd' => round($num, $precision, PHP_ROUND_HALF_ODD),
+                    'awayzero' => $num >= 0 ? ceil($num * pow(10, $precision)) / pow(10, $precision) : floor($num * pow(10, $precision)) / pow(10, $precision),
+                    'tozero' => $num >= 0 ? floor($num * pow(10, $precision)) / pow(10, $precision) : ceil($num * pow(10, $precision)) / pow(10, $precision),
+                    default => round($num, $precision),
+                };
+            },
+            'sprintf' => fn(bool|float|int|string|null $value, string $format) => sprintf($format, $value),
+            'filesizeformat' => function (float|int $bytes, bool $binary = false) {
+                $units = $binary ? ['B', 'KiB', 'MiB', 'GiB', 'TiB'] : ['B', 'kB', 'MB', 'GB', 'TB'];
+                $base = $binary ? 1024 : 1000;
+                if ($bytes < $base) {
+                    return $bytes . ' ' . $units[0];
+                }
+                $exp = intval(log($bytes) / log($base));
+                $exp = min($exp, count($units) - 1);
+                return sprintf('%.1f %s', $bytes / pow($base, $exp), $units[$exp]);
+            },
+
+            // Array/Collection filters
+            'length' => function (mixed $value) {
+                if (is_string($value)) {
+                    return strlen($value);
+                }
+                if (is_array($value) || $value instanceof \Countable) {
+                    return count($value);
+                }
+                return 0;
+            },
+            'count' => function (mixed $value) {
+                if (is_string($value)) {
+                    return strlen($value);
+                }
+                if (is_array($value) || $value instanceof \Countable) {
+                    return count($value);
+                }
+                return 0;
+            },
+            'first' => function (mixed $value, ?int $n = null) {
+                if (!is_array($value)) {
+                    return '';
+                }
+                if ($n === null) {
+                    return empty($value) ? '' : reset($value);
+                }
+                return array_slice($value, 0, $n);
+            },
+            'last' => function (mixed $value, ?int $n = null) {
+                if (!is_array($value)) {
+                    return '';
+                }
+                if ($n === null) {
+                    return empty($value) ? '' : end($value);
+                }
+                return array_slice($value, -$n);
+            },
+            'join' => function (mixed $value, string $sep = '', ?string $attr = null) {
+                if (!is_array($value)) {
+                    return '';
+                }
+                if ($attr !== null) {
+                    $value = array_map(fn($item) => is_array($item) && isset($item[$attr]) ? $item[$attr] : '', $value);
+                }
+                return implode($sep, $value);
+            },
+            'sum' => function (mixed $value, ?string $attr = null) {
+                if (!is_array($value)) {
+                    return 0;
+                }
+                if ($attr !== null) {
+                    $value = array_map(fn($item) => is_array($item) && isset($item[$attr]) ? $item[$attr] : 0, $value);
+                }
+                return array_sum($value);
+            },
+
+            // Utility filters
+            'default' => function (mixed $value, mixed $default, bool $boolean = false) {
+                if ($boolean) {
+                    return $value ? $value : $default;
+                }
+                return $value !== null ? $value : $default;
+            },
+            'attr' => function (mixed $value, string $name) {
+                if (is_array($value) && isset($value[$name])) {
+                    return $value[$name];
+                }
+                if (is_object($value) && isset($value->$name)) {
+                    return $value->$name;
+                }
+                return '';
+            },
+        ];
     }
 
     /**
@@ -708,6 +1031,9 @@ class Template
                 } elseif ($token == 'endfor') {
                     $type = 'endfor';
                     $expression = null;
+                } elseif ($token == 'endblock') {
+                    $type = 'endblock';
+                    $expression = null;
                 } elseif ($token == 'else') {
                     $type = 'else';
                     $expression = null;
@@ -720,20 +1046,29 @@ class Template
                 } elseif (str_starts_with($token, 'for ')) {
                     $type = 'for';
                     $expression = trim(substr($token, 4));
+                } elseif (str_starts_with($token, 'block ')) {
+                    $type = 'block';
+                    $expression = trim(substr($token, 6));
+                } elseif (str_starts_with($token, 'extends ')) {
+                    $type = 'extends';
+                    $expression = trim(substr($token, 8));
+                } elseif (str_starts_with($token, 'include ')) {
+                    $type = 'include';
+                    $expression = trim(substr($token, 8));
                 } else {
                     $type = 'var';
                     $expression = $token;
                 }
-                if (in_array($type, ['endif', 'endfor', 'elseif', 'else'])) {
+                if (in_array($type, ['endif', 'endfor', 'endblock', 'elseif', 'else'])) {
                     if (count($stack)) {
                         $current = array_pop($stack);
                     }
                 }
-                if (in_array($type, ['var'])) {
+                if (in_array($type, ['var', 'extends', 'include'])) {
                     $node = new TreeNode($type, $expression);
                     array_push($current->children, $node);
                 }
-                if (in_array($type, ['if', 'for', 'elseif', 'else'])) {
+                if (in_array($type, ['if', 'for', 'elseif', 'else', 'block'])) {
                     $node = new TreeNode($type, $expression);
                     array_push($current->children, $node);
                     array_push($stack, $current);
@@ -750,7 +1085,7 @@ class Template
      * Renders all child nodes of a given node.
      *
      * Iterates through the children of a node and dispatches to the appropriate
-     * render method based on the child's type (if, for, var, lit, else, elseif).
+     * render method based on the child's type (if, for, var, lit, else, elseif, block, extends, include).
      *
      * @param TreeNode $node The parent node whose children should be rendered.
      * @param array<string,mixed> $data The data context for rendering.
@@ -761,6 +1096,38 @@ class Template
     {
         $result = '';
         $ifNodes = [];
+
+        // First pass: check for extends directive (must be first non-whitespace)
+        $hasExtends = false;
+        $extendsNode = null;
+        $blocks = [];
+
+        foreach ($node->children as $child) {
+            if ($child->type === 'extends') {
+                $hasExtends = true;
+                $extendsNode = $child;
+                break;
+            } elseif ($child->type === 'lit' && is_string($child->expression) && trim($child->expression) === '') {
+                // Skip whitespace-only literals when looking for extends
+                continue;
+            } else {
+                // Non-whitespace, non-extends found
+                break;
+            }
+        }
+
+        // If we have extends, collect all blocks and render the parent
+        if ($hasExtends) {
+            foreach ($node->children as $child) {
+                if ($child->type === 'block' && is_string($child->expression)) {
+                    $blocks[trim($child->expression)] = $child;
+                }
+            }
+
+            return $this->renderExtendsNode($extendsNode, $blocks, $data, $functions);
+        }
+
+        // Normal rendering without extends
         foreach ($node->children as $child) {
             switch ($child->type) {
                 case 'if':
@@ -777,6 +1144,14 @@ class Template
                     break;
                 case 'for':
                     $result .= $this->renderForNode($child, $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'block':
+                    $result .= $this->renderBlockNode($child, [], $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'include':
+                    $result .= $this->renderIncludeNode($child, $data, $functions);
                     $ifNodes = [];
                     break;
                 case 'var':
@@ -976,6 +1351,181 @@ class Template
     }
 
     /**
+     * Renders a 'block' node.
+     *
+     * Blocks are used for template inheritance. If a block override is provided,
+     * it will be rendered instead of the default block content.
+     *
+     * @param TreeNode $node The block node to render.
+     * @param array<string,TreeNode> $blockOverrides Override blocks from child template.
+     * @param array<string,mixed> $data The data context for rendering.
+     * @param array<string,callable> $functions Available custom functions.
+     * @return string The rendered block content.
+     */
+    private function renderBlockNode(TreeNode $node, array $blockOverrides, array $data, array $functions): string
+    {
+        if ($node->expression === null || !is_string($node->expression)) {
+            return $this->escape('{% block !!invalid expression %}');
+        }
+
+        $blockName = trim($node->expression);
+
+        // If we have an override for this block, use it
+        if (isset($blockOverrides[$blockName])) {
+            return $this->renderChildren($blockOverrides[$blockName], $data, $functions);
+        }
+
+        // Otherwise render the default content, but pass blockOverrides for nested blocks
+        return $this->renderChildrenWithBlocks($node, $blockOverrides, $data, $functions);
+    }
+
+    /**
+     * Renders an 'extends' node.
+     *
+     * Loads the parent template and renders it with block overrides from the child.
+     *
+     * @param TreeNode|null $node The extends node to render.
+     * @param array<string,TreeNode> $blocks Blocks defined in the child template.
+     * @param array<string,mixed> $data The data context for rendering.
+     * @param array<string,callable> $functions Available custom functions.
+     * @return string The rendered parent template with block overrides.
+     */
+    private function renderExtendsNode(?TreeNode $node, array $blocks, array $data, array $functions): string
+    {
+        if ($node === null || $node->expression === null || !is_string($node->expression)) {
+            return $this->escape('{% extends !!invalid expression %}');
+        }
+
+        if ($this->templateLoader === null) {
+            return $this->escape('{% extends !!template loader not configured %}');
+        }
+
+        $templateName = trim($node->expression);
+        // Remove quotes if present
+        if ((str_starts_with($templateName, '"') && str_ends_with($templateName, '"')) ||
+            (str_starts_with($templateName, "'") && str_ends_with($templateName, "'"))
+        ) {
+            $templateName = substr($templateName, 1, -1);
+        }
+
+        try {
+            /** @var string|null $parentTemplate */
+            $parentTemplate = ($this->templateLoader)($templateName);
+            if ($parentTemplate === null) {
+                return $this->escape('{% extends "' . $templateName . '" !!template not found %}');
+            }
+
+            // Parse parent template
+            $tokens = $this->tokenize($parentTemplate);
+            $tree = $this->createSyntaxTree($tokens);
+
+            // Render parent with block overrides
+            return $this->renderChildrenWithBlocks($tree, $blocks, $data, $functions);
+        } catch (\Throwable $e) {
+            return $this->escape('{% extends "' . $templateName . '" !!' . $e->getMessage() . ' %}');
+        }
+    }
+
+    /**
+     * Renders an 'include' node.
+     *
+     * Loads and renders another template at this position.
+     *
+     * @param TreeNode $node The include node to render.
+     * @param array<string,mixed> $data The data context for rendering.
+     * @param array<string,callable> $functions Available custom functions.
+     * @return string The rendered included template.
+     */
+    private function renderIncludeNode(TreeNode $node, array $data, array $functions): string
+    {
+        if ($node->expression === null || !is_string($node->expression)) {
+            return $this->escape('{% include !!invalid expression %}');
+        }
+
+        if ($this->templateLoader === null) {
+            return $this->escape('{% include !!template loader not configured %}');
+        }
+
+        $templateName = trim($node->expression);
+        // Remove quotes if present
+        if ((str_starts_with($templateName, '"') && str_ends_with($templateName, '"')) ||
+            (str_starts_with($templateName, "'") && str_ends_with($templateName, "'"))
+        ) {
+            $templateName = substr($templateName, 1, -1);
+        }
+
+        try {
+            /** @var string|null $includedTemplate */
+            $includedTemplate = ($this->templateLoader)($templateName);
+            if ($includedTemplate === null) {
+                return $this->escape('{% include "' . $templateName . '" !!template not found %}');
+            }
+
+            // Parse and render included template
+            $tokens = $this->tokenize($includedTemplate);
+            $tree = $this->createSyntaxTree($tokens);
+
+            return $this->renderChildren($tree, $data, $functions);
+        } catch (\Throwable $e) {
+            return $this->escape('{% include "' . $templateName . '" !!' . $e->getMessage() . ' %}');
+        }
+    }
+
+    /**
+     * Renders children with block overrides (for template inheritance).
+     *
+     * @param TreeNode $node The parent node whose children should be rendered.
+     * @param array<string,TreeNode> $blockOverrides Override blocks from child template.
+     * @param array<string,mixed> $data The data context for rendering.
+     * @param array<string,callable> $functions Available custom functions.
+     * @return string The concatenated rendered output of all child nodes.
+     */
+    private function renderChildrenWithBlocks(TreeNode $node, array $blockOverrides, array $data, array $functions): string
+    {
+        $result = '';
+        $ifNodes = [];
+        foreach ($node->children as $child) {
+            switch ($child->type) {
+                case 'if':
+                    $result .= $this->renderIfNode($child, $data, $functions);
+                    $ifNodes = [$child];
+                    break;
+                case 'elseif':
+                    $result .= $this->renderElseIfNode($child, $ifNodes, $data, $functions);
+                    array_push($ifNodes, $child);
+                    break;
+                case 'else':
+                    $result .= $this->renderElseNode($child, $ifNodes, $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'for':
+                    $result .= $this->renderForNode($child, $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'block':
+                    $result .= $this->renderBlockNode($child, $blockOverrides, $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'include':
+                    $result .= $this->renderIncludeNode($child, $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'var':
+                    $result .= $this->renderVarNode($child, $data, $functions);
+                    $ifNodes = [];
+                    break;
+                case 'lit':
+                    if (is_string($child->expression)) {
+                        $result .= $child->expression;
+                    }
+                    $ifNodes = [];
+                    break;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Renders a variable interpolation node.
      *
      * Resolves the variable path, applies any filter functions, and escapes the result.
@@ -1011,7 +1561,9 @@ class Template
         if ($value instanceof RawValue) {
             return $this->escape($value);
         }
-        if (!is_string($value) && !is_numeric($value)) {
+        if (is_bool($value)) {
+            $value = $value ? '1' : '';
+        } elseif (!is_string($value) && !is_numeric($value)) {
             $value = '';
         }
         return $this->escape((string)$value);
@@ -1062,9 +1614,17 @@ class Template
             $arguments = array_map(function ($argument) use ($data) {
                 $argument = trim($argument);
                 $len = strlen($argument);
-                if ($argument[0] == '"' && $argument[$len - 1] == '"') {
+                if ($len > 0 && $argument[0] == '"' && $argument[$len - 1] == '"') {
                     $argument = stripcslashes(substr($argument, 1, $len - 2));
-                } else if (!is_numeric($argument)) {
+                } else if (is_numeric($argument)) {
+                    // Keep as is - will be cast as needed
+                } else if ($argument === 'true') {
+                    $argument = true;
+                } else if ($argument === 'false') {
+                    $argument = false;
+                } else if ($argument === 'null') {
+                    $argument = null;
+                } else {
                     $argument = $this->resolvePath($argument, $data);
                 }
                 return $argument;

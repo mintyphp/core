@@ -705,4 +705,842 @@ class TemplateTest extends TestCase
         $template = "{% if a\n>\n10 %}first{% elseif a\n>\n5 %}second{% else %}third{% endif %}";
         $this->assertEquals("second", self::$template->render($template, ['a' => 7]));
     }
+
+    // Tests for builtin test functions
+
+    public function testIsDefined(): void
+    {
+        $tmpl = "{% if variable is defined %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['variable' => 'value']);
+        $this->assertEquals("yes", $result);
+
+        // Test undefined variable
+        $tmpl = "{% if missing is defined %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, []);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsUndefined(): void
+    {
+        $tmpl = "{% if missing is undefined %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, []);
+        $this->assertEquals("yes", $result);
+
+        // Test defined variable
+        $tmpl = "{% if variable is undefined %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['variable' => 'value']);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsEven(): void
+    {
+        $tmpl = "{% if num is even %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['num' => 4]);
+        $this->assertEquals("yes", $result);
+
+        // Test odd number
+        $result = self::$template->render($tmpl, ['num' => 3]);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsOdd(): void
+    {
+        $tmpl = "{% if num is odd %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['num' => 3]);
+        $this->assertEquals("yes", $result);
+
+        // Test even number
+        $result = self::$template->render($tmpl, ['num' => 4]);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsDivisibleBy(): void
+    {
+        $tmpl = "{% if num is divisibleby(3) %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['num' => 9]);
+        $this->assertEquals("yes", $result);
+
+        // Test not divisible
+        $result = self::$template->render($tmpl, ['num' => 10]);
+        $this->assertEquals("no", $result);
+
+        // Test divisible by 2
+        $tmpl = "{% if num is divisibleby(2) %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['num' => 10]);
+        $this->assertEquals("yes", $result);
+    }
+
+    public function testIsIterable(): void
+    {
+        $tmpl = "{% if items is iterable %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['items' => [1, 2, 3]]);
+        $this->assertEquals("yes", $result);
+
+        // Test non-iterable
+        $result = self::$template->render($tmpl, ['items' => 42]);
+        $this->assertEquals("no", $result);
+
+        // Test string is iterable
+        $result = self::$template->render($tmpl, ['items' => 'hello']);
+        $this->assertEquals("yes", $result);
+    }
+
+    public function testIsNull(): void
+    {
+        $tmpl = "{% if value is null %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['value' => null]);
+        $this->assertEquals("yes", $result);
+
+        // Test non-null
+        $result = self::$template->render($tmpl, ['value' => 'something']);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsNumber(): void
+    {
+        $tmpl = "{% if value is number %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['value' => 42]);
+        $this->assertEquals("yes", $result);
+
+        // Test float
+        $result = self::$template->render($tmpl, ['value' => 3.14]);
+        $this->assertEquals("yes", $result);
+
+        // Test string number
+        $result = self::$template->render($tmpl, ['value' => '123']);
+        $this->assertEquals("yes", $result);
+
+        // Test non-number string
+        $result = self::$template->render($tmpl, ['value' => 'abc']);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsString(): void
+    {
+        $tmpl = "{% if value is string %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['value' => 'hello']);
+        $this->assertEquals("yes", $result);
+
+        // Test number
+        $result = self::$template->render($tmpl, ['value' => 42]);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsNotTest(): void
+    {
+        $tmpl = "{% if value is not null %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['value' => 'something']);
+        $this->assertEquals("yes", $result);
+
+        // Test with null value
+        $result = self::$template->render($tmpl, ['value' => null]);
+        $this->assertEquals("no", $result);
+    }
+
+    public function testIsTestInVariable(): void
+    {
+        $tmpl = "{{ num is even }}";
+        $result = self::$template->render($tmpl, ['num' => 4]);
+        $this->assertEquals("1", $result);
+
+        // Test false case
+        $result = self::$template->render($tmpl, ['num' => 3]);
+        $this->assertEquals("", $result);
+    }
+
+    public function testIsTestWithComplexExpression(): void
+    {
+        $tmpl = "{% if (value + 1) is even %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['value' => 3]);
+        $this->assertEquals("yes", $result);
+    }
+
+    public function testMultipleIsTests(): void
+    {
+        $tmpl = "{% if value is number and value is even %}yes{% else %}no{% endif %}";
+        $result = self::$template->render($tmpl, ['value' => 4]);
+        $this->assertEquals("yes", $result);
+    }
+
+    // Test basic block definition and rendering
+    public function testBlockBasic(): void
+    {
+        $tmpl = "<html>\n{% block title %}Default Title{% endblock %}\n{% block content %}Default Content{% endblock %}\n</html>";
+        $expected = "<html>\nDefault Title\nDefault Content\n</html>";
+
+        $template = new Template('html');
+        $result = $template->render($tmpl, []);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test extends with block overrides
+    public function testExtendsWithBlockOverride(): void
+    {
+        // Create a simple in-memory template loader
+        $templates = [
+            'base.html' => "<html>\n<head>\n  <title>{% block title %}My Website{% endblock %}</title>\n</head>\n<body>\n  {% block content %}{% endblock %}\n</body>\n</html>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block title %}Home Page{% endblock %}\n\n{% block content %}\n<h1>Welcome to the home page!</h1>\n{% endblock %}";
+
+        $expected = "<html>\n<head>\n  <title>Home Page</title>\n</head>\n<body>\n<h1>Welcome to the home page!</h1>\n</body>\n</html>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, []);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test extends with partial block override (some blocks keep default)
+    public function testExtendsWithPartialOverride(): void
+    {
+        $templates = [
+            'base.html' => "<html>\n<head>\n  <title>{% block title %}Default Title{% endblock %}</title>\n</head>\n<body>\n  <header>{% block header %}Default Header{% endblock %}</header>\n  <main>{% block content %}Default Content{% endblock %}</main>\n  <footer>{% block footer %}Default Footer{% endblock %}</footer>\n</body>\n</html>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block title %}Custom Title{% endblock %}\n\n{% block content %}<p>Custom content here</p>\n{% endblock %}";
+
+        $expected = "<html>\n<head>\n  <title>Custom Title</title>\n</head>\n<body>\n  <header>Default Header</header>\n  <main><p>Custom content here</p>\n</main>\n  <footer>Default Footer</footer>\n</body>\n</html>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, []);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test extends with variables in blocks
+    public function testExtendsWithVariables(): void
+    {
+        $templates = [
+            'base.html' => "<html>\n<head>\n  <title>{% block title %}{{ site_name }}{% endblock %}</title>\n</head>\n<body>\n  {% block content %}{% endblock %}\n</body>\n</html>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block title %}{{ page_title }} - {{ site_name }}{% endblock %}\n\n{% block content %}\n<h1>{{ heading }}</h1>\n<p>{{ message }}</p>\n{% endblock %}";
+
+        $data = [
+            'site_name' => 'My Site',
+            'page_title' => 'About',
+            'heading' => 'About Us',
+            'message' => 'Welcome to our site!',
+        ];
+
+        $expected = "<html>\n<head>\n  <title>About - My Site</title>\n</head>\n<body>\n<h1>About Us</h1>\n<p>Welcome to our site!</p>\n</body>\n</html>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, $data);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test extends with control structures in blocks
+    public function testExtendsWithControlStructures(): void
+    {
+        $templates = [
+            'base.html' => "<html>\n<body>\n  <ul>\n  {% block navigation %}\n    <li><a href=\"/\">Home</a></li>\n  {% endblock %}\n  </ul>\n  {% block content %}{% endblock %}\n</body>\n</html>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block navigation %}\n{% for item in menu %}\n    <li><a href=\"{{ item.url }}\">{{ item.title }}</a></li>\n{% endfor %}\n{% endblock %}\n\n{% block content %}\n<h1>{{ title }}</h1>\n{% if show_list %}\n<ul>\n{% for item in items %}\n  <li>{{ item }}</li>\n{% endfor %}\n</ul>\n{% endif %}\n{% endblock %}";
+
+        $data = [
+            'menu' => [
+                ['url' => '/', 'title' => 'Home'],
+                ['url' => '/about', 'title' => 'About'],
+                ['url' => '/contact', 'title' => 'Contact'],
+            ],
+            'title' => 'My Page',
+            'show_list' => true,
+            'items' => ['Item 1', 'Item 2', 'Item 3'],
+        ];
+
+        $expected = "<html>\n<body>\n  <ul>\n    <li><a href=\"/\">Home</a></li>\n    <li><a href=\"/about\">About</a></li>\n    <li><a href=\"/contact\">Contact</a></li>\n  </ul>\n<h1>My Page</h1>\n<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>\n</body>\n</html>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, $data);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test error when loader not configured
+    public function testExtendsWithoutLoader(): void
+    {
+        $childTmpl = "{% extends 'base.html' %}\n{% block content %}Test{% endblock %}";
+
+        $template = new Template('html');
+        $result = $template->render($childTmpl, []);
+        $this->assertStringContainsString('template loader not configured', $result);
+    }
+
+    // Test error when parent template not found
+    public function testExtendsTemplateNotFound(): void
+    {
+        $loader = function (string $name): ?string {
+            return null;
+        };
+
+        $childTmpl = "{% extends 'nonexistent.html' %}\n{% block content %}Test{% endblock %}";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, []);
+        $this->assertStringContainsString('template not found', $result);
+    }
+
+    // Test nested blocks (blocks within blocks) - inherits nested structure
+    public function testNestedBlocks(): void
+    {
+        $templates = [
+            'base.html' => "<div>\n{% block outer %}\n  <div class=\"outer\">\n  {% block inner %}Inner default{% endblock %}\n  </div>\n{% endblock %}\n</div>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        // Override inner block - parent's outer block includes the inner reference
+        // so inner will be replaced with child's content
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block inner %}Custom inner content{% endblock %}";
+
+        $expected = "<div>\n  <div class=\"outer\">\nCustom inner content\n  </div>\n</div>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, []);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test empty blocks
+    public function testEmptyBlocks(): void
+    {
+        $templates = [
+            'base.html' => "<html>\n<head>{% block head %}{% endblock %}</head>\n<body>{% block body %}Default body{% endblock %}</body>\n</html>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block head %}<title>Page</title>{% endblock %}\n\n{% block body %}{% endblock %}";
+
+        $expected = "<html>\n<head><title>Page</title></head>\n<body></body>\n</html>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, []);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test documenting the current behavior: child blocks do NOT inherit indentation
+    public function testBlockInheritanceNoIndentationPreservation(): void
+    {
+        $templates = [
+            'base.html' => "<html>\n  <body>\n    <div>\n      {% block content %}Default{% endblock %}\n    </div>\n  </body>\n</html>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $childTmpl = "{% extends 'base.html' %}\n\n{% block content %}<h1>Title</h1>\n<p>Text</p>{% endblock %}";
+
+        // Expected: child content is NOT indented (replaces block completely)
+        $expected = "<html>\n  <body>\n    <div>\n<h1>Title</h1>\n<p>Text</p>\n    </div>\n  </body>\n</html>";
+
+        $template = new Template('html', $loader);
+        $result = $template->render($childTmpl, []);
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test basic include functionality
+    public function testIncludeBasic(): void
+    {
+        $templates = [
+            'header.html' => '<header><h1>Site Header</h1></header>',
+            'main.html' => "<div>{% include 'header.html' %}\n<main>Main content</main>\n</div>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $template = new Template('html', $loader);
+        $result = $template->render($templates['main.html'], []);
+
+        $expected = "<div><header><h1>Site Header</h1></header>\n<main>Main content</main>\n</div>";
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test include with variables
+    public function testIncludeWithVariables(): void
+    {
+        $templates = [
+            'greeting.html' => '<p>Hello, {{ name }}!</p>',
+            'main.html' => "<div>{% include 'greeting.html' %}</div>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $data = ['name' => 'Alice'];
+
+        $template = new Template('html', $loader);
+        $result = $template->render($templates['main.html'], $data);
+
+        $expected = '<div><p>Hello, Alice!</p></div>';
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test multiple includes
+    public function testMultipleIncludes(): void
+    {
+        $templates = [
+            'header.html' => "<header>Header</header>\n",
+            'footer.html' => "<footer>Footer</footer>\n",
+            'main.html' => "{% include 'header.html' %}\n<main>Content</main>\n{% include 'footer.html' %}\n",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $template = new Template('html', $loader);
+        $result = $template->render($templates['main.html'], []);
+
+        $expected = "<header>Header</header>\n<main>Content</main>\n<footer>Footer</footer>\n";
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test include with control structures
+    public function testIncludeWithControlStructures(): void
+    {
+        $templates = [
+            'item.html' => "{% for item in items %}<li>{{ item }}</li>\n{% endfor %}",
+            'main.html' => "<ul>\n{% include 'item.html' %}</ul>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $data = ['items' => ['Apple', 'Banana', 'Cherry']];
+
+        $template = new Template('html', $loader);
+        $result = $template->render($templates['main.html'], $data);
+
+        $expected = "<ul>\n<li>Apple</li>\n<li>Banana</li>\n<li>Cherry</li>\n</ul>";
+        $this->assertEquals($expected, $result);
+    }
+
+    // Test include without loader
+    public function testIncludeWithoutLoader(): void
+    {
+        $template = new Template('html');
+        $result = $template->render("{% include 'header.html' %}", []);
+        $this->assertStringContainsString('template loader not configured', $result);
+    }
+
+    // Test include template not found
+    public function testIncludeTemplateNotFound(): void
+    {
+        $loader = function (string $name): ?string {
+            return null;
+        };
+
+        $template = new Template('html', $loader);
+        $result = $template->render("{% include 'missing.html' %}", []);
+        $this->assertStringContainsString('template not found', $result);
+    }
+
+    // Test nested includes
+    public function testNestedIncludes(): void
+    {
+        $templates = [
+            'deep.html' => '<span>Deep content</span>',
+            'middle.html' => "<div>{% include 'deep.html' %}</div>",
+            'top.html' => "<section>{% include 'middle.html' %}</section>",
+        ];
+
+        $loader = function (string $name) use ($templates): ?string {
+            return $templates[$name] ?? null;
+        };
+
+        $template = new Template('html', $loader);
+        $result = $template->render($templates['top.html'], []);
+
+        $expected = '<section><div><span>Deep content</span></div></section>';
+        $this->assertEquals($expected, $result);
+    }
+
+    // Builtin filter tests
+
+    public function testFilterLower(): void
+    {
+        $result = self::$template->render('{{ text|lower }}', ['text' => 'HELLO WORLD']);
+        $this->assertEquals('hello world', $result);
+    }
+
+    public function testFilterUpper(): void
+    {
+        $result = self::$template->render('{{ text|upper }}', ['text' => 'hello world']);
+        $this->assertEquals('HELLO WORLD', $result);
+    }
+
+    public function testFilterCapitalize(): void
+    {
+        $result = self::$template->render('{{ text|capitalize }}', ['text' => 'hello world']);
+        $this->assertEquals('Hello world', $result);
+    }
+
+    public function testFilterTitle(): void
+    {
+        $result = self::$template->render('{{ text|title }}', ['text' => 'hello world']);
+        $this->assertEquals('Hello World', $result);
+    }
+
+    public function testFilterTrim(): void
+    {
+        $result = self::$template->render('{{ text|trim }}', ['text' => '  hello  ']);
+        $this->assertEquals('hello', $result);
+    }
+
+    public function testFilterTruncate(): void
+    {
+        $result = self::$template->render('{{ text|truncate(8) }}', ['text' => 'Hello World']);
+        $this->assertEquals('Hello...', $result);
+    }
+
+    public function testFilterTruncateCustomEnd(): void
+    {
+        $result = self::$template->render('{{ text|truncate(10, ">>")|raw }}', ['text' => 'Hello World']);
+        $this->assertEquals('Hello Wo>>', $result);
+    }
+
+    public function testFilterTruncateNoTruncation(): void
+    {
+        $result = self::$template->render('{{ text|truncate(20) }}', ['text' => 'Hello']);
+        $this->assertEquals('Hello', $result);
+    }
+
+    public function testFilterReplace(): void
+    {
+        $result = self::$template->render('{{ text|replace("Hello", "Goodbye") }}', ['text' => 'Hello World']);
+        $this->assertEquals('Goodbye World', $result);
+    }
+
+    public function testFilterReplaceWithCount(): void
+    {
+        $result = self::$template->render('{{ text|replace("a", "o", 2) }}', ['text' => 'banana']);
+        $this->assertEquals('bonona', $result);
+    }
+
+    public function testFilterSplit(): void
+    {
+        $result = self::$template->render('{{ text|split(",")|join("|") }}', ['text' => '1,2,3']);
+        $this->assertEquals('1|2|3', $result);
+    }
+
+    public function testFilterSplitChars(): void
+    {
+        $result = self::$template->render('{{ text|split|join("|") }}', ['text' => 'abc']);
+        $this->assertEquals('a|b|c', $result);
+    }
+
+    public function testFilterURLEncode(): void
+    {
+        $result = self::$template->render('{{ text|urlencode }}', ['text' => 'hello world']);
+        $this->assertEquals('hello+world', $result);
+    }
+
+    public function testFilterURLEncodeSpecialChars(): void
+    {
+        $result = self::$template->render('{{ text|urlencode }}', ['text' => 'hello&world=test']);
+        $this->assertEquals('hello%26world%3Dtest', $result);
+    }
+
+    public function testFilterAbs(): void
+    {
+        $result = self::$template->render('{{ num|abs }}', ['num' => -42]);
+        $this->assertEquals('42', $result);
+    }
+
+    public function testFilterAbsPositive(): void
+    {
+        $result = self::$template->render('{{ num|abs }}', ['num' => 42]);
+        $this->assertEquals('42', $result);
+    }
+
+    public function testFilterRound(): void
+    {
+        $result = self::$template->render('{{ num|round }}', ['num' => 42.55]);
+        $this->assertEquals('43', $result);
+    }
+
+    public function testFilterRoundWithPrecision(): void
+    {
+        $result = self::$template->render('{{ num|round(1, "floor") }}', ['num' => 42.55]);
+        $this->assertEquals('42.5', $result);
+    }
+
+    public function testFilterRoundCeil(): void
+    {
+        $result = self::$template->render('{{ num|round(0, "ceil") }}', ['num' => 42.1]);
+        $this->assertEquals('43', $result);
+    }
+
+    public function testFilterSprintf(): void
+    {
+        $result = self::$template->render('{{ num|sprintf("%.2f") }}', ['num' => 3.14159]);
+        $this->assertEquals('3.14', $result);
+    }
+
+    public function testFilterFileSizeFormat(): void
+    {
+        $result = self::$template->render('{{ size|filesizeformat }}', ['size' => 13000]);
+        $this->assertEquals('13.0 kB', $result);
+    }
+
+    public function testFilterFileSizeFormatBinary(): void
+    {
+        $result = self::$template->render('{{ size|filesizeformat(true) }}', ['size' => 1024]);
+        $this->assertEquals('1.0 KiB', $result);
+    }
+
+    public function testFilterFileSizeFormatLarge(): void
+    {
+        $result = self::$template->render('{{ size|filesizeformat }}', ['size' => 1500000]);
+        $this->assertEquals('1.5 MB', $result);
+    }
+
+    public function testFilterLength(): void
+    {
+        $result = self::$template->render('{{ items|length }}', ['items' => [1, 2, 3]]);
+        $this->assertEquals('3', $result);
+    }
+
+    public function testFilterCount(): void
+    {
+        $result = self::$template->render('{{ items|count }}', ['items' => [1, 2, 3, 4]]);
+        $this->assertEquals('4', $result);
+    }
+
+    public function testFilterLengthString(): void
+    {
+        $result = self::$template->render('{{ text|length }}', ['text' => 'hello']);
+        $this->assertEquals('5', $result);
+    }
+
+    public function testFilterFirst(): void
+    {
+        $result = self::$template->render('{{ items|first }}', ['items' => [1, 2, 3, 4]]);
+        $this->assertEquals('1', $result);
+    }
+
+    public function testFilterFirstMultiple(): void
+    {
+        $result = self::$template->render('{{ items|first(2)|join(",") }}', ['items' => [1, 2, 3, 4]]);
+        $this->assertEquals('1,2', $result);
+    }
+
+    public function testFilterLast(): void
+    {
+        $result = self::$template->render('{{ items|last }}', ['items' => [1, 2, 3, 4]]);
+        $this->assertEquals('4', $result);
+    }
+
+    public function testFilterLastMultiple(): void
+    {
+        $result = self::$template->render('{{ items|last(2)|join(",") }}', ['items' => [1, 2, 3, 4]]);
+        $this->assertEquals('3,4', $result);
+    }
+
+    public function testFilterJoin(): void
+    {
+        $result = self::$template->render('{{ items|join("|") }}', ['items' => [1, 2, 3]]);
+        $this->assertEquals('1|2|3', $result);
+    }
+
+    public function testFilterJoinNoSeparator(): void
+    {
+        $result = self::$template->render('{{ items|join }}', ['items' => [1, 2, 3]]);
+        $this->assertEquals('123', $result);
+    }
+
+    public function testFilterJoinAttribute(): void
+    {
+        $users = [
+            ['name' => 'Alice'],
+            ['name' => 'Bob'],
+        ];
+        $result = self::$template->render('{{ users|join(", ", "name") }}', ['users' => $users]);
+        $this->assertEquals('Alice, Bob', $result);
+    }
+
+    public function testFilterReverse(): void
+    {
+        $result = self::$template->render('{{ items|reverse|join(",") }}', ['items' => [1, 2, 3]]);
+        $this->assertEquals('3,2,1', $result);
+    }
+
+    public function testFilterReverseString(): void
+    {
+        $result = self::$template->render('{{ text|reverse }}', ['text' => 'hello']);
+        $this->assertEquals('olleh', $result);
+    }
+
+    public function testFilterSum(): void
+    {
+        $result = self::$template->render('{{ items|sum }}', ['items' => [1, 2, 3]]);
+        $this->assertEquals('6', $result);
+    }
+
+    public function testFilterSumAttribute(): void
+    {
+        $items = [
+            ['price' => 10],
+            ['price' => 20],
+            ['price' => 30],
+        ];
+        $result = self::$template->render('{{ items|sum("price") }}', ['items' => $items]);
+        $this->assertEquals('60', $result);
+    }
+
+    public function testFilterDefault(): void
+    {
+        // Use a nil value instead of missing to test default filter
+        $result = self::$template->render('{{ value|default("N/A") }}', ['value' => null]);
+        $this->assertEquals('N/A', $result);
+    }
+
+    public function testFilterDefaultWithValue(): void
+    {
+        $result = self::$template->render('{{ value|default("N/A") }}', ['value' => 'exists']);
+        $this->assertEquals('exists', $result);
+    }
+
+    public function testFilterDefaultBoolean(): void
+    {
+        $result = self::$template->render('{{ value|default("empty", true) }}', ['value' => '']);
+        $this->assertEquals('empty', $result);
+    }
+
+    public function testFilterDefaultBooleanZero(): void
+    {
+        $result = self::$template->render('{{ value|default("zero", true) }}', ['value' => 0]);
+        $this->assertEquals('zero', $result);
+    }
+
+    public function testFilterAttr(): void
+    {
+        $data = [
+            'user' => [
+                'name' => 'Alice',
+                'email' => 'alice@example.com',
+            ],
+        ];
+        $result = self::$template->render('{{ user|attr("email") }}', $data);
+        $this->assertEquals('alice@example.com', $result);
+    }
+
+    public function testFilterAttrMissing(): void
+    {
+        $data = [
+            'user' => [
+                'name' => 'Alice',
+            ],
+        ];
+        $result = self::$template->render('{{ user|attr("missing") }}', $data);
+        $this->assertEquals('', $result);
+    }
+
+    public function testFilterDebug(): void
+    {
+        $data = [
+            'user' => [
+                'name' => 'Alice',
+                'age' => 30,
+            ],
+        ];
+        $result = self::$template->render('{{ user|debug|raw }}', $data);
+        // Should contain JSON formatted output
+        $this->assertStringContainsString('"name"', $result);
+        $this->assertStringContainsString('"Alice"', $result);
+    }
+
+    public function testFilterDebugAlias(): void
+    {
+        $result = self::$template->render('{{ value|d }}', ['value' => 42]);
+        $this->assertEquals('42', $result);
+    }
+
+    public function testFilterRaw(): void
+    {
+        $result = self::$template->render('{{ html|raw }}', ['html' => '<strong>Bold</strong>']);
+        $this->assertEquals('<strong>Bold</strong>', $result);
+    }
+
+    public function testFilterRawWithoutEscaping(): void
+    {
+        $result = self::$template->render('{{ html }}', ['html' => '<strong>Bold</strong>']);
+        $this->assertEquals('&lt;strong&gt;Bold&lt;/strong&gt;', $result);
+    }
+
+    // Filter chaining tests
+
+    public function testFilterChaining(): void
+    {
+        $result = self::$template->render('{{ text|trim|upper|replace("WORLD", "FRIEND") }}', ['text' => '  hello world  ']);
+        $this->assertEquals('HELLO FRIEND', $result);
+    }
+
+    public function testFilterChainingArrays(): void
+    {
+        $result = self::$template->render('{{ items|first(3)|reverse|join(", ") }}', ['items' => [1, 2, 3, 4, 5]]);
+        $this->assertEquals('3, 2, 1', $result);
+    }
+
+    public function testFilterChainingComplex(): void
+    {
+        $users = [
+            ['name' => 'alice'],
+            ['name' => 'bob'],
+            ['name' => 'charlie'],
+        ];
+        $result = self::$template->render('{{ users|join(", ", "name")|upper }}', ['users' => $users]);
+        $this->assertEquals('ALICE, BOB, CHARLIE', $result);
+    }
+
+    // Edge case tests
+
+    public function testFilterEmptyArray(): void
+    {
+        $result = self::$template->render('{{ items|length }}', ['items' => []]);
+        $this->assertEquals('0', $result);
+    }
+
+    public function testFilterEmptyString(): void
+    {
+        $result = self::$template->render('{{ text|upper }}', ['text' => '']);
+        $this->assertEquals('', $result);
+    }
+
+    public function testFilterNilValue(): void
+    {
+        $result = self::$template->render('{{ value|default("nil") }}', ['value' => null]);
+        $this->assertEquals('nil', $result);
+    }
+
+    public function testFilterNumericString(): void
+    {
+        $result = self::$template->render('{{ num|abs }}', ['num' => '-42']);
+        $this->assertEquals('42', $result);
+    }
 }
