@@ -533,7 +533,7 @@ class TemplateTest extends TestCase
     {
         // Test Jinja-style {# #} comment syntax - comments should be completely removed
         $template = "<div>\n    {# This is a comment #}\n    {{ content }}\n    {# Another comment #}\n</div>";
-        $expected = "<div>\n    \n    Data\n    \n</div>";
+        $expected = "<div>\n    Data\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['content' => 'Data']));
     }
 
@@ -578,7 +578,7 @@ class TemplateTest extends TestCase
     public function testCommentMultiline(): void
     {
         $template = "Line 1\n{# This is\na multiline\ncomment #}\nLine 2";
-        $expected = "Line 1\n\nLine 2";
+        $expected = "Line 1\nLine 2";
         $this->assertEquals($expected, self::$template->render($template, []));
     }
 
@@ -600,7 +600,7 @@ class TemplateTest extends TestCase
     public function testCommentInTemplate(): void
     {
         $template = "{# Header comment #}\n<div>\n    {# Content comment #}\n    {{ content }}\n</div>\n{# Footer comment #}";
-        $expected = "\n<div>\n    \n    Data\n</div>\n";
+        $expected = "<div>\n    Data\n</div>";
         $this->assertEquals($expected, self::$template->render($template, ['content' => 'Data']));
     }
 

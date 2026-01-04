@@ -483,11 +483,42 @@ class Template
         while ($i < $len) {
             // Check for comment {#
             if ($i < $len - 1 && $template[$i] === '{' && $template[$i + 1] === '#') {
+                // Check if this comment is on a line with only whitespace (standalone line)
+                $lineStart = strrpos($literal, "\n");
+                $beforeTag = '';
+                $isStandaloneLine = false;
+
+                if ($lineStart === false) {
+                    // No newline found - check if we're at the start of the template
+                    $beforeTag = $literal;
+                    // Only treat as standalone if literal is empty (true start) or only whitespace AND we're at position 0 in template
+                    $isStandaloneLine = $literal === '' || ($i === strlen($beforeTag) && trim($beforeTag) === '');
+                } else {
+                    // Get content after the last newline
+                    $beforeTag = substr($literal, $lineStart + 1);
+                    // This is standalone if everything after the newline is whitespace
+                    $isStandaloneLine = trim($beforeTag) === '';
+                }
+
+                // If standalone, remove just the whitespace on this line (not the newline)
+                if ($isStandaloneLine && $lineStart !== false) {
+                    $literal = substr($literal, 0, $lineStart + 1);
+                } elseif ($isStandaloneLine && $lineStart === false) {
+                    $literal = '';
+                }
+
                 // Skip the comment - just find the closing #} and discard everything
                 $i += 2;
                 while ($i < $len - 1) {
                     if ($template[$i] === '#' && $template[$i + 1] === '}') {
                         $i += 2;
+
+                        // If this is a standalone line, consume the trailing newline
+                        if ($isStandaloneLine && $i < $len && $template[$i] === "\n") {
+                            $i++;
+                        } elseif ($isStandaloneLine && $i < $len - 1 && $template[$i] === "\r" && $template[$i + 1] === "\n") {
+                            $i += 2;
+                        }
                         break;
                     }
                     $i++;
