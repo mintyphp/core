@@ -1,0 +1,438 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://mintyphp.com/schemas/request.schema.json",
+    "title": "Debugger Request",
+    "description": "Debug data for a single HTTP request in MintyPHP Debugger",
+    "type": "object",
+    "required": [
+        "log",
+        "queries",
+        "apiCalls",
+        "session",
+        "cache",
+        "start",
+        "status",
+        "user",
+        "type",
+        "duration",
+        "memory",
+        "classes",
+        "route",
+        "redirect"
+    ],
+    "properties": {
+        "log": {
+            "type": "array",
+            "description": "Debug log messages",
+            "items": {
+                "type": "string"
+            }
+        },
+        "queries": {
+            "type": "array",
+            "description": "Database queries executed during request",
+            "items": {
+                "$ref": "#/definitions/DebuggerQuery"
+            }
+        },
+        "apiCalls": {
+            "type": "array",
+            "description": "External API calls made during request",
+            "items": {
+                "$ref": "#/definitions/DebuggerApiCall"
+            }
+        },
+        "session": {
+            "$ref": "#/definitions/DebuggerSessionStates",
+            "description": "Session state before and after request"
+        },
+        "cache": {
+            "type": "array",
+            "description": "Cache operations performed during request",
+            "items": {
+                "$ref": "#/definitions/DebuggerCacheCall"
+            }
+        },
+        "start": {
+            "type": "number",
+            "description": "Request start timestamp (microtime)",
+            "minimum": 0
+        },
+        "status": {
+            "type": "integer",
+            "description": "HTTP response status code",
+            "minimum": 100,
+            "maximum": 599
+        },
+        "user": {
+            "type": "string",
+            "description": "System user running PHP process"
+        },
+        "type": {
+            "type": "string",
+            "description": "Request completion type",
+            "enum": [
+                "ok",
+                "abort",
+                "error"
+            ]
+        },
+        "duration": {
+            "type": "number",
+            "description": "Request duration in seconds",
+            "minimum": 0
+        },
+        "memory": {
+            "type": "integer",
+            "description": "Peak memory usage in bytes",
+            "minimum": 0
+        },
+        "classes": {
+            "type": "array",
+            "description": "Loaded PHP class files",
+            "items": {
+                "type": "string"
+            }
+        },
+        "route": {
+            "$ref": "#/definitions/DebuggerRoute",
+            "description": "Routing information"
+        },
+        "redirect": {
+            "type": "string",
+            "description": "Redirect location if any"
+        }
+    },
+    "definitions": {
+        "DebuggerQuery": {
+            "type": "object",
+            "description": "Database query information",
+            "required": [
+                "duration",
+                "query",
+                "equery",
+                "params",
+                "result",
+                "explain"
+            ],
+            "properties": {
+                "duration": {
+                    "type": "number",
+                    "description": "Query execution time in seconds",
+                    "minimum": 0
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Original SQL query with placeholders"
+                },
+                "equery": {
+                    "type": "string",
+                    "description": "Query with parameters replaced for display"
+                },
+                "params": {
+                    "type": "object",
+                    "description": "Bound parameters (key-value pairs)",
+                    "additionalProperties": true
+                },
+                "result": {
+                    "description": "Query result (type varies)",
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "array"
+                        },
+                        {
+                            "type": "object"
+                        }
+                    ]
+                },
+                "explain": {
+                    "description": "EXPLAIN query output",
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "array"
+                        },
+                        {
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        "DebuggerApiCall": {
+            "type": "object",
+            "description": "External API call information",
+            "required": [
+                "duration",
+                "method",
+                "url",
+                "data",
+                "options",
+                "headers",
+                "status",
+                "timing",
+                "result"
+            ],
+            "properties": {
+                "duration": {
+                    "type": "number",
+                    "description": "API call duration in seconds",
+                    "minimum": 0
+                },
+                "method": {
+                    "type": "string",
+                    "description": "HTTP method",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "HEAD",
+                        "OPTIONS"
+                    ]
+                },
+                "url": {
+                    "type": "string",
+                    "description": "API endpoint URL"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "Request data sent",
+                    "additionalProperties": true
+                },
+                "options": {
+                    "type": "object",
+                    "description": "cURL options used",
+                    "additionalProperties": true
+                },
+                "headers": {
+                    "type": "object",
+                    "description": "Request headers",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "type": "integer",
+                    "description": "HTTP response status code",
+                    "minimum": 100,
+                    "maximum": 599
+                },
+                "timing": {
+                    "$ref": "#/definitions/DebuggerApiCallTiming",
+                    "description": "Detailed timing breakdown"
+                },
+                "result": {
+                    "description": "Response data (type varies)",
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object"
+                        },
+                        {
+                            "type": "array"
+                        }
+                    ]
+                }
+            }
+        },
+        "DebuggerApiCallTiming": {
+            "type": "object",
+            "description": "API call timing breakdown",
+            "required": [
+                "nameLookup",
+                "connect",
+                "preTransfer",
+                "startTransfer",
+                "redirect",
+                "total"
+            ],
+            "properties": {
+                "nameLookup": {
+                    "type": "number",
+                    "description": "DNS lookup time in seconds",
+                    "minimum": 0
+                },
+                "connect": {
+                    "type": "number",
+                    "description": "Connection establishment time in seconds",
+                    "minimum": 0
+                },
+                "preTransfer": {
+                    "type": "number",
+                    "description": "Pre-transfer time in seconds",
+                    "minimum": 0
+                },
+                "startTransfer": {
+                    "type": "number",
+                    "description": "Time to first byte in seconds",
+                    "minimum": 0
+                },
+                "redirect": {
+                    "type": "number",
+                    "description": "Redirect time in seconds",
+                    "minimum": 0
+                },
+                "total": {
+                    "type": "number",
+                    "description": "Total time in seconds",
+                    "minimum": 0
+                }
+            }
+        },
+        "DebuggerCacheCall": {
+            "type": "object",
+            "description": "Cache operation information",
+            "required": [
+                "duration",
+                "command",
+                "arguments",
+                "result"
+            ],
+            "properties": {
+                "duration": {
+                    "type": "number",
+                    "description": "Cache operation duration in seconds",
+                    "minimum": 0
+                },
+                "command": {
+                    "type": "string",
+                    "description": "Cache command (get, set, delete, flush, etc.)"
+                },
+                "arguments": {
+                    "type": "array",
+                    "description": "Command arguments",
+                    "items": true
+                },
+                "result": {
+                    "description": "Operation result (type varies)",
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "array"
+                        },
+                        {
+                            "type": "object"
+                        }
+                    ]
+                }
+            }
+        },
+        "DebuggerSessionStates": {
+            "type": "object",
+            "description": "Session state before and after request",
+            "required": [
+                "before",
+                "after"
+            ],
+            "properties": {
+                "before": {
+                    "type": "string",
+                    "description": "Serialized session data before request (var_export format)"
+                },
+                "after": {
+                    "type": "string",
+                    "description": "Serialized session data after request (var_export format)"
+                }
+            }
+        },
+        "DebuggerRoute": {
+            "type": "object",
+            "description": "Request routing information",
+            "required": [
+                "method",
+                "csrfOk",
+                "request",
+                "url",
+                "dir",
+                "viewFile",
+                "actionFile",
+                "templateFile",
+                "urlParameters",
+                "getParameters",
+                "postParameters"
+            ],
+            "properties": {
+                "method": {
+                    "type": "string",
+                    "description": "HTTP request method"
+                },
+                "csrfOk": {
+                    "type": "boolean",
+                    "description": "CSRF token validation result"
+                },
+                "request": {
+                    "type": "string",
+                    "description": "Request URI"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Parsed URL"
+                },
+                "dir": {
+                    "type": "string",
+                    "description": "Directory path for route"
+                },
+                "viewFile": {
+                    "type": "string",
+                    "description": "View file path (empty if none)"
+                },
+                "actionFile": {
+                    "type": "string",
+                    "description": "Action file path (empty if none)"
+                },
+                "templateFile": {
+                    "type": "string",
+                    "description": "Template file path (empty if none)"
+                },
+                "urlParameters": {
+                    "type": "object",
+                    "description": "URL path parameters",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "getParameters": {
+                    "type": "object",
+                    "description": "Query string parameters",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "postParameters": {
+                    "type": "object",
+                    "description": "POST body parameters",
+                    "additionalProperties": true
+                }
+            }
+        }
+    }
+}

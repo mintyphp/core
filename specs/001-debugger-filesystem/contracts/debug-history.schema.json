@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://mintyphp.com/schemas/history.schema.json",
+    "title": "Debugger History",
+    "description": "Ordered list of request UUIDs for a browser session in MintyPHP Debugger",
+    "type": "array",
+    "items": {
+        "type": "string",
+        "description": "RFC 4122 version 4 UUID",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "minItems": 0,
+    "maxItems": 100,
+    "uniqueItems": true,
+    "examples": [
+        [
+            "550e8400-e29b-41d4-a716-446655440000",
+            "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        ],
+        []
+    ]
+}
