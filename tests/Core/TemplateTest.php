@@ -600,7 +600,7 @@ class TemplateTest extends TestCase
     public function testCommentInTemplate(): void
     {
         $template = "{# Header comment #}\n<div>\n    {# Content comment #}\n    {{ content }}\n</div>\n{# Footer comment #}";
-        $expected = "<div>\n    Data\n</div>";
+        $expected = "<div>\n    Data\n</div>\n";
         $this->assertEquals($expected, self::$template->render($template, ['content' => 'Data']));
     }
 
