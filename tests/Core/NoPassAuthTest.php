@@ -9,6 +9,7 @@ use MintyPHP\Core\Totp;
 use MintyPHP\Core\Session;
 use MintyPHP\Core\Router;
 use MintyPHP\Error\TotpError;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -67,6 +68,7 @@ class NoPassAuthTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'localhost';
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRegister(): void
     {
         $registered = self::$auth->register('testuser');
@@ -76,6 +78,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testToken(): void
     {
 
@@ -84,6 +87,7 @@ class NoPassAuthTest extends TestCase
         $this->assertStringContainsString('.', $token, 'token is not a JWT');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testTokenNonExistentUser(): void
     {
 
@@ -94,6 +98,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testLogin(): void
     {
 
@@ -112,6 +117,7 @@ class NoPassAuthTest extends TestCase
         $this->assertEquals('testuser', $result['users']['username']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testLoginWithInvalidToken(): void
     {
 
@@ -122,6 +128,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testLoginWithWrongIP(): void
     {
 
@@ -142,6 +149,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testLoginWithTotpFailure(): void
     {
 
@@ -164,6 +172,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testUpdate(): void
     {
 
@@ -174,6 +183,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testUpdateTotpSecret(): void
     {
 
@@ -184,6 +194,7 @@ class NoPassAuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testExists(): void
     {
 
@@ -193,6 +204,7 @@ class NoPassAuthTest extends TestCase
         $notExists = self::$auth->exists('nonexistent');
         $this->assertFalse($notExists, 'user should not exist');
     }
+    #[AllowMockObjectsWithoutExpectations]
     public function testLogout(): void
     {
         $_SESSION['user'] = ['id' => 1, 'username' => 'testuser'];

@@ -83,9 +83,7 @@ class AnalyzerTest extends \PHPUnit\Framework\TestCase
 
     private function createRouter(string $actionFile, ?string $viewFile = null, ?string $templateActionFile = null, ?string $templateViewFile = null): Router
     {
-        $router = $this->getMockBuilder(Router::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $router = $this->createStub(Router::class);
 
         $action = $actionFile ? self::$path . '/pages/' . $actionFile : '';
         $view = $viewFile ? self::$path . '/pages/' . $viewFile : '';

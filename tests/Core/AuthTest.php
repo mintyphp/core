@@ -7,6 +7,7 @@ use MintyPHP\Core\DB;
 use MintyPHP\Core\Totp;
 use MintyPHP\Core\Session;
 use MintyPHP\Error\TotpError;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -61,6 +62,7 @@ class AuthTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testRegister(): void
     {
         $registered = self::$auth->register('test', 'test');
@@ -90,6 +92,7 @@ class AuthTest extends TestCase
     /**
      * @depends testRegister
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testLoginTotpFailure(): void
     {
         // Mock TOTP to return false for verification
@@ -102,6 +105,7 @@ class AuthTest extends TestCase
         self::$auth->login('test', 'test');
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testLogout(): void
     {
         $_SESSION['user'] = ['id' => 1, 'username' => 'test'];
@@ -112,7 +116,7 @@ class AuthTest extends TestCase
 
         self::$auth->logout();
 
-        $this->assertNull($_SESSION['user'], 'user not unset');
+        $this->assertArrayNotHasKey('user', $_SESSION, 'user not unset');
     }
 
     public static function tearDownAfterClass(): void

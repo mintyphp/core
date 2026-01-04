@@ -83,9 +83,8 @@ class RouterTest extends \PHPUnit\Framework\TestCase
             'REQUEST_URI' => $uri,
             'SCRIPT_NAME' => self::$path . '/web/index.php',
         ];
-        $session = $this->createMock(Session::class);
-        $session->expects($this->any())
-            ->method('checkCsrfToken')
+        $session = $this->createStub(Session::class);
+        $session->method('checkCsrfToken')
             ->willReturn(true);
         return new Router($session, '/', self::$pageRoot, self::$templateRoot, false, $routes, $serverGlobal);
     }

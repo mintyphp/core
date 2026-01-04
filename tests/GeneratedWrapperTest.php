@@ -4,6 +4,7 @@ namespace MintyPHP\Tests;
 
 use MintyPHP\Auth;
 use MintyPHP\Core\Auth as CoreAuth;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -38,12 +39,14 @@ class GeneratedWrapperTest extends TestCase
         $instanceProperty->setValue(null, null);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetInstance(): void
     {
         $instance = Auth::getInstance();
         $this->assertSame($this->mockCoreAuth, $instance);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSetInstance(): void
     {
         $newMock = $this->createMock(CoreAuth::class);
@@ -238,6 +241,7 @@ class GeneratedWrapperTest extends TestCase
      * are represented as public static variables (without __) in the wrapper
      * and that the wrapper has a private static $instance variable
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testConstructorParametersArePublicStaticVariables(): void
     {
         $coreReflection = new \ReflectionClass(CoreAuth::class);
