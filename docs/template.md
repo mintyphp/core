@@ -1362,7 +1362,7 @@ Use `is not` to negate tests:
 
 ## Custom Filters
 
-Filters can be provided as custom functions when rendering templates. The `raw`
+Custom filters can be provided as functions when rendering templates. The `raw`
 filter is built-in.
 
 **PHP Usage Example:**
