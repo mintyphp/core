@@ -12,7 +12,6 @@
 namespace MintyPHP;
 
 use MintyPHP\Core\Debugger as CoreDebugger;
-use MintyPHP\Core\Debugger\ApiCallTiming;
 
 /**
  * Debugger class for development and debugging support.

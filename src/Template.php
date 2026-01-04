@@ -17,8 +17,8 @@ use MintyPHP\Core\Template as CoreTemplate;
  * Template engine for MintyPHP
  * 
  * Provides functionality to render templates with variable interpolation,
- * control structures (if/for), and custom filters. Uses HTML escaping
- * for all output by default.
+ * control structures (if/for), and custom filters. Supports HTML escaping
+ * and raw output.
  */
 class Template
 {
@@ -34,7 +34,9 @@ class Template
      */
     public static function getInstance(): CoreTemplate
     {
-        return self::$instance ??= new CoreTemplate();
+        return self::$instance ??= new CoreTemplate(
+            null
+        );
     }
 
     /**

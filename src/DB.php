@@ -70,7 +70,7 @@ class DB
      * 
      * @param string $query SQL query with ? placeholders
      * @param mixed ...$params Query parameters
-     * @return mixed Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
+     * @return array<int, array<string, array<string, mixed>>>|int Query result (array for SELECT, int for INSERT/UPDATE/DELETE)
      * @throws \RuntimeException if query execution fails or database is closed
      */
     public static function query(string $query, mixed ...$params): mixed
