@@ -34,9 +34,7 @@ class Template
      */
     public static function getInstance(): CoreTemplate
     {
-        return self::$instance ??= new CoreTemplate(
-            null
-        );
+        return self::$instance ??= new CoreTemplate();
     }
 
     /**
