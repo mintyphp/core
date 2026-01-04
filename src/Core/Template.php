@@ -350,10 +350,10 @@ class Template
                 $blocks,
                 $data,
                 $filters,
-                $this->tokenizeCallback(...),
-                $this->createSyntaxTreeCallback(...),
-                $this->renderChildrenWithBlocksCallback(...),
-                $this->escapeCallback(...),
+                $this->tokenize(...),
+                $this->createSyntaxTree(...),
+                $this->renderChildrenWithBlocks(...),
+                $this->escape(...),
                 $this->templateLoader
             );
         }
@@ -366,8 +366,8 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     $ifNodes = [$child];
                     break;
@@ -377,8 +377,8 @@ class Template
                         $ifNodes,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     array_push($ifNodes, $child);
                     break;
@@ -388,8 +388,8 @@ class Template
                         $ifNodes,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
 
                     break;
@@ -398,8 +398,8 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     break;
                 case 'block':
@@ -408,9 +408,9 @@ class Template
                         [],
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->renderChildrenWithBlocksCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->renderChildrenWithBlocks(...),
+                        $this->escape(...)
                     );
                     break;
                 case 'include':
@@ -418,10 +418,10 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->tokenizeCallback(...),
-                        $this->createSyntaxTreeCallback(...),
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...),
+                        $this->tokenize(...),
+                        $this->createSyntaxTree(...),
+                        $this->renderChildren(...),
+                        $this->escape(...),
                         $this->templateLoader
                     );
                     break;
@@ -430,7 +430,7 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->escapeCallback(...)
+                        $this->escape(...)
                     );
                     break;
                 case 'lit':
@@ -463,8 +463,8 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     $ifNodes = [$child];
                     break;
@@ -474,8 +474,8 @@ class Template
                         $ifNodes,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     array_push($ifNodes, $child);
                     break;
@@ -485,8 +485,8 @@ class Template
                         $ifNodes,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     $ifNodes = [];
                     break;
@@ -495,8 +495,8 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->escape(...)
                     );
                     break;
                 case 'block':
@@ -505,9 +505,9 @@ class Template
                         $blockOverrides,
                         $data,
                         $filters,
-                        $this->renderChildrenCallback(...),
-                        $this->renderChildrenWithBlocksCallback(...),
-                        $this->escapeCallback(...)
+                        $this->renderChildren(...),
+                        $this->renderChildrenWithBlocks(...),
+                        $this->escape(...)
                     );
                     break;
                 case 'include':
@@ -515,10 +515,10 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->tokenizeCallback(...),
-                        $this->createSyntaxTreeCallback(...),
-                        $this->renderChildrenCallback(...),
-                        $this->escapeCallback(...),
+                        $this->tokenize(...),
+                        $this->createSyntaxTree(...),
+                        $this->renderChildren(...),
+                        $this->escape(...),
                         $this->templateLoader
                     );
                     break;
@@ -527,7 +527,7 @@ class Template
                         $child,
                         $data,
                         $filters,
-                        $this->escapeCallback(...)
+                        $this->escape(...)
                     );
                     break;
                 case 'lit':
@@ -538,52 +538,5 @@ class Template
             }
         }
         return $result;
-    }
-
-    /**
-     * Callback for tokenizing templates
-     * @return array<int,string>
-     */
-    private function tokenizeCallback(string $template): array
-    {
-        return $this->tokenize($template);
-    }
-
-    /**
-     * Callback for creating syntax trees
-     * @param array<int,string> $tokens
-     */
-    private function createSyntaxTreeCallback(array &$tokens): TreeNode
-    {
-        return $this->createSyntaxTree($tokens);
-    }
-
-    /**
-     * Callback for rendering children
-     * @param array<string,mixed> $data
-     * @param array<string,callable> $filters
-     */
-    private function renderChildrenCallback(TreeNode $node, array $data, array $filters): string
-    {
-        return $this->renderChildren($node, $data, $filters);
-    }
-
-    /**
-     * Callback for rendering children with blocks
-     * @param array<string,TreeNode> $blockOverrides
-     * @param array<string,mixed> $data
-     * @param array<string,callable> $filters
-     */
-    private function renderChildrenWithBlocksCallback(TreeNode $node, array $blockOverrides, array $data, array $filters): string
-    {
-        return $this->renderChildrenWithBlocks($node, $blockOverrides, $data, $filters);
-    }
-
-    /**
-     * Callback for escaping values
-     */
-    private function escapeCallback(string|RawValue $string): string
-    {
-        return $this->escape($string);
     }
 }
