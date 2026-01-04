@@ -3,7 +3,6 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Core\Debugger\ApiCall;
-use MintyPHP\Core\Debugger\ApiCallTiming;
 use MintyPHP\Core\Debugger\CacheCall;
 use MintyPHP\Core\Debugger\Request;
 use MintyPHP\Core\Debugger\Route;
