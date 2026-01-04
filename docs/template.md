@@ -96,26 +96,26 @@ Templates are HTML-safe by default with automatic escaping.
 
 ### Arithmetic Operators
 
-- `+` - Addition (also string concatenation)
-- `-` - Subtraction
-- `*` - Multiplication
-- `/` - Division
-- `%` - Modulo
+- `+` Addition (also string concatenation)
+- `-` Subtraction
+- `*` Multiplication
+- `/` Division
+- `%` Modulo
 
 ### Comparison Operators
 
-- `==` - Equal
-- `!=` - Not equal
-- `<` - Less than
-- `>` - Greater than
-- `<=` - Less than or equal
-- `>=` - Greater than or equal
+- `==` Equal
+- `!=` Not equal
+- `<` Less than
+- `>` Greater than
+- `<=` Less than or equal
+- `>=` Greater than or equal
 
 ### Logical Operators
 
-- `and`, `&&` - Logical AND
-- `or`, `||` - Logical OR
-- `not` - Logical NOT (unary)
+- `and`, `&&` Logical AND
+- `or`, `||` Logical OR
+- `not` Logical NOT (unary)
 
 ### Operator Precedence (highest to lowest)
 
