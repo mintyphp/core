@@ -16,8 +16,8 @@ class Render
      * @param TreeNode $node The if node to render.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $renderChildren Function to render children nodes.
-     * @param callable $escape Function to escape values.
+     * @param callable(TreeNode, array<string,mixed>, array<string,callable>): string $renderChildren Function to render children nodes.
+     * @param callable(string|RawValue): string $escape Function to escape values.
      * @return string The rendered output if condition is true, empty string otherwise.
      */
     public static function renderIfNode(
@@ -66,8 +66,8 @@ class Render
      * @param array<int,TreeNode> $ifNodes Array of preceding if/elseif nodes in the chain.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $renderChildren Function to render children nodes.
-     * @param callable $escape Function to escape values.
+     * @param callable(TreeNode, array<string,mixed>, array<string,callable>): string $renderChildren Function to render children nodes.
+     * @param callable(string|RawValue): string $escape Function to escape values.
      * @return string The rendered output if condition is true and no previous conditions were true, empty string otherwise.
      */
     public static function renderElseIfNode(
@@ -124,8 +124,8 @@ class Render
      * @param array<int,TreeNode> $ifNodes Array of preceding if/elseif nodes in the chain.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $renderChildren Function to render children nodes.
-     * @param callable $escape Function to escape values.
+     * @param callable(TreeNode, array<string,mixed>, array<string,callable>): string $renderChildren Function to render children nodes.
+     * @param callable(string|RawValue): string $escape Function to escape values.
      * @return string The rendered output if no previous conditions were true, empty string otherwise.
      */
     public static function renderElseNode(
@@ -161,8 +161,8 @@ class Render
      * @param TreeNode $node The for node to render.
      * @param array<string,mixed> $data The data context for evaluation.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $renderChildren Function to render children nodes.
-     * @param callable $escape Function to escape values.
+     * @param callable(TreeNode, array<string,mixed>, array<string,callable>): string $renderChildren Function to render children nodes.
+     * @param callable(string|RawValue): string $escape Function to escape values.
      * @return string The concatenated rendered output for each iteration.
      */
     public static function renderForNode(
@@ -227,7 +227,7 @@ class Render
      * @param TreeNode $node The var node to render.
      * @param array<string,mixed> $data The data context for variable lookup.
      * @param array<string,callable> $functions Available custom functions for filters.
-     * @param callable $escape Function to escape values.
+     * @param callable(string|RawValue): string $escape Function to escape values.
      * @return string The rendered and escaped variable value.
      */
     public static function renderVarNode(

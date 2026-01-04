@@ -16,11 +16,11 @@ class Blocks
      * @param array<string,TreeNode> $blocks Blocks defined in the child template.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $tokenize Function to tokenize templates.
-     * @param callable $createSyntaxTree Function to create syntax trees.
-     * @param callable $renderChildrenWithBlocks Function to render with blocks.
-     * @param callable $escape Function to escape values.
-     * @param callable|null $templateLoader Template loader function.
+     * @param callable(string): array<int,string> $tokenize Function to tokenize templates.
+     * @param callable(array<int,string>): TreeNode $createSyntaxTree Function to create syntax trees.
+     * @param callable(TreeNode, array<string,TreeNode>, array<string,mixed>, array<string,callable>): string $renderChildrenWithBlocks Function to render with blocks.
+     * @param callable(string|RawValue): string $escape Function to escape values.
+     * @param (callable(string): (string|null))|null $templateLoader Template loader function.
      * @return string The rendered parent template with block overrides.
      */
     public static function renderExtendsNode(
@@ -51,7 +51,6 @@ class Blocks
         }
 
         try {
-            /** @var string|null $parentTemplate */
             $parentTemplate = $templateLoader($templateName);
             if ($parentTemplate === null) {
                 return $escape('{% extends "' . $templateName . '" !!template not found %}');
@@ -78,9 +77,9 @@ class Blocks
      * @param array<string,TreeNode> $blockOverrides Override blocks from child template.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $renderChildren Function to render children nodes.
-     * @param callable $renderChildrenWithBlocks Function to render with blocks.
-     * @param callable $escape Function to escape values.
+     * @param callable(TreeNode, array<string,mixed>, array<string,callable>): string $renderChildren Function to render children nodes.
+     * @param callable(TreeNode, array<string,TreeNode>, array<string,mixed>, array<string,callable>): string $renderChildrenWithBlocks Function to render with blocks.
+     * @param callable(string|RawValue): string $escape Function to escape values.
      * @return string The rendered block content.
      */
     public static function renderBlockNode(
@@ -115,11 +114,11 @@ class Blocks
      * @param TreeNode $node The include node to render.
      * @param array<string,mixed> $data The data context for rendering.
      * @param array<string,callable> $functions Available custom functions.
-     * @param callable $tokenize Function to tokenize templates.
-     * @param callable $createSyntaxTree Function to create syntax trees.
-     * @param callable $renderChildren Function to render children nodes.
-     * @param callable $escape Function to escape values.
-     * @param callable|null $templateLoader Template loader function.
+     * @param callable(string): array<int,string> $tokenize Function to tokenize templates.
+     * @param callable(array<int,string>): TreeNode $createSyntaxTree Function to create syntax trees.
+     * @param callable(TreeNode, array<string,mixed>, array<string,callable>): string $renderChildren Function to render children nodes.
+     * @param callable(string|RawValue): string $escape Function to escape values.
+     * @param (callable(string): (string|null))|null $templateLoader Template loader function.
      * @return string The rendered included template.
      */
     public static function renderIncludeNode(
@@ -149,7 +148,6 @@ class Blocks
         }
 
         try {
-            /** @var string|null $includedTemplate */
             $includedTemplate = $templateLoader($templateName);
             if ($includedTemplate === null) {
                 return $escape('{% include "' . $templateName . '" !!template not found %}');

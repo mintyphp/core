@@ -141,7 +141,7 @@ class Expression
                     $ident .= $expression[$i];
                     $i++;
                 }
-                
+
                 // Check if followed by '(' for function-like test (e.g., divisibleby(3))
                 // But only in the context of 'is' operator
                 $j = $i;
@@ -166,7 +166,7 @@ class Expression
                     }
                     $i = $j;
                 }
-                
+
                 $tokens[] = ExpressionToken::identifier($ident);
                 continue;
             }
@@ -281,7 +281,7 @@ class Expression
                     $isForTest = false;
                     $isLeftOperandOfIs = false;
                     $nextIdx = $idx + 1;
-                    
+
                     // Check if directly followed by 'is' (this is left operand)
                     // In RPN: left, right, is
                     // So we need to check: is the token at idx+2 an 'is' operator?
@@ -297,7 +297,7 @@ class Expression
                             $isLeftOperandOfIs = true;
                         }
                     }
-                    
+
                     // Check if it's the right operand (test name)
                     // Skip 'not' operators
                     while ($nextIdx < count($rpn) && $rpn[$nextIdx]->isOperator() && $rpn[$nextIdx]->value === 'not') {
@@ -306,7 +306,7 @@ class Expression
                     if ($nextIdx < count($rpn) && $rpn[$nextIdx]->isOperator() && $rpn[$nextIdx]->value === 'is') {
                         $isForTest = true;
                     }
-                    
+
                     if ($isForTest) {
                         // Keep as identifier string for test name, don't resolve
                         $stack[] = ['__test_identifier' => $token->value];
@@ -331,11 +331,11 @@ class Expression
                         throw new TemplateError("not enough operands for 'not'");
                     }
                     $operand = array_pop($stack);
-                    
+
                     // Check if next operator is 'is' - if so, modify the identifier
                     if ($idx + 1 < count($rpn) && $rpn[$idx + 1]->isOperator() && $rpn[$idx + 1]->value === 'is') {
                         // This 'not' is part of "is not X" construct
-                        if (is_array($operand) && isset($operand['__test_identifier'])) {
+                        if (is_array($operand) && isset($operand['__test_identifier']) && is_string($operand['__test_identifier'])) {
                             // Prepend 'not.' to the test identifier
                             $stack[] = ['__test_identifier' => 'not.' . $operand['__test_identifier']];
                         } else {
@@ -351,9 +351,9 @@ class Expression
                     if (count($stack) < 2) {
                         throw new TemplateError("not enough operands for '$op'");
                     }
-                    /** @var float|int|string $right */
+                    /** @var array<string,string>|float|int|string $right */
                     $right = array_pop($stack);
-                    /** @var float|int|string $left */
+                    /** @var array<string,string>|float|int|string $left */
                     $left = array_pop($stack);
 
                     // Special handling for 'is' operator with tests
@@ -382,7 +382,7 @@ class Expression
                         '>=' => $left >= $right,
                         // Arithmetic operators - cast to numeric types
                         '+' => (!is_numeric($left) || !is_numeric($right))
-                            ? ((string)$left . (string)$right)  // String concatenation
+                            ? ((is_scalar($left) ? (string)$left : '') . (is_scalar($right) ? (string)$right : ''))  // String concatenation
                             : +$left + +$right,  // Numeric addition
                         '-' => (is_numeric($left) ? +$left : 0) - (is_numeric($right) ? +$right : 0),
                         '*' => (is_numeric($left) ? +$left : 0) * (is_numeric($right) ? +$right : 0),
@@ -411,12 +411,12 @@ class Expression
      * Applies a test to a value (for `is` operator)
      *
      * @param mixed $value The value to test
-     * @param mixed $testSpec The test specification (identifier like "even", "not.defined", or "divisibleby(3)")
+     * @param array<string,string>|float|int|string $testSpec The test specification (identifier like "even", "not.defined", or "divisibleby(3)")
      * @param array<string,mixed> $data Data context
      * @param callable $resolvePath Path resolver function
-     * @return bool|int The test result (true/false or 1/0)
+     * @return bool The test result
      */
-    private function applyTest(mixed $value, mixed $testSpec, array $data, callable $resolvePath): bool|int
+    private function applyTest(mixed $value, array|float|int|string $testSpec, array $data, callable $resolvePath): bool
     {
         $isNegated = false;
         $testName = '';
@@ -429,9 +429,16 @@ class Expression
             } else {
                 $testName = $testSpec;
             }
+        } elseif (is_array($testSpec) && isset($testSpec['__test_identifier'])) {
+            // Test identifier marker from expression evaluation
+            $testName = $testSpec['__test_identifier'];
+            if (str_starts_with($testName, 'not.')) {
+                $isNegated = true;
+                $testName = substr($testName, 4);
+            }
         } else {
             // testSpec was resolved, shouldn't happen in normal cases
-            $testName = (string)$testSpec;
+            $testName = is_scalar($testSpec) ? (string)$testSpec : '';
         }
 
         // Handle "divisibleby(n)" test first (before the match)

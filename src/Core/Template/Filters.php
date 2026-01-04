@@ -20,7 +20,7 @@ class Filters
                 if ($value instanceof RawValue) {
                     return $value; // Already raw
                 }
-                return new RawValue((string)$value);
+                return new RawValue(is_scalar($value) || $value === null ? (string)$value : '');
             },
             'debug' => fn(mixed $value) => new RawValue('<pre>' . (json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '') . '</pre>'),
             'd' => fn(mixed $value) => $value, // Just returns the value as-is

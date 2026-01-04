@@ -11,7 +11,7 @@ class TemplateTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        self::$template = new Template('html');
+        self::$template = new Template();
     }
 
     public function testRenderWithCustomFunction(): void
@@ -97,8 +97,9 @@ class TemplateTest extends TestCase
 
     public function testNoEscape(): void
     {
-        $template = new Template('none');
-        $this->assertEquals('<script>alert("xss")</script>', $template->render('{{ a }}', ['a' => '<script>alert("xss")</script>'], []));
+        // Since HTML escaping is now always enabled, use raw filter to bypass escaping
+        $template = new Template();
+        $this->assertEquals('<script>alert("xss")</script>', $template->render('{{ a|raw }}', ['a' => '<script>alert("xss")</script>'], []));
     }
 
     // Expression tests - Basic comparison operators
@@ -868,7 +869,7 @@ class TemplateTest extends TestCase
         $tmpl = "<html>\n{% block title %}Default Title{% endblock %}\n{% block content %}Default Content{% endblock %}\n</html>";
         $expected = "<html>\nDefault Title\nDefault Content\n</html>";
 
-        $template = new Template('html');
+        $template = new Template();
         $result = $template->render($tmpl, []);
         $this->assertEquals($expected, $result);
     }
@@ -889,7 +890,7 @@ class TemplateTest extends TestCase
 
         $expected = "<html>\n<head>\n  <title>Home Page</title>\n</head>\n<body>\n<h1>Welcome to the home page!</h1>\n</body>\n</html>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, []);
         $this->assertEquals($expected, $result);
     }
@@ -909,7 +910,7 @@ class TemplateTest extends TestCase
 
         $expected = "<html>\n<head>\n  <title>Custom Title</title>\n</head>\n<body>\n  <header>Default Header</header>\n  <main><p>Custom content here</p>\n</main>\n  <footer>Default Footer</footer>\n</body>\n</html>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, []);
         $this->assertEquals($expected, $result);
     }
@@ -936,7 +937,7 @@ class TemplateTest extends TestCase
 
         $expected = "<html>\n<head>\n  <title>About - My Site</title>\n</head>\n<body>\n<h1>About Us</h1>\n<p>Welcome to our site!</p>\n</body>\n</html>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, $data);
         $this->assertEquals($expected, $result);
     }
@@ -967,7 +968,7 @@ class TemplateTest extends TestCase
 
         $expected = "<html>\n<body>\n  <ul>\n    <li><a href=\"/\">Home</a></li>\n    <li><a href=\"/about\">About</a></li>\n    <li><a href=\"/contact\">Contact</a></li>\n  </ul>\n<h1>My Page</h1>\n<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ul>\n</body>\n</html>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, $data);
         $this->assertEquals($expected, $result);
     }
@@ -977,7 +978,7 @@ class TemplateTest extends TestCase
     {
         $childTmpl = "{% extends 'base.html' %}\n{% block content %}Test{% endblock %}";
 
-        $template = new Template('html');
+        $template = new Template();
         $result = $template->render($childTmpl, []);
         $this->assertStringContainsString('template loader not configured', $result);
     }
@@ -991,7 +992,7 @@ class TemplateTest extends TestCase
 
         $childTmpl = "{% extends 'nonexistent.html' %}\n{% block content %}Test{% endblock %}";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, []);
         $this->assertStringContainsString('template not found', $result);
     }
@@ -1013,7 +1014,7 @@ class TemplateTest extends TestCase
 
         $expected = "<div>\n  <div class=\"outer\">\nCustom inner content\n  </div>\n</div>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, []);
         $this->assertEquals($expected, $result);
     }
@@ -1033,7 +1034,7 @@ class TemplateTest extends TestCase
 
         $expected = "<html>\n<head><title>Page</title></head>\n<body></body>\n</html>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, []);
         $this->assertEquals($expected, $result);
     }
@@ -1054,7 +1055,7 @@ class TemplateTest extends TestCase
         // Expected: child content is NOT indented (replaces block completely)
         $expected = "<html>\n  <body>\n    <div>\n<h1>Title</h1>\n<p>Text</p>\n    </div>\n  </body>\n</html>";
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($childTmpl, []);
         $this->assertEquals($expected, $result);
     }
@@ -1071,7 +1072,7 @@ class TemplateTest extends TestCase
             return $templates[$name] ?? null;
         };
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($templates['main.html'], []);
 
         $expected = "<div><header><h1>Site Header</h1></header>\n<main>Main content</main>\n</div>";
@@ -1092,7 +1093,7 @@ class TemplateTest extends TestCase
 
         $data = ['name' => 'Alice'];
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($templates['main.html'], $data);
 
         $expected = '<div><p>Hello, Alice!</p></div>';
@@ -1112,7 +1113,7 @@ class TemplateTest extends TestCase
             return $templates[$name] ?? null;
         };
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($templates['main.html'], []);
 
         $expected = "<header>Header</header>\n<main>Content</main>\n<footer>Footer</footer>\n";
@@ -1133,7 +1134,7 @@ class TemplateTest extends TestCase
 
         $data = ['items' => ['Apple', 'Banana', 'Cherry']];
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($templates['main.html'], $data);
 
         $expected = "<ul>\n<li>Apple</li>\n<li>Banana</li>\n<li>Cherry</li>\n</ul>";
@@ -1143,7 +1144,7 @@ class TemplateTest extends TestCase
     // Test include without loader
     public function testIncludeWithoutLoader(): void
     {
-        $template = new Template('html');
+        $template = new Template();
         $result = $template->render("{% include 'header.html' %}", []);
         $this->assertStringContainsString('template loader not configured', $result);
     }
@@ -1155,7 +1156,7 @@ class TemplateTest extends TestCase
             return null;
         };
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render("{% include 'missing.html' %}", []);
         $this->assertStringContainsString('template not found', $result);
     }
@@ -1173,7 +1174,7 @@ class TemplateTest extends TestCase
             return $templates[$name] ?? null;
         };
 
-        $template = new Template('html', $loader);
+        $template = new Template($loader);
         $result = $template->render($templates['top.html'], []);
 
         $expected = '<section><div><span>Deep content</span></div></section>';

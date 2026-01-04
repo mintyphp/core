@@ -3,13 +3,10 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Core\Template\RawValue;
-use MintyPHP\Core\Template\Expression;
 use MintyPHP\Core\Template\TreeNode;
 use MintyPHP\Core\Template\Filters;
-use MintyPHP\Core\Template\Helpers;
 use MintyPHP\Core\Template\Render;
 use MintyPHP\Core\Template\Blocks;
-use MintyPHP\Error\TemplateError;
 
 /**
  * Template engine for MintyPHP
@@ -20,24 +17,20 @@ use MintyPHP\Error\TemplateError;
  */
 class Template
 {
-    // Default static configuration
-    public static string $__escape = 'html';
-
     /** @var callable|null */
     private $templateLoader = null;
 
     /**
      * Constructor
-     * @param string $escape
      * @param callable|null $templateLoader Function to load templates by name for extends/include
      */
-    public function __construct(private string $escape, ?callable $templateLoader = null)
+    public function __construct(?callable $templateLoader = null)
     {
         $this->templateLoader = $templateLoader;
     }
 
     /**
-     * Escapes a string based on the specified escape type.
+     * Escapes a string for HTML output.
      *
      * @param string|RawValue $string The string to escape.
      * @return string The escaped string.
@@ -47,10 +40,7 @@ class Template
         if ($string instanceof RawValue) {
             return $string->value;
         }
-        return match ($this->escape) {
-            'html' => htmlspecialchars($string, ENT_QUOTES, 'UTF-8'),
-            default => $string,
-        };
+        return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
     }
 
     /**
@@ -360,10 +350,10 @@ class Template
                 $blocks,
                 $data,
                 $functions,
-                fn($t) => $this->tokenize($t),
-                fn(&$t) => $this->createSyntaxTree($t),
-                fn($n, $b, $d, $f) => $this->renderChildrenWithBlocks($n, $b, $d, $f),
-                fn($s) => $this->escape($s),
+                $this->tokenizeCallback(...),
+                $this->createSyntaxTreeCallback(...),
+                $this->renderChildrenWithBlocksCallback(...),
+                $this->escapeCallback(...),
                 $this->templateLoader
             );
         }
@@ -376,8 +366,8 @@ class Template
                         $child,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
                     $ifNodes = [$child];
                     break;
@@ -387,8 +377,8 @@ class Template
                         $ifNodes,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
                     array_push($ifNodes, $child);
                     break;
@@ -398,20 +388,19 @@ class Template
                         $ifNodes,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
+
                     break;
                 case 'for':
                     $result .= Render::renderForNode(
                         $child,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
                     break;
                 case 'block':
                     $result .= Blocks::renderBlockNode(
@@ -419,39 +408,35 @@ class Template
                         [],
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($n, $b, $d, $f) => $this->renderChildrenWithBlocks($n, $b, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->renderChildrenWithBlocksCallback(...),
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
                     break;
                 case 'include':
                     $result .= Blocks::renderIncludeNode(
                         $child,
                         $data,
                         $functions,
-                        fn($t) => $this->tokenize($t),
-                        fn(&$t) => $this->createSyntaxTree($t),
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s),
+                        $this->tokenizeCallback(...),
+                        $this->createSyntaxTreeCallback(...),
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...),
                         $this->templateLoader
                     );
-                    $ifNodes = [];
                     break;
                 case 'var':
                     $result .= Render::renderVarNode(
                         $child,
                         $data,
                         $functions,
-                        fn($s) => $this->escape($s)
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
                     break;
                 case 'lit':
                     if (is_string($child->expression)) {
                         $result .= $child->expression;
                     }
-                    $ifNodes = [];
                     break;
             }
         }
@@ -478,8 +463,8 @@ class Template
                         $child,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
                     $ifNodes = [$child];
                     break;
@@ -489,8 +474,8 @@ class Template
                         $ifNodes,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
                     array_push($ifNodes, $child);
                     break;
@@ -500,8 +485,8 @@ class Template
                         $ifNodes,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
                     $ifNodes = [];
                     break;
@@ -510,10 +495,9 @@ class Template
                         $child,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
                     break;
                 case 'block':
                     $result .= Blocks::renderBlockNode(
@@ -521,42 +505,85 @@ class Template
                         $blockOverrides,
                         $data,
                         $functions,
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($n, $b, $d, $f) => $this->renderChildrenWithBlocks($n, $b, $d, $f),
-                        fn($s) => $this->escape($s)
+                        $this->renderChildrenCallback(...),
+                        $this->renderChildrenWithBlocksCallback(...),
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
                     break;
                 case 'include':
                     $result .= Blocks::renderIncludeNode(
                         $child,
                         $data,
                         $functions,
-                        fn($t) => $this->tokenize($t),
-                        fn(&$t) => $this->createSyntaxTree($t),
-                        fn($n, $d, $f) => $this->renderChildren($n, $d, $f),
-                        fn($s) => $this->escape($s),
+                        $this->tokenizeCallback(...),
+                        $this->createSyntaxTreeCallback(...),
+                        $this->renderChildrenCallback(...),
+                        $this->escapeCallback(...),
                         $this->templateLoader
                     );
-                    $ifNodes = [];
                     break;
                 case 'var':
                     $result .= Render::renderVarNode(
                         $child,
                         $data,
                         $functions,
-                        fn($s) => $this->escape($s)
+                        $this->escapeCallback(...)
                     );
-                    $ifNodes = [];
                     break;
                 case 'lit':
                     if (is_string($child->expression)) {
                         $result .= $child->expression;
                     }
-                    $ifNodes = [];
                     break;
             }
         }
         return $result;
+    }
+
+    /**
+     * Callback for tokenizing templates
+     * @return array<int,string>
+     */
+    private function tokenizeCallback(string $template): array
+    {
+        return $this->tokenize($template);
+    }
+
+    /**
+     * Callback for creating syntax trees
+     * @param array<int,string> $tokens
+     */
+    private function createSyntaxTreeCallback(array &$tokens): TreeNode
+    {
+        return $this->createSyntaxTree($tokens);
+    }
+
+    /**
+     * Callback for rendering children
+     * @param array<string,mixed> $data
+     * @param array<string,callable> $functions
+     */
+    private function renderChildrenCallback(TreeNode $node, array $data, array $functions): string
+    {
+        return $this->renderChildren($node, $data, $functions);
+    }
+
+    /**
+     * Callback for rendering children with blocks
+     * @param array<string,TreeNode> $blockOverrides
+     * @param array<string,mixed> $data
+     * @param array<string,callable> $functions
+     */
+    private function renderChildrenWithBlocksCallback(TreeNode $node, array $blockOverrides, array $data, array $functions): string
+    {
+        return $this->renderChildrenWithBlocks($node, $blockOverrides, $data, $functions);
+    }
+
+    /**
+     * Callback for escaping values
+     */
+    private function escapeCallback(string|RawValue $string): string
+    {
+        return $this->escape($string);
     }
 }
