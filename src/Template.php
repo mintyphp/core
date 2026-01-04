@@ -50,17 +50,17 @@ class Template
     }
 
     /**
-     * Renders a template string with the provided data and custom functions.
+     * Renders a template string with the provided data and custom filters.
      *
      * @param string $template The template string containing placeholders like {{variable}}.
      * @param array<string,mixed> $data Associative array of data to use in the template.
-     * @param array<string,callable> $functions Associative array of custom functions available in the template.
+     * @param array<string,callable> $filters Associative array of custom filters available in the template.
      * @return string The rendered template string.
      * @throws \RuntimeException If there is an error during rendering.
      */
-    public static function render(string $template, array $data, array $functions = []): string
+    public static function render(string $template, array $data, array $filters = []): string
     {
         $instance = self::getInstance();
-        return $instance->render($template, $data, $functions);
+        return $instance->render($template, $data, $filters);
     }
 }

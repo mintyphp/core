@@ -1368,11 +1368,11 @@ filter is built-in.
 **PHP Usage Example:**
 
 ```php
-$template = new Template('html');
+$template = new Template();
 
 $data = ['name' => 'john doe', 'date' => 'May 13, 1980'];
 
-$functions = [
+$filters = [
     'upper' => 'strtoupper',
     'capitalize' => 'ucfirst',
     'dateFormat' => fn($date, $format) => date($format, strtotime($date))
@@ -1381,7 +1381,7 @@ $functions = [
 $html = $template->render(
     'Hello {{ name|upper }}, date: {{ date|dateFormat("Y-m-d") }}',
     $data,
-    $functions
+    $filters
 );
 // Output: Hello JOHN DOE, date: 1980-05-13
 ```
@@ -1419,6 +1419,6 @@ $templateLoader = function(string $name): ?string {
     return file_exists($path) ? file_get_contents($path) : null;
 };
 
-$template = new Template('html', $templateLoader);
+$template = new Template($templateLoader);
 $result = $template->render($templateContent, $data);
 ```

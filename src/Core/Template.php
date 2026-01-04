@@ -44,21 +44,21 @@ class Template
     }
 
     /**
-     * Renders a template string with the provided data and custom functions.
+     * Renders a template string with the provided data and custom filters.
      *
      * @param string $template The template string containing placeholders like {{variable}}.
      * @param array<string,mixed> $data Associative array of data to use in the template.
-     * @param array<string,callable> $functions Associative array of custom functions available in the template.
+     * @param array<string,callable> $filters Associative array of custom filters available in the template.
      * @return string The rendered template string.
      * @throws \RuntimeException If there is an error during rendering.
      */
-    public function render(string $template, array $data, array $functions = []): string
+    public function render(string $template, array $data, array $filters = []): string
     {
         $tokens = $this->tokenize($template);
         $tree = $this->createSyntaxTree($tokens);
         // Add built-in filters
-        $functions = array_merge(Filters::getBuiltinFilters(), $functions);
-        return $this->renderChildren($tree, $data, $functions);
+        $filters = array_merge(Filters::getBuiltinFilters(), $filters);
+        return $this->renderChildren($tree, $data, $filters);
     }
 
     /**
@@ -310,10 +310,10 @@ class Template
      *
      * @param TreeNode $node The parent node whose children should be rendered.
      * @param array<string,mixed> $data The data context for rendering.
-     * @param array<string,callable> $functions Available custom functions.
+     * @param array<string,callable> $filters Available custom filters.
      * @return string The concatenated rendered output of all child nodes.
      */
-    private function renderChildren(TreeNode $node, array $data, array $functions): string
+    private function renderChildren(TreeNode $node, array $data, array $filters): string
     {
         $result = '';
         $ifNodes = [];
@@ -349,7 +349,7 @@ class Template
                 $extendsNode,
                 $blocks,
                 $data,
-                $functions,
+                $filters,
                 $this->tokenizeCallback(...),
                 $this->createSyntaxTreeCallback(...),
                 $this->renderChildrenWithBlocksCallback(...),
@@ -365,7 +365,7 @@ class Template
                     $result .= Render::renderIfNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -376,7 +376,7 @@ class Template
                         $child,
                         $ifNodes,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -387,7 +387,7 @@ class Template
                         $child,
                         $ifNodes,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -397,7 +397,7 @@ class Template
                     $result .= Render::renderForNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -407,7 +407,7 @@ class Template
                         $child,
                         [],
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->renderChildrenWithBlocksCallback(...),
                         $this->escapeCallback(...)
@@ -417,7 +417,7 @@ class Template
                     $result .= Blocks::renderIncludeNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->tokenizeCallback(...),
                         $this->createSyntaxTreeCallback(...),
                         $this->renderChildrenCallback(...),
@@ -429,7 +429,7 @@ class Template
                     $result .= Render::renderVarNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->escapeCallback(...)
                     );
                     break;
@@ -449,10 +449,10 @@ class Template
      * @param TreeNode $node The parent node whose children should be rendered.
      * @param array<string,TreeNode> $blockOverrides Override blocks from child template.
      * @param array<string,mixed> $data The data context for rendering.
-     * @param array<string,callable> $functions Available custom functions.
+     * @param array<string,callable> $filters Available custom filters.
      * @return string The concatenated rendered output of all child nodes.
      */
-    private function renderChildrenWithBlocks(TreeNode $node, array $blockOverrides, array $data, array $functions): string
+    private function renderChildrenWithBlocks(TreeNode $node, array $blockOverrides, array $data, array $filters): string
     {
         $result = '';
         $ifNodes = [];
@@ -462,7 +462,7 @@ class Template
                     $result .= Render::renderIfNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -473,7 +473,7 @@ class Template
                         $child,
                         $ifNodes,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -484,7 +484,7 @@ class Template
                         $child,
                         $ifNodes,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -494,7 +494,7 @@ class Template
                     $result .= Render::renderForNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->escapeCallback(...)
                     );
@@ -504,7 +504,7 @@ class Template
                         $child,
                         $blockOverrides,
                         $data,
-                        $functions,
+                        $filters,
                         $this->renderChildrenCallback(...),
                         $this->renderChildrenWithBlocksCallback(...),
                         $this->escapeCallback(...)
@@ -514,7 +514,7 @@ class Template
                     $result .= Blocks::renderIncludeNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->tokenizeCallback(...),
                         $this->createSyntaxTreeCallback(...),
                         $this->renderChildrenCallback(...),
@@ -526,7 +526,7 @@ class Template
                     $result .= Render::renderVarNode(
                         $child,
                         $data,
-                        $functions,
+                        $filters,
                         $this->escapeCallback(...)
                     );
                     break;
@@ -561,22 +561,22 @@ class Template
     /**
      * Callback for rendering children
      * @param array<string,mixed> $data
-     * @param array<string,callable> $functions
+     * @param array<string,callable> $filters
      */
-    private function renderChildrenCallback(TreeNode $node, array $data, array $functions): string
+    private function renderChildrenCallback(TreeNode $node, array $data, array $filters): string
     {
-        return $this->renderChildren($node, $data, $functions);
+        return $this->renderChildren($node, $data, $filters);
     }
 
     /**
      * Callback for rendering children with blocks
      * @param array<string,TreeNode> $blockOverrides
      * @param array<string,mixed> $data
-     * @param array<string,callable> $functions
+     * @param array<string,callable> $filters
      */
-    private function renderChildrenWithBlocksCallback(TreeNode $node, array $blockOverrides, array $data, array $functions): string
+    private function renderChildrenWithBlocksCallback(TreeNode $node, array $blockOverrides, array $data, array $filters): string
     {
-        return $this->renderChildrenWithBlocks($node, $blockOverrides, $data, $functions);
+        return $this->renderChildrenWithBlocks($node, $blockOverrides, $data, $filters);
     }
 
     /**
