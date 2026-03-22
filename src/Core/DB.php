@@ -351,7 +351,8 @@ class DB
      */
     public function close(): void
     {
-        $this->mysqli->close();
+        //don't actually close the connection to allow reuse within the same request, just mark it as closed
+        //$this->mysqli->close();
         $this->closed = true;
     }
 
