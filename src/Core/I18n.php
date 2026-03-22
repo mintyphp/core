@@ -176,7 +176,7 @@ class I18n
      * @param string $str The date string to format.
      * @return string The formatted date.
      */
-    public function date(string $str): string
+    public function date($str): string
     {
         return $str ? $this->formatDateTime('date', "$str") : '';
     }
@@ -187,7 +187,7 @@ class I18n
      * @param string $str The UTC date string to format.
      * @return string The formatted date.
      */
-    public function dateUtc(string $str): string
+    public function dateUtc($str): string
     {
         return $str ? $this->formatDateTime('date', "$str UTC") : '';
     }
@@ -220,7 +220,7 @@ class I18n
      * @param string $str The datetime string to format.
      * @return string The formatted datetime.
      */
-    public function datetime(string $str): string
+    public function datetime($str): string
     {
         return $str ? $this->formatDateTime('datetime', "$str") : '';
     }
@@ -231,7 +231,7 @@ class I18n
      * @param string $str The UTC datetime string to format.
      * @return string The formatted datetime.
      */
-    public function datetimeUtc(string $str): string
+    public function datetimeUtc($str): string
     {
         return $str ? $this->formatDateTime('datetime', "$str UTC") : '';
     }
@@ -326,7 +326,7 @@ class I18n
      * @param string $str The datetime string to format.
      * @return string The formatted short datetime.
      */
-    public function datetimeShort(string $str): string
+    public function datetimeShort($str): string
     {
         if (!$str) {
             return '';
@@ -337,7 +337,7 @@ class I18n
             $dateFormat = 'm/d/Y';
         }
         $sep = $dateFormat[1];
-        $timestamp = strtotime($str);
+        $timestamp = strtotime("$str");
         if ($timestamp === false) {
             return '';
         }
