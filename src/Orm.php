@@ -33,7 +33,8 @@ class Orm
     public static function getInstance(): CoreOrm
     {
         return self::$instance ??= new CoreOrm(
-            DB::getInstance()
+            DB::getInstance(),
+            Cache::getInstance()
         );
     }
 
@@ -101,5 +102,24 @@ class Orm
     {
         $instance = self::getInstance();
         return $instance->delete($tableName, $id, $idField);
+    }
+
+    /**
+     * Execute a query with automatic path inference for hierarchical results using PathQL.
+     * 
+     * Automatically infers the structure of the result set based on SQL JOINs and
+     * foreign key relationships, returning nested arrays/objects instead of flat rows.
+     * 
+     * @param string $sql The SQL query to execute
+     * @param array<int|string,mixed> $params Parameters for prepared statement
+     * @param array<string,string> $pathHints Optional path mappings for table aliases
+     *                     Format: ['alias' => '$.path', 'other' => '$.parent.child[]']
+     * @return array<int|string,mixed> Hierarchical result structure based on inferred paths
+     * @throws \RuntimeException If query execution fails
+     */
+    public static function path(string $sql, array $params = [], array $pathHints = []): array
+    {
+        $instance = self::getInstance();
+        return $instance->path($sql, $params, $pathHints);
     }
 }

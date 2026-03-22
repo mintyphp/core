@@ -3,6 +3,7 @@
 namespace MintyPHP\Tests\Core;
 
 use MintyPHP\Core\DB;
+use MintyPHP\Core\Cache;
 use MintyPHP\Core\Orm;
 use PHPUnit\Framework\TestCase;
 
@@ -16,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 class OrmTest extends TestCase
 {
 	private static DB $db;
+	private static Cache $cache;
 	private static Orm $orm;
 
 	public static function setUpBeforeClass(): void
@@ -23,8 +25,11 @@ class OrmTest extends TestCase
 		// Create database connection
 		self::$db = new DB(null, 'mintyphp_test', 'mintyphp_test', 'mintyphp_test', null, null);
 
+		// Create cache instance
+		self::$cache = new Cache('mintyphp_test_', 'localhost:11211');
+
 		// Create Core ORM instance
-		self::$orm = new Orm(self::$db);
+		self::$orm = new Orm(self::$db, self::$cache);
 	}
 
 	public function testDropPostsBefore(): void
@@ -201,6 +206,73 @@ class OrmTest extends TestCase
 	 * @depends testInsertUsers
 	 * @depends testInsertPosts
 	 * @depends testUpdatePosts
+	 */
+	public function testPathQueryWithoutHints(): void
+	{
+		// Test automatic path inference - posts with their users
+		$result = self::$orm->path(
+			'SELECT p.id, p.slug, u.id, u.username 
+			 FROM posts p 
+			 JOIN users u ON p.user_id = u.id 
+			 WHERE p.id <= ? 
+			 ORDER BY p.id',
+			[2]
+		);
+
+		// Should return nested structure with users as objects within posts array
+		$this->assertCount(2, $result);
+		assert(is_array($result[0]), 'result[0] is not an array');
+		$this->assertEquals(1, $result[0]['id']);
+		$this->assertEquals('2014-08-test1', $result[0]['slug']);
+		$this->assertArrayHasKey('u', $result[0]);
+		$this->assertIsArray($result[0]['u']);
+		$this->assertEquals(1, $result[0]['u']['id']);
+		$this->assertEquals('test1', $result[0]['u']['username']);
+	}
+
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
+	public function testPathQueryWithHints(): void
+	{
+		// Test with custom path hints for cleaner structure
+		$result = self::$orm->path(
+			'SELECT p.id, p.slug, p.title, u.id, u.username 
+			 FROM posts p 
+			 JOIN users u ON p.user_id = u.id 
+			 WHERE p.id = ?',
+			[1],
+			[
+				'p' => '$',
+				'u' => '$.author'
+			]
+		);
+
+		// Should return single object with custom 'author' field
+		$this->assertEquals(1, $result['id']);
+		$this->assertEquals('2014-08-test1', $result['slug']);
+		$this->assertEquals('test', $result['title']);
+		$this->assertArrayHasKey('author', $result);
+		$this->assertIsArray($result['author']);
+		$this->assertEquals(1, $result['author']['id']);
+		$this->assertEquals('test1', $result['author']['username']);
+	}
+
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 * @depends testDeletePosts
 	 */
 	public function testDeletePosts(): void
 	{

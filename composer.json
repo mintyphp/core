@@ -11,7 +11,8 @@
     "require": {
         "php": ">=8.0",
         "ext-memcache": "*",
-        "ext-mysqli": "*"
+        "ext-mysqli": "*",
+        "mintyphp/pathql": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "*",

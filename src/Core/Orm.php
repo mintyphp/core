@@ -3,6 +3,8 @@
 namespace MintyPHP\Core;
 
 use MintyPHP\Core\DB;
+use MintyPHP\Core\Cache;
+use MintyPHP\PathQL\PathQL;
 
 /**
  * ORM (Object-Relational Mapping) layer for MintyPHP
@@ -11,12 +13,16 @@ use MintyPHP\Core\DB;
  */
 class Orm
 {
+    private PathQL $pathQL;
+
     /**
      * Constructor for the Orm class.
      * @param DB $db Database instance for executing queries.
+     * @param Cache $cache Cache instance for storing schema metadata.
      */
-    public function __construct(private DB $db)
+    public function __construct(private DB $db, Cache $cache)
     {
+        $this->pathQL = new PathQL($db, $cache);
     }
 
     /**
@@ -105,5 +111,23 @@ class Orm
     {
         $sql = "DELETE FROM `$tableName` WHERE `$idField` = ?";
         return $this->db->delete($sql, $id) ? true : false;
+    }
+
+    /**
+     * Execute a query with automatic path inference for hierarchical results using PathQL.
+     * 
+     * Automatically infers the structure of the result set based on SQL JOINs and
+     * foreign key relationships, returning nested arrays/objects instead of flat rows.
+     * 
+     * @param string $sql The SQL query to execute
+     * @param array<int|string,mixed> $params Parameters for prepared statement
+     * @param array<string,string> $pathHints Optional path mappings for table aliases
+     *                     Format: ['alias' => '$.path', 'other' => '$.parent.child[]']
+     * @return array<int|string,mixed> Hierarchical result structure based on inferred paths
+     * @throws \RuntimeException If query execution fails
+     */
+    public function path(string $sql, array $params = [], array $pathHints = []): array
+    {
+        return $this->pathQL->execute($sql, $params, $pathHints);
     }
 }
