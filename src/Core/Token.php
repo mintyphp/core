@@ -13,7 +13,7 @@ class Token
     /**
      * Supported algorithms
      */
-    public const array ALGORITHMS = [
+    public const ALGORITHMS = [
         'HS256' => 'sha256',
         'HS384' => 'sha384',
         'HS512' => 'sha512',
