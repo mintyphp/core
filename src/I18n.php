@@ -91,7 +91,7 @@ class I18n
      * @param string $str The date string to format.
      * @return string The formatted date.
      */
-    public static function date(string $str): string
+    public static function date($str): string
     {
         $instance = self::getInstance();
         return $instance->date($str);
@@ -103,7 +103,7 @@ class I18n
      * @param string $str The UTC date string to format.
      * @return string The formatted date.
      */
-    public static function dateUtc(string $str): string
+    public static function dateUtc($str): string
     {
         $instance = self::getInstance();
         return $instance->dateUtc($str);
@@ -128,7 +128,7 @@ class I18n
      * @param string $str The datetime string to format.
      * @return string The formatted datetime.
      */
-    public static function datetime(string $str): string
+    public static function datetime($str): string
     {
         $instance = self::getInstance();
         return $instance->datetime($str);
@@ -140,7 +140,7 @@ class I18n
      * @param string $str The UTC datetime string to format.
      * @return string The formatted datetime.
      */
-    public static function datetimeUtc(string $str): string
+    public static function datetimeUtc($str): string
     {
         $instance = self::getInstance();
         return $instance->datetimeUtc($str);
@@ -207,7 +207,7 @@ class I18n
      * @param string $str The datetime string to format.
      * @return string The formatted short datetime.
      */
-    public static function datetimeShort(string $str): string
+    public static function datetimeShort($str): string
     {
         $instance = self::getInstance();
         return $instance->datetimeShort($str);
