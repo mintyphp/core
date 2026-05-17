@@ -101,7 +101,25 @@ class I18n
             'lv' => ['janvāris', 'februāris', 'marts', 'aprīlis', 'maijs', 'jūnijs', 'jūlijs', 'augusts', 'septembris', 'oktobris', 'novembris', 'decembris'],
             'lt' => ['sausis', 'vasaris', 'kovas', 'balandis', 'gegužė', 'birželis', 'liepa', 'rugpjūtis', 'rugsėjis', 'spalis', 'lapkritis', 'gruodis'],
             'ee' => ['jaanuar', 'veebruar', 'märts', 'aprill', 'mai', 'juuni', 'juuli', 'august', 'september', 'oktoober', 'november', 'detsember'],
-        ]
+        ],
+        'unitsAgo' => [
+            'en' => ['years' => 'years', 'months' => 'months', 'weeks' => 'weeks', 'hours' => 'hours', 'minutes' => 'minutes', 'seconds' => 'seconds', 'ago' => 'ago'],
+            'de' => ['years' => 'Jahre', 'months' => 'Monate', 'weeks' => 'Wochen', 'hours' => 'Stunden', 'minutes' => 'Minuten', 'seconds' => 'Sekunden', 'ago' => 'vor'],
+            'fr' => ['years' => 'ans', 'months' => 'mois', 'weeks' => 'semaines', 'hours' => 'heures', 'minutes' => 'minutes', 'seconds' => 'secondes', 'ago' => 'il y a'],
+            'nl' => ['years' => 'jaren', 'months' => 'maanden', 'weeks' => 'weken', 'hours' => 'uren', 'minutes' => 'minuten', 'seconds' => 'seconden', 'ago' => 'geleden'],
+            'es' => ['years' => 'años', 'months' => 'meses', 'weeks' => 'semanas', 'hours' => 'horas', 'minutes' => 'minutos', 'seconds' => 'segundos', 'ago' => 'hace'],
+            'it' => ['years' => 'anni', 'months' => 'mesi', 'weeks' => 'settimane', 'hours' => 'ore', 'minutes' => 'minuti', 'seconds' => 'secondi', 'ago' => 'fa'],
+            'pt' => ['years' => 'anos', 'months' => 'meses', 'weeks' => 'semanas', 'hours' => 'horas', 'minutes' => 'minutos', 'seconds' => 'segundos', 'ago' => 'há'],
+            'dk' => ['years' => 'år', 'months' => 'måneder', 'weeks' => 'uger', 'hours' => 'timer', 'minutes' => 'minutter', 'seconds' => 'sekunder', 'ago' => 'siden'],
+            'se' => ['years' => 'år', 'months' => 'månader', 'weeks' => 'veckor', 'hours' => 'timmar', 'minutes' => 'minuter', 'seconds' => 'sekunder', 'ago' => 'sedan'],
+            'fi' => ['years' => 'vuotta', 'months' => 'kuukautta', 'weeks' => 'viikkoa', 'hours' => 'tuntia', 'minutes' => 'minuuttia', 'seconds' => 'sekuntia', 'ago' => 'sitten'],
+            'pl' => ['years' => 'lat', 'months' => 'miesięcy', 'weeks' => 'tygodni', 'hours' => 'godzin', 'minutes' => 'minut', 'seconds' => 'sekund', 'ago' => 'temu'],
+            'bg' => ['years' => 'години', 'months' => 'месеца', 'weeks' => 'седмици', 'hours' => 'часа', 'minutes' => 'минути', 'seconds' => 'секунди', 'ago' => 'преди'],
+            'ro' => ['years' => 'ani', 'months' => 'luni', 'weeks' => 'săptămâni', 'hours' => 'ore', 'minutes' => 'minute', 'seconds' => 'secunde', 'ago' => 'în urmă'],
+            'lv' => ['years' => 'gadi', 'months' => 'mēneši', 'weeks' => 'nedēļas', 'hours' => 'stundas', 'minutes' => 'minūtes', 'seconds' => 'sekundes', 'ago' => 'atpakaļ'],
+            'lt' => ['years' => 'metai', 'months' => 'mėnesiai', 'weeks' => 'savaitės', 'hours' => 'valandos', 'minutes' => 'minutės', 'seconds' => 'sekundės', 'ago' => 'prieš'],
+            'ee' => ['years' => 'aasta', 'months' => 'kuu', 'weeks' => 'nädal', 'hours' => 'tunnid', 'minutes' => 'minutid', 'seconds' => 'sekundid', 'ago' => 'sissel'],
+        ],
     ];
 
     /**
@@ -358,6 +376,54 @@ class I18n
         $day = substr($this->weekDay($dayNum), 0, 2);
         $date = implode($sep, array_map('intval', array_slice(explode($sep, $this->formatDateTime('date', "$str")), 0, 2)));
         return "$day $date";
+    }
+
+    /**
+     * Format a time string as "X units ago".
+     *
+     * Picks the largest unit (year, month, week, hour, minute, second) whose
+     * floored count is at least 2, so the unit word is always plural and the
+     * count is always a whole number (minimum 2).
+     *
+     * @param string $str The time string to convert.
+     * @return string The formatted "X units ago" string, or '' if empty/invalid.
+     */
+    public function timeAgo(string $str): string
+    {
+        if (!$str) {
+            return '';
+        }
+        $timestamp = strtotime($str);
+        if ($timestamp === false) {
+            return '';
+        }
+        $diff = time() - $timestamp;
+        if ($diff < 0) {
+            $diff = 0;
+        }
+        $seconds = [
+            'years' => 31536000,
+            'months' => 2592000,
+            'weeks' => 604800,
+            'hours' => 3600,
+            'minutes' => 60,
+            'seconds' => 1,
+        ];
+        $count = 2;
+        $unit = 'seconds';
+        foreach ($seconds as $name => $unitSeconds) {
+            $value = (int)floor($diff / $unitSeconds);
+            if ($value >= 2) {
+                $count = $value;
+                $unit = $name;
+                break;
+            }
+        }
+        $unitsAgo = $this->formats['unitsAgo'];
+        $localeUnits = $unitsAgo[$this->locale] ?? $unitsAgo[$this->defaultLocale];
+        $word = $localeUnits[$unit] ?? $unit;
+        $ago = $localeUnits['ago'] ?? 'ago';
+        return "$count $word $ago";
     }
 
     /**

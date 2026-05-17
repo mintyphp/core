@@ -228,4 +228,76 @@ class I18nTest extends TestCase
         $result = $this->i18n->price(0);
         $this->assertEquals('€ 0.00', $result);
     }
+
+    public function testTimeAgoEmpty(): void
+    {
+        $result = $this->i18n->timeAgo('');
+        $this->assertEquals('', $result);
+    }
+
+    public function testTimeAgoInvalid(): void
+    {
+        $result = $this->i18n->timeAgo('not-a-date');
+        $this->assertEquals('', $result);
+    }
+
+    public function testTimeAgoNow(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s'));
+        $this->assertEquals('2 seconds ago', $result);
+    }
+
+    public function testTimeAgoFuture(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() + 3600));
+        $this->assertEquals('2 seconds ago', $result);
+    }
+
+    public function testTimeAgoMinutes(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() - 120));
+        $this->assertEquals('2 minutes ago', $result);
+    }
+
+    public function testTimeAgoHoursSmall(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() - 7200));
+        $this->assertEquals('2 hours ago', $result);
+    }
+
+    public function testTimeAgoMinutesLarge(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() - 110 * 60));
+        $this->assertEquals('110 minutes ago', $result);
+    }
+
+    public function testTimeAgoHoursLarge(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() - 46 * 3600));
+        $this->assertEquals('46 hours ago', $result);
+    }
+
+    public function testTimeAgoWeeks(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() - 14 * 86400));
+        $this->assertEquals('2 weeks ago', $result);
+    }
+
+    public function testTimeAgoYears(): void
+    {
+        $result = $this->i18n->timeAgo(date('Y-m-d H:i:s', time() - 2 * 31536000));
+        $this->assertEquals('2 years ago', $result);
+    }
+
+    public function testTimeAgoGerman(): void
+    {
+        $result = $this->i18nDe->timeAgo(date('Y-m-d H:i:s', time() - 7200));
+        $this->assertEquals('2 Stunden vor', $result);
+    }
+
+    public function testTimeAgoDutch(): void
+    {
+        $result = $this->i18nNl->timeAgo(date('Y-m-d H:i:s', time() - 7200));
+        $this->assertEquals('2 uren geleden', $result);
+    }
 }
