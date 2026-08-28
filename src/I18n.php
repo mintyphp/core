@@ -217,9 +217,8 @@ class I18n
      * Format a time string as "X units ago".
      *
      * Picks the largest unit (year, month, week, hour, minute, second) whose
-     * count is at least 1.5, so the unit word is always plural. Counts under 5
-     * are rendered with one decimal using the locale's decimal separator;
-     * counts of 5 or more are rendered as a floored integer.
+     * floored count is at least 2, so the unit word is always plural and the
+     * count is always a whole number (minimum 2).
      *
      * @param string $str The time string to convert.
      * @return string The formatted "X units ago" string, or '' if empty/invalid.
@@ -232,9 +231,9 @@ class I18n
 
     /**
      * Translate a string ID to the localized text.
-     *
+     * 
      * Loads translation files from i18n/{domain}_{locale}.json on demand.
-     *
+     * 
      * @param string $id The translation ID.
      * @return string The translated text, or the ID if not found.
      */
