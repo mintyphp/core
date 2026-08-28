@@ -92,24 +92,28 @@ class Router
     	 * Initiate file download with provided data and terminate execution
     	 * @param string $filename The name of the file to download
     	 * @param string $data The file content data
+    	 * @param string $contentType The media type of the data
+    	 * @param string $disposition Either 'attachment' to save or 'inline' to show in the browser
     	 * @return void
     	 */
-    public static function download(string $filename, string $data): void
+    public static function download(string $filename, string $data, string $contentType = 'application/octet-stream', string $disposition = 'attachment'): void
     {
         $instance = self::getInstance();
-        $instance->download($filename, $data);
+        $instance->download($filename, $data, $contentType, $disposition);
     }
 
     /**
     	 * Initiate file download from filesystem and terminate execution
     	 * @param string $filename The name for the downloaded file
     	 * @param string $filepath The path to the file on the filesystem
+    	 * @param string $contentType The media type of the file
+    	 * @param string $disposition Either 'attachment' to save or 'inline' to show in the browser
     	 * @return void
     	 */
-    public static function file(string $filename, string $filepath): void
+    public static function file(string $filename, string $filepath, string $contentType = 'application/octet-stream', string $disposition = 'attachment'): void
     {
         $instance = self::getInstance();
-        $instance->file($filename, $filepath);
+        $instance->file($filename, $filepath, $contentType, $disposition);
     }
 
     /**
