@@ -334,15 +334,15 @@ class NoPassAuth
      * Check if a user with the given username exists.
      * 
      * @param string $username The username to check.
-     * @return mixed The user ID if exists, null otherwise.
+     * @return bool True if user exists, false otherwise.
      */
-    public function exists(string $username)
+    public function exists(string $username): bool
     {
         $query = sprintf(
-            'select `id` from `%s` where `%s`=?',
+            'select 1 from `%s` where `%s`=?',
             $this->usersTable,
             $this->usernameField
         );
-        return $this->db->selectValue($query, $username);
+        return boolval($this->db->selectValue($query, $username));
     }
 }

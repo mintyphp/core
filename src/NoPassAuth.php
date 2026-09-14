@@ -178,4 +178,16 @@ class NoPassAuth
         $instance = self::getInstance();
         return $instance->updateTotpSecret($username, $secret);
     }
+
+    /**
+     * Check if a user with the given username exists.
+     * 
+     * @param string $username The username to check.
+     * @return bool True if user exists, false otherwise.
+     */
+    public static function exists(string $username): bool
+    {
+        $instance = self::getInstance();
+        return $instance->exists($username);
+    }
 }
