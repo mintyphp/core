@@ -87,6 +87,11 @@ class AuthTest extends TestCase
         $result = self::$auth->login('test', 'test');
         $this->assertNotEmpty($result, 'login failed');
         $this->assertArrayHasKey('users', $result);
+        $sessionUser = $_SESSION['user'] ?? null;
+        $this->assertIsArray($sessionUser);
+        $this->assertEquals('test', $sessionUser['username']);
+        $this->assertArrayNotHasKey('password', $sessionUser);
+        $this->assertArrayNotHasKey('totp_secret', $sessionUser);
     }
 
     /**

@@ -128,11 +128,27 @@ class NoPassAuth
             $hash = $user[$table][$this->rememberTokenField] ?? '';
             if (is_string($hash) && password_verify($token, $hash)) {
                 $this->session->regenerate();
-                $_SESSION['user'] = $user[$table];
+                $_SESSION['user'] = $this->sessionUser($user[$table]);
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Strip secret fields from a user record before storing it in the session.
+     *
+     * The session may be persisted in files, memcached, redis or the debugger
+     * history, so it must never hold the password hash (which is the signing
+     * key for login tokens), the TOTP secret or the remember token hash.
+     *
+     * @param array<string,mixed> $user The user record from the database.
+     * @return array<string,mixed> The user record without secret fields.
+     */
+    private function sessionUser(array $user): array
+    {
+        unset($user[$this->passwordField], $user[$this->totpSecretField], $user[$this->rememberTokenField]);
+        return $user;
     }
 
     /**
@@ -262,7 +278,7 @@ class NoPassAuth
                     throw new TotpError($usernameStr);
                 }
                 $this->session->regenerate();
-                $_SESSION['user'] = $user[$table];
+                $_SESSION['user'] = $this->sessionUser($user[$table]);
                 if ($rememberMe) {
                     $this->doRemember($usernameStr);
                 }

@@ -71,11 +71,26 @@ class Auth
                     throw new TotpError($username);
                 }
                 $this->session->regenerate();
-                $_SESSION['user'] = $user[$this->usersTable];
+                $_SESSION['user'] = $this->sessionUser($user[$this->usersTable]);
                 return $user;
             }
         }
         return [];
+    }
+
+    /**
+     * Strip secret fields from a user record before storing it in the session.
+     *
+     * The session may be persisted in files, memcached, redis or the debugger
+     * history, so it must never hold the password hash or the TOTP secret.
+     *
+     * @param array<string,mixed> $user The user record from the database.
+     * @return array<string,mixed> The user record without secret fields.
+     */
+    private function sessionUser(array $user): array
+    {
+        unset($user[$this->passwordField], $user[$this->totpSecretField]);
+        return $user;
     }
 
     /**
