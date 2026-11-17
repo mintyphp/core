@@ -85,4 +85,56 @@ class FirewallTest extends TestCase
         $firewall = new Firewall(self::$cache, 5, 0.1, 10, self::$testPrefix . 'fw_rp_', true);
         $this->assertInstanceOf(Firewall::class, $firewall);
     }
+
+    private function counterKey(string $prefix, string $ip): string
+    {
+        return self::$testPrefix . $prefix . '_' . $ip;
+    }
+
+    public function testEndOnlyReleasesAcquiredSlotOnce(): void
+    {
+        $server = ['REMOTE_ADDR' => '10.0.0.1'];
+        $key = $this->counterKey('fw_once_', '10.0.0.1');
+        self::$memcached->delete($key);
+
+        $firewall = new Firewall(self::$cache, 5, 0.1, 10, 'fw_once_', false, $server);
+        $firewall->end();
+        self::$memcached->set($key, 2);
+        $firewall->end();
+        $this->assertEquals(2, self::$memcached->get($key), 'end() without start() must not decrement');
+
+        $firewall->start();
+        $this->assertEquals(3, self::$memcached->get($key));
+        $firewall->end();
+        $firewall->end();
+        $this->assertEquals(2, self::$memcached->get($key), 'end() must decrement only once');
+
+        self::$memcached->delete($key);
+    }
+
+    public function testRejectedRequestDoesNotLowerCounter(): void
+    {
+        $key = $this->counterKey('fw_reject_', '10.0.0.2');
+        self::$memcached->delete($key);
+        // the concurrency limit (2) is already reached
+        self::$memcached->set($key, 2);
+
+        $autoload = var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true);
+        $prefix = var_export(self::$testPrefix, true);
+        $script = <<<PHP
+            require $autoload;
+            \$memcached = new Memcached();
+            \$memcached->addServer('127.0.0.1', 11211);
+            \$cache = new MintyPHP\Core\Cache($prefix, '127.0.0.1:11211', \$memcached);
+            \$firewall = new MintyPHP\Core\Firewall(\$cache, 2, 0, 10, 'fw_reject_', false, ['REMOTE_ADDR' => '10.0.0.2']);
+            \$firewall->start();
+            echo 'not rejected';
+            PHP;
+        $output = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($script) . ' 2>&1');
+
+        $this->assertEquals('429: Too Many Requests', $output);
+        $this->assertEquals(2, self::$memcached->get($key), 'a rejected request must not release a slot');
+
+        self::$memcached->delete($key);
+    }
 }
