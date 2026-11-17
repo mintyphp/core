@@ -158,11 +158,13 @@ class Session
             return true;
         }
 
-        $success = false;
-        if (isset($_POST[$this->csrfSessionKey])) {
-            $success = $_POST[$this->csrfSessionKey] == $_SESSION[$this->csrfSessionKey];
+        $posted = $_POST[$this->csrfSessionKey] ?? null;
+        $expected = $_SESSION[$this->csrfSessionKey] ?? null;
+        if (!is_string($posted) || !is_string($expected) || $expected === '') {
+            return false;
         }
-        return $success;
+        // strict, constant-time comparison (loose == treats "0" and "0e123..." as equal)
+        return hash_equals($expected, $posted);
     }
 
     /**

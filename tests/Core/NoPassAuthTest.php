@@ -117,6 +117,12 @@ class NoPassAuthTest extends TestCase
         $this->assertNotEmpty($result, 'login failed');
         $this->assertArrayHasKey('users', $result);
         $this->assertEquals('testuser', $result['users']['username']);
+        $sessionUser = $_SESSION['user'] ?? null;
+        $this->assertIsArray($sessionUser);
+        $this->assertEquals('testuser', $sessionUser['username']);
+        $this->assertArrayNotHasKey('password', $sessionUser);
+        $this->assertArrayNotHasKey('totp_secret', $sessionUser);
+        $this->assertArrayNotHasKey('remember_token', $sessionUser);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -239,6 +245,11 @@ class NoPassAuthTest extends TestCase
         self::$auth->register('rememberuser');
         $this->rememberUser('rememberuser', 'known-token');
         $this->assertTrue(self::$auth->remember(), 'remember should work before logout');
+        $sessionUser = $_SESSION['user'] ?? null;
+        $this->assertIsArray($sessionUser);
+        $this->assertArrayNotHasKey('password', $sessionUser);
+        $this->assertArrayNotHasKey('totp_secret', $sessionUser);
+        $this->assertArrayNotHasKey('remember_token', $sessionUser);
 
         // no cookie in this request, so setcookie is not called
         unset($_COOKIE['mintyphp_remember']);
