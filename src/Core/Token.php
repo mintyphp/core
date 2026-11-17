@@ -90,7 +90,16 @@ class Token
         if (!isset(self::ALGORITHMS[$algorithm])) {
             return [];
         }
-        if (!empty($requirements['alg']) && !in_array($algorithm, $requirements['alg'])) {
+        if (empty($requirements['alg'])) {
+            // without an explicit allow-list only the configured algorithm is accepted
+            if ($algorithm !== $this->algorithm) {
+                return [];
+            }
+        } elseif (!in_array($algorithm, $requirements['alg'], true)) {
+            return [];
+        }
+        // never mix HMAC and RSA: the same key would be interpreted differently
+        if ($algorithm[0] !== $this->algorithm[0]) {
             return [];
         }
         $hmac = self::ALGORITHMS[$algorithm];

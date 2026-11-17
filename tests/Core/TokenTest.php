@@ -347,4 +347,30 @@ class TokenTest extends TestCase
 
         $this->assertEmpty($result);
     }
+    public function testRejectsHmacTokenSignedWithRsaPublicKey(): void
+    {
+        $publicKey = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugd\nUWAY9iR3fy4arWNA1KoS8kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQs\nHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5D\no2kQ+X5xK9cipRgEKwIDAQAB\n-----END PUBLIC KEY-----";
+        // attacker signs an HS256 token using the (public) RSA key as HMAC secret
+        $forger = new Token('HS256', $publicKey, 5, 30);
+        $forged = $forger->getToken(['sub' => 'admin']);
+
+        $verifier = new Token('RS256', $publicKey, 5, 30);
+        $this->assertEquals([], $verifier->getClaims($forged));
+
+        // also when HS256 is explicitly in the allow-list
+        $verifier = new Token('RS256', $publicKey, 5, 30, '', '', 'RS256,HS256');
+        $this->assertEquals([], $verifier->getClaims($forged));
+    }
+
+    public function testRejectsOtherAlgorithmWithoutAllowList(): void
+    {
+        $signer = new Token('HS512', $this->secret, 5, 30);
+        $jwt = $signer->getToken(['sub' => 'user123']);
+
+        $verifier = new Token('HS256', $this->secret, 5, 30);
+        $this->assertEquals([], $verifier->getClaims($jwt));
+
+        $verifier = new Token('HS256', $this->secret, 5, 30, '', '', 'HS256,HS512');
+        $this->assertEquals('user123', $verifier->getClaims($jwt)['sub']);
+    }
 }
