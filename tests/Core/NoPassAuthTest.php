@@ -9,7 +9,9 @@ use MintyPHP\Core\Totp;
 use MintyPHP\Core\Session;
 use MintyPHP\Core\Router;
 use MintyPHP\Error\TotpError;
+use MintyPHP\Mocking\BuiltInFunctionMock;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -216,6 +218,65 @@ class NoPassAuthTest extends TestCase
         $this->assertArrayNotHasKey('user', $_SESSION, 'user session not cleared');
         $this->assertArrayNotHasKey('other', $_SESSION, 'other session not cleared');
         $this->assertArrayHasKey('debugger', $_SESSION, 'debugger session should be preserved');
+    }
+
+    /**
+     * Store a known remember token for the user and put it in the cookie.
+     */
+    private function rememberUser(string $username, string $token): void
+    {
+        self::$db->update(
+            'update `users` set `remember_token` = ?, `remember_expires` = DATE_ADD(NOW(), INTERVAL 1 DAY) where `username` = ?',
+            password_hash($token, PASSWORD_DEFAULT),
+            $username
+        );
+        $_COOKIE['mintyphp_remember'] = "$username:$token";
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogoutInvalidatesRememberToken(): void
+    {
+        self::$auth->register('rememberuser');
+        $this->rememberUser('rememberuser', 'known-token');
+        $this->assertTrue(self::$auth->remember(), 'remember should work before logout');
+
+        // no cookie in this request, so setcookie is not called
+        unset($_COOKIE['mintyphp_remember']);
+        $_SESSION['user'] = ['id' => 2, 'username' => 'rememberuser'];
+        self::$auth->logout();
+
+        $row = self::$db->selectOne('select * from `users` where `username` = ?', 'rememberuser');
+        $this->assertIsArray($row);
+        $this->assertNull($row['users']['remember_token']);
+        $this->assertNull($row['users']['remember_expires']);
+
+        // a stolen cookie no longer works after logout
+        $_COOKIE['mintyphp_remember'] = 'rememberuser:known-token';
+        $this->assertFalse(self::$auth->remember(), 'remember should fail after logout');
+        unset($_COOKIE['mintyphp_remember']);
+    }
+
+    #[RunInSeparateProcess]
+    #[AllowMockObjectsWithoutExpectations]
+    public function testLogoutRemovesCookieWithSameDomainAndPath(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'example.com:443';
+        self::$auth->register('cookieuser');
+        $this->rememberUser('cookieuser', 'known-token');
+        $_SESSION['user'] = ['id' => 3, 'username' => 'cookieuser'];
+
+        $mock = new BuiltInFunctionMock('MintyPHP\Core', $this);
+        $mock->expect('setcookie', ['mintyphp_remember', '', [
+            'expires' => 1,
+            'path' => '/',
+            'domain' => 'example.com',
+            'secure' => true,
+            'httponly' => true,
+        ]], true);
+
+        self::$auth->logout();
+        $mock->assertExpectationsMet();
+        $this->assertArrayNotHasKey('mintyphp_remember', $_COOKIE);
     }
 
     public static function tearDownAfterClass(): void
