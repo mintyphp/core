@@ -99,6 +99,32 @@ class SessionTest extends TestCase
         unset($_POST['test_csrf_token']);
     }
 
+    public function testCheckCsrfTokenRejectsLooseNumericMatch(): void
+    {
+        $this->session->start();
+        $original = $_SESSION['test_csrf_token'];
+        // a "magic hash" token: "0" == "0e1234..." is true with loose comparison
+        $_SESSION['test_csrf_token'] = '0e123456789012345678901234567890';
+        $_POST['test_csrf_token'] = '0';
+
+        $result = $this->session->checkCsrfToken();
+        $this->assertFalse($result);
+
+        $_SESSION['test_csrf_token'] = $original;
+        unset($_POST['test_csrf_token']);
+    }
+
+    public function testCheckCsrfTokenRejectsArray(): void
+    {
+        $this->session->start();
+        $_POST['test_csrf_token'] = [$_SESSION['test_csrf_token']];
+
+        $result = $this->session->checkCsrfToken();
+        $this->assertFalse($result);
+
+        unset($_POST['test_csrf_token']);
+    }
+
     public function testCheckCsrfTokenMissing(): void
     {
         $this->session->start();
