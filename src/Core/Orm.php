@@ -26,6 +26,24 @@ class Orm
     }
 
     /**
+     * Quote a table or column name for use in a query.
+     *
+     * Backticks are escaped by doubling them, so the name can never break
+     * out of the quoted identifier.
+     *
+     * @param string $name The identifier to quote.
+     * @return string The quoted identifier, including the surrounding backticks.
+     * @throws \InvalidArgumentException If the identifier is empty or contains a NUL byte.
+     */
+    private function quoteIdentifier(string $name): string
+    {
+        if ($name === '' || str_contains($name, "\0")) {
+            throw new \InvalidArgumentException('Invalid identifier: ' . json_encode($name));
+        }
+        return '`' . str_replace('`', '``', $name) . '`';
+    }
+
+    /**
      * Inserts a new record into the specified table.
      * 
      * @param string $tableName The name of the table to insert into.
@@ -41,13 +59,14 @@ class Orm
         $qmarks = [];
         $params = [];
         foreach ($object as $key => $value) {
-            $fields[] = $key;
+            $fields[] = $this->quoteIdentifier((string) $key);
             $qmarks[] = '?';
             $params[] = $value;
         }
-        $fields = implode('`,`', $fields);
+        $table = $this->quoteIdentifier($tableName);
+        $fields = implode(',', $fields);
         $qmarks = implode(',', $qmarks);
-        $sql = "INSERT INTO `$tableName` (`$fields`) VALUES ($qmarks)";
+        $sql = "INSERT INTO $table ($fields) VALUES ($qmarks)";
         return $this->db->insert($sql, $params);
     }
 
@@ -69,18 +88,18 @@ class Orm
             return false;
         }
         $fields = [];
-        $qmarks = [];
         $params = [];
         foreach ($object as $key => $value) {
             if (!in_array(gettype($value), ['integer', 'double', 'string', 'NULL'])) {
                 throw new \InvalidArgumentException("Invalid value type for $key: " . gettype($value));
             }
-            $fields[] = $key;
+            $fields[] = $this->quoteIdentifier((string) $key) . ' = ?';
             $params[] = $value;
         }
-        $fields = implode('` = ?, `', $fields);
-        $qmarks = implode(',', $qmarks);
-        $sql = "UPDATE `$tableName` SET `$fields` = ? WHERE `$idField` = ?";
+        $table = $this->quoteIdentifier($tableName);
+        $fields = implode(', ', $fields);
+        $where = $this->quoteIdentifier($idField);
+        $sql = "UPDATE $table SET $fields WHERE $where = ?";
         $params[] = $id;
         return $this->db->update($sql, $params) ? true : false;
     }
@@ -95,7 +114,7 @@ class Orm
      */
     public function select(string $tableName, string|int $id, string $idField = 'id'): array
     {
-        $sql = "SELECT * FROM `$tableName` WHERE `$idField` = ?";
+        $sql = 'SELECT * FROM ' . $this->quoteIdentifier($tableName) . ' WHERE ' . $this->quoteIdentifier($idField) . ' = ?';
         return $this->db->selectOne($sql, $id)[$tableName] ?? [];
     }
 
@@ -109,7 +128,7 @@ class Orm
      */
     public function delete(string $tableName, string|int $id, string $idField = 'id'): bool
     {
-        $sql = "DELETE FROM `$tableName` WHERE `$idField` = ?";
+        $sql = 'DELETE FROM ' . $this->quoteIdentifier($tableName) . ' WHERE ' . $this->quoteIdentifier($idField) . ' = ?';
         return $this->db->delete($sql, $id) ? true : false;
     }
 

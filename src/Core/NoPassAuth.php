@@ -136,13 +136,46 @@ class NoPassAuth
     }
 
     /**
-     * Remove the remember-me cookie.
+     * Get the options for the remember-me cookie.
+     *
+     * Setting and removing the cookie must use the same path and domain,
+     * otherwise the browser treats them as different cookies.
+     *
+     * @param int $expires The expiry timestamp of the cookie.
+     * @return array{expires: int, path: string, domain?: string, secure?: bool, httponly?: bool} The options for setcookie().
      */
-    private function unRemember(): void
+    private function rememberCookieOptions(int $expires): array
     {
+        /** @var array<string, string> $_SERVER */
+        $path = $this->baseUrl;
+        $domain = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
+        if (!$domain || $domain == 'localhost') {
+            return ['expires' => $expires, 'path' => $path];
+        }
+        return ['expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => true, 'httponly' => true];
+    }
+
+    /**
+     * Remove the remember-me cookie and invalidate the stored remember token.
+     *
+     * @param string $username The username of the logged in user, or empty if unknown.
+     */
+    private function unRemember(string $username): void
+    {
+        if ($username !== '') {
+            $query = sprintf(
+                'update `%s` set `%s` = NULL, `%s` = NULL where `%s` = ? limit 1',
+                $this->usersTable,
+                $this->rememberTokenField,
+                $this->rememberExpiresField,
+                $this->usernameField
+            );
+            $this->db->update($query, $username);
+        }
         $name = $this->sessionName . '_remember';
         if (isset($_COOKIE[$name])) {
-            setcookie($name, '');
+            setcookie($name, '', $this->rememberCookieOptions(1));
+            unset($_COOKIE[$name]);
         }
     }
 
@@ -156,7 +189,6 @@ class NoPassAuth
      */
     private function doRemember(string $username): void
     {
-        /** @var array<string, string> $_SERVER */
         $name = $this->sessionName . '_remember';
         $token = base64_encode(random_bytes(24));
         $hash = password_hash($token, PASSWORD_DEFAULT);
@@ -173,13 +205,7 @@ class NoPassAuth
         if ($expires === false) {
             $expires = time() + ($this->rememberDays * 86400);
         }
-        $path = $this->baseUrl;
-        $domain = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
-        if (!$domain || $domain == 'localhost') {
-            setcookie($name, $value, ['expires' => $expires, 'path' => $path]);
-        } else {
-            setcookie($name, $value, ['expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => true, 'httponly' => true]);
-        }
+        setcookie($name, $value, $this->rememberCookieOptions($expires));
     }
 
     /**
@@ -253,19 +279,25 @@ class NoPassAuth
      * Log out the current user.
      * 
      * Clears all session variables except debugger data,
-     * regenerates the session ID, and removes the remember-me cookie.
+     * regenerates the session ID, removes the remember-me cookie and
+     * invalidates the stored remember token.
      * 
      * @return bool Always returns true.
      */
     public function logout(): bool
     {
+        $username = '';
+        if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
+            $value = $_SESSION['user'][$this->usernameField] ?? '';
+            $username = is_string($value) ? $value : '';
+        }
         foreach ($_SESSION as $key => $value) {
             if ($key != 'debugger') {
                 unset($_SESSION[$key]);
             }
         }
         $this->session->regenerate();
-        $this->unRemember();
+        $this->unRemember($username);
         return true;
     }
 

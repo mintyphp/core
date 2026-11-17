@@ -5,6 +5,7 @@ namespace MintyPHP\Tests\Core;
 use MintyPHP\Core\DB;
 use MintyPHP\Core\Cache;
 use MintyPHP\Core\Orm;
+use MintyPHP\Error\DBError;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -196,6 +197,63 @@ class OrmTest extends TestCase
 	{
 		$result = self::$orm->select('posts', 999);
 		$this->assertEquals([], $result);
+	}
+
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
+	public function testUpdateRejectsInjectionInColumnName(): void
+	{
+		try {
+			self::$orm->update('posts', ["slug` = 'pwned', `created" => '2014-05-28 22:58:20'], 1);
+			$this->fail('expected DBError for unknown column');
+		} catch (DBError $e) {
+			$this->assertStringContainsString('Unknown column', $e->getMessage());
+		}
+		$result = self::$orm->select('posts', 1);
+		$this->assertEquals('2014-08-test1', $result['slug']);
+	}
+
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
+	public function testInsertRejectsInjectionInColumnName(): void
+	{
+		$this->expectException(DBError::class);
+		self::$orm->insert('posts', ["slug`) VALUES ('x'); -- " => 'x']);
+	}
+
+	/**
+	 * @depends testDropPostsBefore
+	 * @depends testDropUsersBefore
+	 * @depends testCreateUsers
+	 * @depends testCreatePosts
+	 * @depends testInsertUsers
+	 * @depends testInsertPosts
+	 * @depends testUpdatePosts
+	 */
+	public function testSelectRejectsInjectionInIdField(): void
+	{
+		$this->expectException(DBError::class);
+		self::$orm->select('posts', 999, 'id` > 0 OR `id');
+	}
+
+	public function testEmptyIdentifierIsRejected(): void
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		self::$orm->delete('', 1);
 	}
 
 	/**

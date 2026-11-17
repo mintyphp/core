@@ -25,6 +25,7 @@ class Firewall
     /** @var array<string,string> */
     private array $serverGlobal;
     private string $key;
+    private bool $acquired = false;
 
     /**
      * Constructor
@@ -74,7 +75,6 @@ class Firewall
         $key = $this->key;
         $start = microtime(true);
         $this->cache->add($key, 0, $this->intervalSeconds);
-        register_shutdown_function([$this, 'end']);
         while ($this->cache->increment($key) > $this->concurrency) {
             $this->cache->decrement($key);
             if (!$this->spinLockSeconds || microtime(true) - $start > $this->intervalSeconds) {
@@ -83,17 +83,25 @@ class Firewall
             }
             usleep(intval($this->spinLockSeconds * 1000000));
         }
+        // only release the slot on shutdown once it is actually held
+        $this->acquired = true;
+        register_shutdown_function([$this, 'end']);
     }
 
     /**
      * End the firewall check
      * 
-     * Decrements the concurrency count for the client IP.
+     * Decrements the concurrency count for the client IP, but only if
+     * start() acquired a slot that has not been released yet.
      * 
      * @return void
      */
     public function end(): void
     {
+        if (!$this->acquired) {
+            return;
+        }
+        $this->acquired = false;
         $this->cache->decrement($this->key);
     }
 }
